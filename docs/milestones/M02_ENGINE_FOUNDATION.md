@@ -1,10 +1,10 @@
 # M02 — Authoritative Engine Foundation
 
-Status: **in progress**
+Status: **accepted on `codex/m02-engine-foundation`**
 
 ## Scope
 
-M02 is engine-foundation work only. It must not introduce combat rules, card-zone
+M02 is engine-foundation work only. It does not introduce combat rules, card-zone
 behavior, UI-owned state, or content-ID special cases.
 
 The design acceptance target is:
@@ -18,7 +18,7 @@ The design acceptance target is:
 - Authoritative state can be serialized canonically and hashed without browser,
   React, PixiJS, storage, clock, or network dependencies.
 
-## First implementation slice
+## Implementation
 
 - `src/engine/canonical.ts` — canonical JSON-compatible serialization and a
   versioned deterministic 64-bit FNV-1a hash over canonical UTF-8 bytes.
@@ -31,21 +31,17 @@ The design acceptance target is:
 - `src/engine/events.ts` — deterministic command-scoped event records with no
   timestamps or presentation state.
 - Engine exports updated through `src/engine/index.ts`.
-- `test:replay` and `test:properties` become real M02 test commands.
+- `test:replay` and `test:properties` are real M02 test commands.
+- `.github/workflows/m02-ci.yml` runs the locked M02 acceptance suite on the M02
+  branch so the project can be tested from connected GitHub work without a local
+  checkout.
 
-## Verification performed in this task
+## Acceptance verification
 
-The connected GitHub environment cannot install or execute the repository's npm
-workspace directly, so full repository acceptance is intentionally not claimed.
+GitHub Actions run `34478451729` executed on 2026-09-10 using the repository's
+locked dependencies and completed successfully.
 
-A local isolated engine harness was compiled with TypeScript 5.8.3 under Node
-22.16.0 and passed. A compiled smoke harness repeated 100 seeded 80-command
-sequences and confirmed identical final state hashes with and without interleaved
-cosmetic RNG draws.
-
-## Required before M02 acceptance
-
-Run from a normal repository checkout using the locked toolchain:
+The following all passed:
 
 ```text
 npm ci
@@ -57,5 +53,19 @@ npm run test:properties
 npm run build
 ```
 
-If any command fails, M02 remains in progress. Do not delete or weaken tests to
-make the milestone appear complete.
+The replay suite repeats 100 seeded 80-command sequences and verifies identical
+sampled values, event IDs, RNG state, and final authoritative-state hashes. The
+same sequences are also run with interleaved cosmetic RNG draws and must remain
+identical.
+
+The property suite independently verifies that arbitrary cosmetic draw counts do
+not perturb the first gameplay draw or resulting authoritative-state hash.
+
+## Result
+
+M02 meets its design acceptance criterion on `codex/m02-engine-foundation`.
+`main` remains unchanged until this branch is explicitly merged.
+
+## Next eligible milestone after merge
+
+**M03 — deck cycling, Energy, hand cap, card zones, and turn transitions.**

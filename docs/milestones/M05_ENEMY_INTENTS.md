@@ -1,6 +1,6 @@
 # M05 — Enemy Move Cycles and Fixed Intents
 
-Status: **in progress**
+Status: **accepted**
 
 ## Scope
 
@@ -24,9 +24,24 @@ M05 executes the primitives already owned by prior milestones and needed to prov
 
 The authored Paperwork side effect that adds an Invoice to discard is intentionally deferred. The roadmap does not add Invoice production content until M13, and M05 does not introduce a content-ID special case or premature generic card-effect compiler merely to fake that later feature.
 
-## Acceptance target
+## Acceptance record
 
-M05 is accepted only when the locked GitHub Actions run passes every prior suite plus `npm run test:m05` and the production build. Focused tests must prove:
+M05 was accepted on 2026-09-10. GitHub Actions run `34498372266` completed successfully on the substantive implementation commit `dcd7f434` using Node 24.20.0 on Ubuntu.
+
+The run passed:
+
+- `npm ci`
+- `npm run check`
+- `npm run test:engine`
+- `npm run test:content`
+- `npm run test:replay`
+- `npm run test:properties`
+- `npm run test:m03`
+- `npm run test:m04`
+- `npm run test:m05`
+- `npm run build`
+
+Focused tests prove:
 
 - Claims Adjuster selects/executes `stamp → paperwork → stamp_harder → stamp`;
 - intents are visible before the first player action;
@@ -35,3 +50,7 @@ M05 is accepted only when the locked GitHub Actions run passes every prior suite
 - living enemies execute in explicit displayed order;
 - opening-cycle behavior works;
 - the next player turn cannot begin until the enemy phase has actually resolved.
+
+## Next milestone
+
+**M06 — Bleed, Poison, Weak, Exposed, and escalation timing.**

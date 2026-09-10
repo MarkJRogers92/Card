@@ -21,7 +21,7 @@ not import the client.
 
 React owns menus and accessible controls. PixiJS will own battlefield
 presentation when that adapter is introduced. Neither layer owns HP, deck order,
-Energy, targeting, damage, triggers, or other authoritative state.
+Energy, targeting, damage, triggers, card lifecycle, or other authoritative state.
 
 ## M07 duo and Reaction boundary
 
@@ -30,7 +30,7 @@ Energy, targeting, damage, triggers, or other authoritative state.
 - `src/engine/reactions.ts` owns declarative Reaction recipes and generic ordered effect resolution.
 - A card-resolution context snapshots Lead/Support/Crew classification before base effects. The post-card ingredient step consumes that internal snapshot after base effects, preserving specified timing even when the card swaps formation.
 - `enemySpawnOrder` is serialized separately from displayed enemy execution order and supplies deterministic primary-Reaction reacquisition.
-- The M07 resolver exposes engine operations, not content-ID conditionals or UI behavior. The future card compiler will map validated card definitions into these operations.
+- The M07 resolver exposes engine operations, not content-ID conditionals or UI behavior. The future card compiler maps validated card definitions into these operations.
 
 ## M08 delayed-packet boundary
 
@@ -57,12 +57,24 @@ Energy, targeting, damage, triggers, or other authoritative state.
 
 - `src/engine/m10-fight.ts` is a bounded first-playable orchestration layer. It owns the six starter-card checkpoint definitions, the Claims Adjuster checkpoint behavior registry, fight setup, and the `play_card` / `swap` / `end_turn` command surface.
 - The M10 card table is data-driven and resolves through existing engine operations; React does not calculate Energy, damage, Block, Imprints, Reactions, swaps, passives, enemy actions, or turn timing.
-- M10 does not pretend to be the final general card compiler. The narrow starter effect set exists only to make the first fight playable before M11–M13 complete keyword lifecycle and production card data.
+- M10 does not pretend to be the final general card compiler. The narrow starter effect set exists only to make the first fight playable before production content expands.
 - `src/client/App.tsx` is a projection/control layer over authoritative state. It renders combatants, intent, target selection, Imprint, hand, resources, and controls, then submits M10 commands back to the engine.
 - The browser exposes the authoritative hash and its ordered M10 command log for test/debug verification. `tests/browser/m10-combat.spec.ts` replays the browser-produced command log through the same headless M10 command API and requires identical final hashes.
 - Restart constructs a fresh deterministic M10 fight rather than mutating the previous combat snapshot.
-- `Change of Shift` has a checkpoint-local post-play exhaust destination so the starter deck can be represented faithfully enough for M10. The general Exhaust/Retain/Fleeting/Unplayable/Protocol lifecycle remains explicitly deferred to M11.
+- `Change of Shift` retains its checkpoint-local exhaust destination inside M10. M11 now provides the general keyword lifecycle for production cards; the M10 shortcut remains frozen as a browser regression fixture rather than being expanded.
 - Chromium is the M10 scripted-browser acceptance target. Broader cross-browser release verification remains a later release gate.
+
+## M11 card-lifecycle boundary
+
+- `src/engine/card-lifecycle.ts` owns the reusable lifecycle contracts for Exhaust, Retain, Fleeting, Unplayable, Protocol, and additional self-HP card costs.
+- Card playability is checked before costs or zone changes. Unplayable cards therefore cannot consume Energy, HP, or card-zone state.
+- Energy and all additional HP costs are prevalidated before any payment is committed. HP costs resolve before base effects, bypass Block, and enforce the global requirement that the payer remain at 1+ HP.
+- Normal played cards enter discard; Exhaust cards enter exhaust; Protocol cards enter deployed. Exhausted and deployed cards remain outside discard reshuffles.
+- Player-turn-end hand settlement resolves Fleeting first, then Retain, then ordinary discard. This matches the explicit turn-sequence ordering and avoids ambiguous dual-keyword behavior.
+- Protocol trigger bindings are appended only after the installing card has completed the existing post-card/Reaction/trigger step, so a newly installed Protocol never retroactively observes its own installation play.
+- Protocol copies remain separate card instances and may install separate trigger bindings. Stable per-instance source IDs allow independent limits and deterministic stacking through the M09 dispatcher.
+- `endPlayerTurnWithSettledHand` is a narrow combat primitive used by the M11 lifecycle so keyword settlement can occur before the existing status/enemy-phase transition without rewriting M03 turn logic.
+- M11 introduces no UI-owned rules and no new content-ID branches. M12 production Source cards should use this lifecycle surface rather than extending the M10 checkpoint layer.
 
 ## M00 implementation
 

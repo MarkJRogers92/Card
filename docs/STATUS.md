@@ -2,25 +2,27 @@
 
 ## Current milestone
 
-**M10 — minimal playable browser combat — accepted**
+**M11 — card keyword lifecycle, Protocols, and additional HP costs — accepted**
 
-M10 is accepted on `codex/m10-playable-combat`. GitHub Actions run `34529248894` passed the substantive browser checkpoint at `f0f9296083dd3cfc7ad18c011fb9657c89571945`, including the first real Playwright combat acceptance.
+M11 is accepted on `codex/m11-keyword-lifecycle`. GitHub Actions run `34536867617` passed the substantive implementation at `8b869a26fb70be865cc08a73c9e761686a677736`, including the complete engine/regression stack, production build, and the M10 Chromium browser/replay regression.
 
-## M10 acceptance checklist
+## M11 acceptance checklist
 
-- [x] Browser opens directly into a deterministic Morrow/Switch vs Claims Adjuster fight
-- [x] Starter 10-card deck is represented with real authoritative card instances/zones
-- [x] Hand displays owner, Lead/Support/Crew classification, Energy cost, and ingredient
-- [x] Enemy target, HP/Block, and selected intent are visible
-- [x] Morrow/Switch HP, Block, and Front/Reserve state are visible
-- [x] Manual Swap uses the M07/M09 atomic swap + Shared Warranty path
-- [x] Starter card plays use real Energy, attack damage, Block, Imprint, Reaction, and passive operations
-- [x] End Turn resolves the real enemy phase and begins the next player turn when combat remains active
-- [x] Restart reconstructs the deterministic opening state and clears the UI command log
-- [x] Browser command log replays headlessly to the exact same authoritative-state hash
-- [x] Scripted Playwright fight defeats the Claims Adjuster through real UI controls
-- [x] Prior M00–M09 suites continue to pass
+- [x] Played Exhaust cards enter the exhaust zone for the remainder of combat
+- [x] Unplayed Fleeting cards exhaust at player-turn end
+- [x] Retain cards remain in hand at player-turn end
+- [x] Fleeting takes precedence over Retain when both are present
+- [x] Unplayable cards are rejected before costs or zone movement
+- [x] Protocol cards move to deployed and never return through reshuffles
+- [x] Protocol triggers install after the installing card event and therefore do not trigger retroactively
+- [x] Multiple Protocol copies stack through distinct per-instance trigger identities and limits
+- [x] Exhausted and deployed cards never enter discard reshuffles
+- [x] Additional HP costs bypass Block and require at least 1 HP remaining
+- [x] Energy and all declared HP costs are prevalidated before any payment is committed
+- [x] HP costs are collected before base effects, including lethal base effects
+- [x] Prior M00–M10 suites continue to pass
 - [x] Production build passes
+- [x] M10 Playwright browser/headless hash parity remains green
 
 ## Prior accepted milestones
 
@@ -34,17 +36,20 @@ M10 is accepted on `codex/m10-playable-combat`. GitHub Actions run `34529248894`
 - **M07 — duo handoffs, Imprints, and Needle Reactions**: accepted on `codex/m07-imprint-needle-reactions`; final GitHub Actions run `34506507341`.
 - **M08 — remaining Reactions and serializable delayed packets**: accepted on `codex/m08-reactions-delayed-packets`; final GitHub Actions run `34524502196`.
 - **M09 — bounded trigger/modifier dispatch and initial passives**: accepted on `codex/m09-trigger-passives`; final GitHub Actions run `34526337720`.
+- **M10 — minimal playable browser combat**: accepted on `codex/m10-playable-combat`; final head `105369de44b1cafa11ec5cdaf093becc01e24198` passed GitHub Actions run `34529482114`.
 
-## M10 verification record
+## M11 verification record
 
-`src/engine/m10-fight.ts` is a bounded checkpoint orchestration layer for the six starter definitions and the Claims Adjuster fixture. It composes existing authoritative engine operations rather than putting rules in React. The UI submits the same `play_card`, `swap`, and `end_turn` commands used by the headless replay path.
+`src/engine/card-lifecycle.ts` is the reusable M11 lifecycle boundary. It owns keyword validation, playability checks, additional Energy/HP cost collection, post-play zone destination, Protocol trigger installation, and player-turn-end hand settlement. It composes the existing M03–M10 deck, damage, trigger, Imprint, Reaction, and turn systems rather than duplicating them.
 
-GitHub Actions run `34529248894` passed installation, type/generated-content checks, every general and focused M03–M10 engine suite, the production build, Chromium installation, and two Playwright browser tests. The main browser fixture wins the Claims Adjuster fight through rendered controls, reads the resulting command log, replays it headlessly, and requires the final authoritative hashes to match exactly.
+GitHub Actions run `34536867617` passed installation, type/generated-content checks, all general unit/content/replay/property suites, every focused M03–M11 command, production build, Chromium installation, and the M10 Playwright browser/replay regression.
 
-M10 intentionally does not implement the general keyword lifecycle. `Change of Shift` uses a checkpoint-local post-play exhaust destination only; Exhaust/Retain/Fleeting/Unplayable/Protocol rules remain M11 work. Claims Adjuster's Invoice insertion remains deferred to M13 as previously specified.
+The focused M11 fixtures cover normal/Exhaust/Protocol play destinations, Retain/Fleeting end-turn settlement, Unplayable rejection, reshuffle exclusion, atomic HP costs, Block bypass, lethal-effect cost ordering, Protocol non-retroactivity, and independent stacking Protocol copies.
 
-`main` remains unchanged by M02–M10 work.
+The M10 checkpoint remains intentionally stable as a regression fixture. Its six-card debug table is not expanded into the production card pool; M12 should use the M11 lifecycle surface for new Source content rather than growing checkpoint-specific shortcuts.
+
+`main` remains unchanged by M02–M11 work.
 
 ## Next eligible milestone
 
-**M11 — Exhaust, Retain, Fleeting, Unplayable, Protocol deployment, and additional HP costs.** Preserve the M10 browser/headless command parity and do not begin M12 card-pool production until M11 is accepted.
+**M12 — add all 12 Source pool cards and upgrades.** Use validated content plus targeted fixtures, reuse the M11 lifecycle and existing effect primitives, and do not begin M13 Shaper/Crew/Invoice/Fine Print production until M12 is accepted.

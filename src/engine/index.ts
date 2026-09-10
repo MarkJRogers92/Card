@@ -84,10 +84,12 @@ export {
   applyDirectDamage,
   applyDirectDamageToRule,
   applyHpLossBypassingBlock,
-  calculateReactionDamage,
   calculateAttackDamage,
+  calculateReactionDamage,
+  calculateReactionDamageFromBase,
   createDirectDamagePacket,
   gainBlock,
+  healActor,
   paySelfHpCost,
 } from "./damage";
 export type {
@@ -95,6 +97,9 @@ export type {
   DamageResolution,
   DamageResult,
   DirectDamagePacket,
+  HealingResolution,
+  HealingResult,
+  ReactionBaseDamageCalculation,
   ReactionDamageCalculation,
 } from "./damage";
 export {
@@ -140,6 +145,11 @@ export {
   EVENT_RECORD_VERSION,
   createEventRecords,
 } from "./events";
+export type {
+  EngineEventDraft,
+  EngineEventRecord,
+  EventId,
+} from "./events";
 export {
   FORM_INGREDIENT_IDS,
   IMPRINT_STATE_VERSION,
@@ -158,21 +168,34 @@ export type {
 } from "./imprint";
 export {
   NEEDLE_REACTION_RECIPES,
+  REACTION_RECIPES,
   REACTION_RECIPE_VERSION,
   resolvePostCardIngredient,
+  resolveReactionRecipe,
 } from "./reactions";
 export type {
+  EnemyReactionTarget,
   NeedleReactionEffect,
   NeedleReactionRecipe,
   PostCardIngredientInput,
   PostCardIngredientResolution,
   PrimaryReactionResolution,
+  ReactionEffect,
+  ReactionRecipe,
+  RepeatableReactionEffect,
 } from "./reactions";
+export {
+  SCHEDULED_PACKET_TIMING,
+  SCHEDULED_PACKET_VERSION,
+  resolveScheduledPacketsAtPlayerTurnStart,
+  scheduleReactionPacket,
+} from "./scheduled";
 export type {
-  EngineEventDraft,
-  EngineEventRecord,
-  EventId,
-} from "./events";
+  ScheduledPacketExecution,
+  ScheduledPacketResolution,
+  ScheduledReactionEffect,
+  ScheduledReactionPacket,
+} from "./scheduled";
 export {
   GAMEPLAY_RNG_STREAMS,
   RNG_ALGORITHM_VERSION,

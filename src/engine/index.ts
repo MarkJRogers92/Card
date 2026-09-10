@@ -15,12 +15,54 @@ export {
 } from "./canonical";
 export type { JsonPrimitive, JsonValue } from "./canonical";
 export {
+  CARD_INSTANCE_VERSION,
+  createCardInstance,
+  createCardInstanceId,
+} from "./cards";
+export type {
+  CardInstance,
+  CardInstanceId,
+  CardInstanceInput,
+  CardOrigin,
+} from "./cards";
+export {
+  COMBAT_STATE_VERSION,
+  DEFAULT_CARDS_PER_TURN,
+  DEFAULT_ENERGY_PER_TURN,
+  DEFAULT_MAX_HAND_SIZE,
+  beginPlayerTurn,
+  endPlayerTurn,
+  payEnergyCost,
+  startCombat,
+} from "./combat";
+export type {
+  CombatPhase,
+  CombatRuleOverrides,
+  CombatRules,
+  CombatState,
+} from "./combat";
+export {
   COMMAND_ID_VERSION,
   commitCommand,
   createCommand,
   createCommandId,
 } from "./commands";
 export type { CommandId, EngineCommand } from "./commands";
+export {
+  CARD_ZONES,
+  assertCardConservation,
+  createDeckState,
+  discardHand,
+  drawCards,
+  shuffleDrawPile,
+} from "./deck";
+export type {
+  CardZoneName,
+  CardZones,
+  DeckRngResult,
+  DeckState,
+  DrawResult,
+} from "./deck";
 export {
   EVENT_RECORD_VERSION,
   createEventRecords,

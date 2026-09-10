@@ -151,6 +151,17 @@ export type {
   EventId,
 } from "./events";
 export {
+  MORROW_THICK_BLOOD_SOURCE_ID,
+  MORROW_THICK_BLOOD_TRIGGER_ID,
+  SHARED_WARRANTY_SOURCE_ID,
+  SHARED_WARRANTY_TRIGGER_ID,
+  SWITCH_OPEN_CHANNEL_SOURCE_ID,
+  SWITCH_OPEN_CHANNEL_TRIGGER_ID,
+  createInitialPassiveBindings,
+  installInitialPassives,
+} from "./initial-passives";
+export type { InitialPassiveSetup } from "./initial-passives";
+export {
   FORM_INGREDIENT_IDS,
   IMPRINT_STATE_VERSION,
   MATERIAL_INGREDIENT_IDS,
@@ -166,6 +177,7 @@ export type {
   Ingredient,
   MaterialIngredientId,
 } from "./imprint";
+export { resolvePostCardIngredientWithTriggers } from "./passive-card";
 export {
   NEEDLE_REACTION_RECIPES,
   REACTION_RECIPES,
@@ -257,6 +269,41 @@ export type {
   StatusTick,
   StatusTickResolution,
 } from "./status-runtime";
+export {
+  MAX_GENERATED_EVENTS_PER_DISPATCH,
+  MAX_MODIFIERS_PER_CHANNEL,
+  MODIFIER_BINDING_VERSION,
+  TRIGGER_BINDING_VERSION,
+  TRIGGER_COUNTERS_VERSION,
+  TRIGGER_EVENT_VERSION,
+  collectApplicableModifiers,
+  createTriggerCounters,
+  dispatchTriggerEvent,
+  installTriggerBindings,
+  previewTriggerEvent,
+  resetTurnTriggerCounters,
+} from "./triggers";
+export type {
+  AfterSwapTriggerEvent,
+  CardPlayedTriggerEvent,
+  ModifierBinding,
+  ModifierCondition,
+  ModifierContext,
+  ModifierOperation,
+  TriggerActivationProjection,
+  TriggerActivationResult,
+  TriggerBinding,
+  TriggerCondition,
+  TriggerCounters,
+  TriggerDispatchResult,
+  TriggerEffect,
+  TriggerEffectTarget,
+  TriggerEvent,
+  TriggerEventKind,
+  TriggerLimit,
+  TriggerLimitScope,
+  TriggerSwapMode,
+} from "./triggers";
 export {
   TARGET_RULE_KINDS,
   getReserveCharacterId,

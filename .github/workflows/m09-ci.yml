@@ -1,0 +1,60 @@
+name: M09 Acceptance
+
+on:
+  push:
+    branches:
+      - codex/m09-trigger-passives
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - ".github/workflows/m09-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.20.0
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Type and generated-content checks
+        run: npm run check
+      - name: Engine tests
+        run: npm run test:engine
+      - name: Content tests
+        run: npm run test:content
+      - name: Replay determinism tests
+        run: npm run test:replay
+      - name: Engine property tests
+        run: npm run test:properties
+      - name: Focused M03 tests
+        run: npm run test:m03
+      - name: Focused M04 tests
+        run: npm run test:m04
+      - name: Focused M05 tests
+        run: npm run test:m05
+      - name: Focused M06 tests
+        run: npm run test:m06
+      - name: Focused M07 tests
+        run: npm run test:m07
+      - name: Focused M08 tests
+        run: npm run test:m08
+      - name: Focused M09 tests
+        run: npm run test:m09
+      - name: Production build
+        run: npm run build

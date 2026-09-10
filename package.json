@@ -21,6 +21,7 @@
     "test:browser": "node tools/not-implemented.mjs M10 \"browser automation\"",
     "test:properties": "vitest run tests/properties",
     "test:m03": "vitest run tests/unit/deck-turn.test.ts tests/properties/deck-turn.property.test.ts",
+    "test:m04": "vitest run tests/unit/hp-damage-targeting.test.ts tests/properties/hp-damage-targeting.property.test.ts",
     "simulate": "node tools/not-implemented.mjs M33 \"simulation\"",
     "assets:audit": "node tools/not-implemented.mjs M35 \"asset audit\"",
     "build": "vite build"

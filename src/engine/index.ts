@@ -9,6 +9,15 @@ export type {
   EnginePhase,
 } from "./bootstrap";
 export {
+  ACTOR_STATE_VERSION,
+  createCombatActor,
+} from "./actors";
+export type {
+  ActorSide,
+  ActorVitalityInput,
+  CombatActor,
+} from "./actors";
+export {
   CANONICAL_HASH_VERSION,
   canonicalStringify,
   hashCanonical,
@@ -32,10 +41,14 @@ export {
   DEFAULT_MAX_HAND_SIZE,
   beginPlayerTurn,
   endPlayerTurn,
+  initializeCombatActors,
   payEnergyCost,
+  setFrontCharacter,
   startCombat,
 } from "./combat";
 export type {
+  CombatActorSetup,
+  CombatOutcome,
   CombatPhase,
   CombatRuleOverrides,
   CombatRules,
@@ -48,6 +61,19 @@ export {
   createCommandId,
 } from "./commands";
 export type { CommandId, EngineCommand } from "./commands";
+export {
+  DAMAGE_PACKET_VERSION,
+  applyDirectDamage,
+  applyDirectDamageToRule,
+  createDirectDamagePacket,
+  gainBlock,
+  paySelfHpCost,
+} from "./damage";
+export type {
+  DamageResolution,
+  DamageResult,
+  DirectDamagePacket,
+} from "./damage";
 export {
   CARD_ZONES,
   assertCardConservation,
@@ -103,3 +129,9 @@ export type {
   AuthoritativeState,
   AuthoritativeStateOptions,
 } from "./state";
+export {
+  TARGET_RULE_KINDS,
+  getReserveCharacterId,
+  resolveTargetRule,
+} from "./targeting";
+export type { TargetRule, TargetRuleKind } from "./targeting";

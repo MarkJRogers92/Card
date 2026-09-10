@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.trigger_reserved_key",
+  "name": "Trigger Reserved Key",
+  "rarity": "common",
+  "family": "anatomy",
+  "modifiers": [],
+  "triggers": [
+    {
+      "event": "after_primary_reaction",
+      "filter": { "event": "after_primary_reaction" },
+      "effects": [
+        { "op": "block", "target": "front", "amount": { "const": 1 } }
+      ],
+      "limit": { "scope": "turn", "count": 1, "keying": "relic_instance" },
+      "priority": 10,
+      "add": { "const": 1 }
+    }
+  ],
+  "unlockId": null,
+  "artId": "relic.trigger_reserved_key_art"
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "card.overflow_cost",
+  "name": "Overflow Cost",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {
+    "value": { "base": 4000000000, "upgraded": 5000000000 }
+  },
+  "energyCost": {
+    "multiply": [
+      { "param": "value" },
+      { "param": "value" }
+    ]
+  },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    { "op": "block", "target": "owner", "amount": { "const": 1 } }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.overflow_cost_art"
+}

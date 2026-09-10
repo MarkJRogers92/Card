@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "event.unknown_reference",
+  "title": "Unknown Reference",
+  "body": "This event references a card that is not in the registry.",
+  "eligibility": { "act_is": "act_1" },
+  "choices": [
+    {
+      "id": "event.unknown_reference_choice",
+      "label": "Reference it.",
+      "requirements": { "act_is": "act_1" },
+      "costs": [],
+      "selections": [],
+      "effects": [
+        { "op": "add_card", "cardId": "card.not_in_registry", "destination": "player_discard", "temporary": true }
+      ],
+      "consequenceSummary": { "immediate": "No valid card is added.", "delayed": "None." }
+    }
+  ],
+  "weight": 1,
+  "oncePerRun": false,
+  "followUpPlacement": "none"
+}

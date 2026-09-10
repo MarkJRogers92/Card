@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.fixture",
+  "name": "Fixture Relic",
+  "rarity": "common",
+  "family": "anatomy",
+  "modifiers": [
+    {
+      "channel": "reaction.direct.multiplier",
+      "condition": { "target_has_status": "bleed" },
+      "operation": "multiply",
+      "value": 15000,
+      "priority": 100
+    }
+  ],
+  "triggers": [
+    {
+      "event": "after_primary_reaction",
+      "filter": { "event": "after_primary_reaction" },
+      "effects": [
+        { "op": "block", "target": "front", "amount": { "stat": "owner_hp" } }
+      ],
+      "limit": { "scope": "turn", "count": 1, "keying": "relic_instance" },
+      "priority": 10
+    }
+  ],
+  "unlockId": null,
+  "artId": "relic.fixture_art"
+}

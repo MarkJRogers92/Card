@@ -1,0 +1,10 @@
+# codex-workflow-managed-start
+.codex_workflow_hidden_resources/
+AGENTS.md
+# codex-workflow-managed-end
+
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/

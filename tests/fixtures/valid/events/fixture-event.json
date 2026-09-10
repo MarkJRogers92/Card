@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "id": "event.fixture",
+  "title": "Fixture Event",
+  "body": "A deterministic event fixture exercises every approved effect operation.",
+  "eligibility": { "act_is": "act_1" },
+  "choices": [
+    {
+      "id": "event.fixture_choice",
+      "label": "Run every operation.",
+      "requirements": {
+        "can_pay": { "resource": "scrap", "amount": 1 }
+      },
+      "costs": [
+        { "resource": "scrap", "amount": { "const": 1 } }
+      ],
+      "selections": [],
+      "effects": [
+        { "op": "damage", "target": "selected_enemy", "amount": { "const": 1 }, "hits": 1, "category": "direct" },
+        { "op": "block", "target": "front", "amount": { "const": 1 } },
+        { "op": "heal", "target": "front", "amount": { "const": 1 }, "recoveryCategory": "other" },
+        { "op": "apply_status", "target": "selected_enemy", "status": "poison", "amount": { "const": 1 } },
+        { "op": "draw", "amount": { "const": 1 } },
+        { "op": "gain_energy", "amount": { "const": 1 } },
+        { "op": "swap", "mode": "free" },
+        { "op": "boost_imprint", "amount": { "const": 1 } },
+        { "op": "add_card", "cardId": "card.fixture", "destination": "player_discard", "temporary": true },
+        {
+          "op": "install_protocol",
+          "trigger": {
+            "event": "after_source_lead",
+            "filter": { "event": "after_source_lead" },
+            "effects": [
+              { "op": "block", "target": "owner", "amount": { "const": 1 } }
+            ],
+            "limit": { "scope": "turn", "count": 1, "keying": "source" },
+            "priority": 1
+          }
+        },
+        {
+          "op": "schedule_packet",
+          "timing": "next_player_turn_start",
+          "packet": {
+            "effects": [
+              { "op": "gain_scrap", "amount": { "const": 1 } }
+            ]
+          }
+        },
+        {
+          "op": "repeat_packet",
+          "packetRef": "packet.fixture",
+          "multiplier": 5000,
+          "timing": "next_player_turn_start"
+        },
+        { "op": "gain_scrap", "amount": { "const": 1 } },
+        { "op": "gain_evidence", "amount": { "const": 1 } },
+        { "op": "change_standing", "factionId": "union", "amount": 1 },
+        { "op": "set_flag", "flagId": "event.fixture_done", "value": true },
+        { "op": "remove_card", "selection": { "type": "selected_card" } },
+        { "op": "upgrade_card", "selection": { "type": "selected_card" } }
+      ],
+      "consequenceSummary": {
+        "immediate": "Exercise each operation once.",
+        "delayed": "No delayed consequence."
+      }
+    }
+  ],
+  "weight": 1,
+  "oncePerRun": false,
+  "followUpPlacement": "none"
+}

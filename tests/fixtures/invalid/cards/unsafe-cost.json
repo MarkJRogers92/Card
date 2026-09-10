@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "card.unsafe_cost",
+  "name": "Unsafe Cost",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": { "value": { "base": 1, "upgraded": 1 } },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [
+    { "resource": "owner_hp", "amount": { "const": 3 }, "minimumRemaining": 0 }
+  ],
+  "target": "self",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    { "op": "block", "target": "owner", "amount": { "param": "value" } }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.unsafe_cost_art"
+}

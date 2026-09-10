@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "card.malformed_operation",
+  "name": "Malformed Operation",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {},
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    { "amount": { "const": 1 } }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.malformed_operation_art"
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "card.multiple_expression_keys",
+  "name": "Multiple Expression Keys",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {
+    "damage": { "base": 2, "upgraded": 3 }
+  },
+  "energyCost": { "const": 1, "param": "damage" },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    { "op": "block", "target": "owner", "amount": { "const": 1 } }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.multiple_expression_keys_art"
+}

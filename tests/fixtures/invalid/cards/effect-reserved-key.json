@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "card.effect_reserved_key",
+  "name": "Effect Reserved Key",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {},
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    {
+      "op": "block",
+      "target": "owner",
+      "amount": { "const": 1 },
+      "add": { "const": 1 }
+    }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.effect_reserved_key_art"
+}

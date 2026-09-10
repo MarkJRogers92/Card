@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "card.additional_stat_cost",
+  "name": "Additional Stat Cost",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {},
+  "energyCost": { "const": 1 },
+  "additionalCosts": [
+    { "resource": "scrap", "amount": { "add": [ { "stat": "scrap" }, { "const": 1 } ] } }
+  ],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    { "op": "block", "target": "owner", "amount": { "const": 1 } }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.additional_stat_cost_art"
+}

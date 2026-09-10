@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joint-liability.local/schemas/event.schema.json",
+  "title": "Joint Liability event definition",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "Selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["character", "card", "relic", "consumable", "faction"] },
+        "required": { "type": "boolean" }
+      },
+      "required": ["type", "required"]
+    },
+    "ConsequenceSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "immediate": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/LongText" },
+        "delayed": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/LongText" }
+      },
+      "required": ["immediate", "delayed"]
+    },
+    "Choice": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" },
+        "label": { "type": "string", "minLength": 1, "maxLength": 180 },
+        "requirements": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Predicate" },
+        "costs": {
+          "type": "array",
+          "items": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Cost" },
+          "maxItems": 8
+        },
+        "selections": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Selection" },
+          "maxItems": 8
+        },
+        "effects": {
+          "type": "array",
+          "items": { "$ref": "https://joint-liability.local/schemas/effect.schema.json#/$defs/Effect" },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "consequenceSummary": { "$ref": "#/$defs/ConsequenceSummary" }
+      },
+      "required": [
+        "id",
+        "label",
+        "requirements",
+        "costs",
+        "selections",
+        "effects",
+        "consequenceSummary"
+      ]
+    }
+  },
+  "properties": {
+    "schemaVersion": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/SchemaVersion" },
+    "id": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" },
+    "title": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Text" },
+    "body": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/LongText" },
+    "eligibility": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Predicate" },
+    "choices": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Choice" },
+      "minItems": 1,
+      "maxItems": 3
+    },
+    "weight": { "type": "integer", "minimum": 1 },
+    "oncePerRun": { "type": "boolean" },
+    "followUpPlacement": { "enum": ["none", "act_2_row_2", "act_2_row_5"] }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "title",
+    "body",
+    "eligibility",
+    "choices",
+    "weight",
+    "oncePerRun",
+    "followUpPlacement"
+  ]
+}

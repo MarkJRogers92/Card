@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "enemy.unknown_move_reference",
+  "name": "Unknown Move Reference",
+  "maxHp": 10,
+  "startingBlock": 0,
+  "moves": [
+    {
+      "id": "strike",
+      "label": "Strike",
+      "target": "front",
+      "effects": [ { "op": "damage", "target": "intent_target", "amount": { "const": 1 }, "hits": 1, "category": "attack" } ]
+    }
+  ],
+  "ai": { "kind": "cycle", "moveIds": ["missing_move"], "startIndex": 0 },
+  "traits": [],
+  "phases": [],
+  "artId": "enemy.unknown_move_reference_art"
+}

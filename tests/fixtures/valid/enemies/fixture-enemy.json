@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "enemy.fixture",
+  "name": "Fixture Enemy",
+  "maxHp": 20,
+  "startingBlock": 0,
+  "moves": [
+    {
+      "id": "strike",
+      "label": "Strike",
+      "target": "front",
+      "effects": [
+        {
+          "op": "damage",
+          "target": "intent_target",
+          "amount": { "const": 3 },
+          "hits": 1,
+          "category": "attack"
+        }
+      ]
+    },
+    {
+      "id": "guard",
+      "label": "Guard",
+      "target": "self",
+      "effects": [
+        { "op": "block", "target": "self", "amount": { "const": 2 } }
+      ]
+    }
+  ],
+  "ai": {
+    "kind": "cycle",
+    "moveIds": ["strike", "guard"],
+    "startIndex": 0
+  },
+  "traits": [],
+  "phases": [],
+  "artId": "enemy.fixture_art"
+}

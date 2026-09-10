@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "card.malformed_expression",
+  "name": "Malformed Expression",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {},
+  "energyCost": { "const": 1, "extra": true },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    {
+      "op": "block",
+      "target": "owner",
+      "amount": { "const": 1 }
+    }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.malformed_expression_art"
+}

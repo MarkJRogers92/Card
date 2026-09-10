@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "card.duplicate",
+  "name": "Duplicate A",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": { "value": { "base": 1, "upgraded": 1 } },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "self",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [ { "op": "block", "target": "owner", "amount": { "param": "value" } } ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.duplicate_a_art"
+}

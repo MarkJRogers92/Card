@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joint-liability.local/schemas/effect.schema.json",
+  "title": "Joint Liability effect operations",
+  "oneOf": [{ "$ref": "#/$defs/Effect" }],
+  "$defs": {
+    "Effect": {
+      "type": "object",
+      "discriminator": { "propertyName": "op" },
+      "oneOf": [
+        { "$ref": "#/$defs/DamageEffect" },
+        { "$ref": "#/$defs/BlockEffect" },
+        { "$ref": "#/$defs/HealEffect" },
+        { "$ref": "#/$defs/ApplyStatusEffect" },
+        { "$ref": "#/$defs/DrawEffect" },
+        { "$ref": "#/$defs/GainEnergyEffect" },
+        { "$ref": "#/$defs/SwapEffect" },
+        { "$ref": "#/$defs/BoostImprintEffect" },
+        { "$ref": "#/$defs/AddCardEffect" },
+        { "$ref": "#/$defs/InstallProtocolEffect" },
+        { "$ref": "#/$defs/SchedulePacketEffect" },
+        { "$ref": "#/$defs/RepeatPacketEffect" },
+        { "$ref": "#/$defs/GainScrapEffect" },
+        { "$ref": "#/$defs/GainEvidenceEffect" },
+        { "$ref": "#/$defs/ChangeStandingEffect" },
+        { "$ref": "#/$defs/SetFlagEffect" },
+        { "$ref": "#/$defs/RemoveCardEffect" },
+        { "$ref": "#/$defs/UpgradeCardEffect" }
+      ]
+    },
+    "DamageEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "damage" },
+        "target": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/EffectTarget" },
+        "amount": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/ValueExpr" },
+        "hits": { "type": "integer", "minimum": 1, "maximum": 20 },
+        "category": { "enum": ["attack", "reaction", "direct", "status"] }
+      },
+      "required": ["op", "target", "amount", "hits", "category"]
+    },
+    "BlockEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "block" },
+        "target": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/EffectTarget" },
+        "amount": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/ValueExpr" }
+      },
+      "required": ["op", "target", "amount"]
+    },
+    "HealEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "heal" },
+        "target": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/EffectTarget" },
+        "amount": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/ValueExpr" },
+        "recoveryCategory": { "enum": ["reaction", "exhaust", "consumable", "other"] }
+      },
+      "required": ["op", "target", "amount", "recoveryCategory"]
+    },
+    "ApplyStatusEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "apply_status" },
+        "target": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/EffectTarget" },
+        "status": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StatusId" },
+        "amount": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/ValueExpr" }
+      },
+      "required": ["op", "target", "status", "amount"]
+    },
+    "DrawEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "draw" },
+        "amount": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/ValueExpr" }
+      },
+      "required": ["op", "amount"]
+    },
+    "GainEnergyEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "gain_energy" },
+        "amount": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/ValueExpr" }
+      },
+      "required": ["op", "amount"]
+    },
+    "SwapEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "swap" },
+        "mode": { "enum": ["free", "normal"] }
+      },
+      "required": ["op", "mode"]
+    },
+    "BoostImprintEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "boost_imprint" },
+        "amount": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/ValueExpr" }
+      },
+      "required": ["op", "amount"]
+    },
+    "AddCardEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "add_card" },
+        "cardId": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" },
+        "destination": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Destination" },
+        "temporary": { "type": "boolean" }
+      },
+      "required": ["op", "cardId", "destination", "temporary"]
+    },
+    "ProtocolTrigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "enum": [
+            "after_source_lead",
+            "after_primary_reaction",
+            "after_swap",
+            "player_turn_start",
+            "enemy_phase_start"
+          ]
+        },
+        "filter": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Condition" },
+        "effects": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Effect" },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "limit": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/TriggerLimit" },
+        "priority": { "type": "integer" }
+      },
+      "required": ["event", "filter", "effects", "limit", "priority"]
+    },
+    "InstallProtocolEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "install_protocol" },
+        "trigger": { "$ref": "#/$defs/ProtocolTrigger" }
+      },
+      "required": ["op", "trigger"]
+    },
+    "Packet": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "effects": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Effect" },
+          "minItems": 1,
+          "maxItems": 32
+        }
+      },
+      "required": ["effects"]
+    },
+    "SchedulePacketEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "schedule_packet" },
+        "timing": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/EffectTiming" },
+        "packet": { "$ref": "#/$defs/Packet" }
+      },
+      "required": ["op", "timing", "packet"]
+    },
+    "RepeatPacketEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "repeat_packet" },
+        "packetRef": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" },
+        "multiplier": { "type": "integer", "minimum": 1, "maximum": 100000 },
+        "timing": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/EffectTiming" }
+      },
+      "required": ["op", "packetRef", "multiplier", "timing"]
+    },
+    "GainScrapEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "gain_scrap" },
+        "amount": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/ValueExpr" }
+      },
+      "required": ["op", "amount"]
+    },
+    "GainEvidenceEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "gain_evidence" },
+        "amount": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/ValueExpr" }
+      },
+      "required": ["op", "amount"]
+    },
+    "ChangeStandingEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "change_standing" },
+        "factionId": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/FactionId" },
+        "amount": { "type": "integer", "minimum": -3, "maximum": 3 }
+      },
+      "required": ["op", "factionId", "amount"]
+    },
+    "SetFlagEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "set_flag" },
+        "flagId": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" },
+        "value": {
+          "oneOf": [
+            { "type": "boolean" },
+            { "type": "string", "minLength": 1, "maxLength": 120 },
+            { "type": "integer" }
+          ]
+        }
+      },
+      "required": ["op", "flagId", "value"]
+    },
+    "RemoveCardEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "remove_card" },
+        "selection": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "type": { "const": "selected_card" } },
+          "required": ["type"]
+        }
+      },
+      "required": ["op", "selection"]
+    },
+    "UpgradeCardEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "upgrade_card" },
+        "selection": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "type": { "const": "selected_card" } },
+          "required": ["type"]
+        }
+      },
+      "required": ["op", "selection"]
+    }
+  }
+}

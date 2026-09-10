@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joint-liability.local/schemas/card.schema.json",
+  "title": "Joint Liability card definition",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/SchemaVersion" },
+    "id": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" },
+    "name": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Text" },
+    "owner": { "enum": ["source", "shaper", "crew"] },
+    "category": { "enum": ["attack", "skill", "protocol", "status"] },
+    "rarity": { "enum": ["starter", "common", "uncommon", "rare", "generated"] },
+    "parameters": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-z][a-zA-Z0-9_]*$": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "base": { "type": "integer" },
+            "upgraded": { "type": "integer" }
+          },
+          "required": ["base", "upgraded"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "energyCost": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/ValueExpr" },
+    "additionalCosts": {
+      "type": "array",
+      "items": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Cost" },
+      "maxItems": 8
+    },
+    "target": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/CardTarget" },
+    "ingredient": {
+      "anyOf": [
+        { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Ingredient" },
+        { "type": "null" }
+      ]
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Keyword" },
+      "uniqueItems": true,
+      "maxItems": 5
+    },
+    "effects": {
+      "type": "array",
+      "items": { "$ref": "https://joint-liability.local/schemas/effect.schema.json#/$defs/Effect" },
+      "minItems": 1,
+      "maxItems": 32
+    },
+    "graftEligible": { "type": "boolean" },
+    "unlockId": {
+      "anyOf": [
+        { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" },
+        { "type": "null" }
+      ]
+    },
+    "artId": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "owner",
+    "category",
+    "rarity",
+    "parameters",
+    "energyCost",
+    "additionalCosts",
+    "target",
+    "ingredient",
+    "keywords",
+    "effects",
+    "graftEligible",
+    "unlockId",
+    "artId"
+  ]
+}

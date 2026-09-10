@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "card.unknown_field",
+  "name": "Unknown Field",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": { "block": { "base": 2, "upgraded": 3 } },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "self",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    { "op": "block", "target": "owner", "amount": { "param": "block" } }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.unknown_field_art",
+  "unexpected": true
+}

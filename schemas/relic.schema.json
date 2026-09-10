@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joint-liability.local/schemas/relic.schema.json",
+  "title": "Joint Liability relic definition",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "Modifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "channel": { "type": "string", "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$", "maxLength": 120 },
+        "condition": {
+          "anyOf": [
+            { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Condition" },
+            { "type": "null" }
+          ]
+        },
+        "operation": { "enum": ["multiply", "add", "set", "cap"] },
+        "value": { "type": "integer" },
+        "priority": { "type": "integer" }
+      },
+      "required": ["channel", "condition", "operation", "value", "priority"]
+    },
+    "Trigger": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "enum": [
+            "after_source_lead",
+            "after_primary_reaction",
+            "after_swap",
+            "card_played",
+            "player_turn_start",
+            "enemy_phase_start"
+          ]
+        },
+        "filter": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Condition" },
+        "effects": {
+          "type": "array",
+          "items": { "$ref": "https://joint-liability.local/schemas/effect.schema.json#/$defs/Effect" },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "limit": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/TriggerLimit" },
+        "priority": { "type": "integer" }
+      },
+      "required": ["event", "filter", "effects", "limit", "priority"]
+    }
+  },
+  "properties": {
+    "schemaVersion": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/SchemaVersion" },
+    "id": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" },
+    "name": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Text" },
+    "rarity": { "enum": ["starter", "common", "uncommon", "rare"] },
+    "family": { "enum": ["anatomy", "circuit", "forgery", "neutral", "none"] },
+    "modifiers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Modifier" },
+      "maxItems": 16
+    },
+    "triggers": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Trigger" },
+      "maxItems": 16
+    },
+    "unlockId": {
+      "anyOf": [
+        { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" },
+        { "type": "null" }
+      ]
+    },
+    "artId": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "rarity",
+    "family",
+    "modifiers",
+    "triggers",
+    "unlockId",
+    "artId"
+  ]
+}

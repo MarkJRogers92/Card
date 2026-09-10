@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "card.root_reserved_key",
+  "name": "Root Reserved Key",
+  "const": 1,
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {},
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    { "op": "block", "target": "owner", "amount": { "const": 1 } }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.root_reserved_key_art"
+}

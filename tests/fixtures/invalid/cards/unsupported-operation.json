@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "card.unsupported_operation",
+  "name": "Unsupported Operation",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": { "value": { "base": 1, "upgraded": 1 } },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    { "op": "teleport", "amount": { "const": 1 } }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.unsupported_operation_art"
+}

@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "card.fixture",
+  "name": "Fixture Card",
+  "owner": "source",
+  "category": "attack",
+  "rarity": "common",
+  "parameters": {
+    "damage": { "base": 4, "upgraded": 7 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "material",
+    "id": "gore",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    },
+    {
+      "op": "apply_status",
+      "target": "selected_enemy",
+      "status": "bleed",
+      "amount": { "const": 1 }
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.fixture_art"
+}

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "card.missing_trigger_filter",
+  "name": "Missing Trigger Filter",
+  "owner": "source",
+  "category": "protocol",
+  "rarity": "common",
+  "parameters": {},
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    {
+      "op": "install_protocol",
+      "trigger": {
+        "event": "after_source_lead",
+        "effects": [
+          { "op": "block", "target": "owner", "amount": { "const": 1 } }
+        ],
+        "limit": { "scope": "turn", "count": 1, "keying": "source" },
+        "priority": 1
+      }
+    }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.missing_trigger_filter_art"
+}

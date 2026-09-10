@@ -1,0 +1,311 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joint-liability.local/schemas/common.schema.json",
+  "title": "Joint Liability common content primitives",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "SchemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "StableId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:[._-][a-z0-9]+)+$",
+      "minLength": 3,
+      "maxLength": 120
+    },
+    "Text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 240
+    },
+    "LongText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 2000
+    },
+    "ValueExpr": {
+      "oneOf": [
+        { "$ref": "#/$defs/ConstExpr" },
+        { "$ref": "#/$defs/ParamExpr" },
+        { "$ref": "#/$defs/StatExpr" },
+        { "$ref": "#/$defs/AddExpr" },
+        { "$ref": "#/$defs/MultiplyExpr" }
+      ]
+    },
+    "ConstExpr": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "const": { "type": "integer" }
+      },
+      "required": ["const"]
+    },
+    "ParamExpr": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "param": { "type": "string", "minLength": 1, "maxLength": 80 }
+      },
+      "required": ["param"]
+    },
+    "StatExpr": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stat": { "$ref": "#/$defs/StatReference" }
+      },
+      "required": ["stat"]
+    },
+    "AddExpr": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "add": {
+          "type": "array",
+          "prefixItems": [
+            { "$ref": "#/$defs/ValueExpr" },
+            { "$ref": "#/$defs/ValueExpr" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": ["add"]
+    },
+    "MultiplyExpr": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "multiply": {
+          "type": "array",
+          "prefixItems": [
+            { "$ref": "#/$defs/ValueExpr" },
+            { "$ref": "#/$defs/ValueExpr" }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": ["multiply"]
+    },
+    "StatReference": {
+      "type": "string",
+      "enum": [
+        "owner_hp",
+        "owner_max_hp",
+        "front_hp",
+        "front_max_hp",
+        "reserve_hp",
+        "reserve_max_hp",
+        "energy",
+        "imprint_potency",
+        "enemy_hp",
+        "enemy_max_hp",
+        "scrap",
+        "evidence"
+      ]
+    },
+    "EffectTarget": {
+      "type": "string",
+      "enum": [
+        "selected_enemy",
+        "all_enemies",
+        "front",
+        "reserve",
+        "both",
+        "locked_character",
+        "self",
+        "owner",
+        "intent_target",
+        "none"
+      ]
+    },
+    "CardTarget": {
+      "type": "string",
+      "enum": [
+        "enemy",
+        "all_enemies",
+        "self",
+        "owner",
+        "front",
+        "reserve",
+        "both",
+        "none"
+      ]
+    },
+    "Material": {
+      "type": "string",
+      "enum": ["gore", "volt", "rot", "echo"]
+    },
+    "Form": {
+      "type": "string",
+      "enum": ["needle", "burst", "siphon", "loop"]
+    },
+    "Ingredient": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["material", "form"] },
+        "id": {
+          "type": "string",
+          "enum": [
+            "gore",
+            "volt",
+            "rot",
+            "echo",
+            "needle",
+            "burst",
+            "siphon",
+            "loop"
+          ]
+        },
+        "prime": { "$ref": "#/$defs/ValueExpr" }
+      },
+      "required": ["kind", "id", "prime"]
+    },
+    "IngredientReference": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["material", "form"] },
+        "id": {
+          "type": "string",
+          "enum": [
+            "gore",
+            "volt",
+            "rot",
+            "echo",
+            "needle",
+            "burst",
+            "siphon",
+            "loop"
+          ]
+        }
+      },
+      "required": ["kind", "id"]
+    },
+    "StatusId": {
+      "type": "string",
+      "enum": ["bleed", "poison", "weak", "exposed", "strength"]
+    },
+    "FactionId": {
+      "type": "string",
+      "enum": ["office", "union", "broadcast"]
+    },
+    "Keyword": {
+      "type": "string",
+      "enum": ["exhaust", "retain", "fleeting", "unplayable", "protocol"]
+    },
+    "Destination": {
+      "type": "string",
+      "enum": [
+        "player_hand",
+        "player_discard",
+        "player_draw",
+        "player_exhaust",
+        "deployed"
+      ]
+    },
+    "CostResource": {
+      "type": "string",
+      "enum": ["owner_hp", "front_hp", "reserve_hp", "scrap", "evidence", "energy"]
+    },
+    "Cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource": { "$ref": "#/$defs/CostResource" },
+        "amount": { "$ref": "#/$defs/ValueExpr" },
+        "minimumRemaining": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["resource", "amount"]
+    },
+    "EffectTiming": {
+      "type": "string",
+      "enum": ["next_player_turn_start", "next_enemy_phase_start"]
+    },
+    "TriggerScope": {
+      "type": "string",
+      "enum": ["command", "turn", "combat", "run"]
+    },
+    "TriggerKeying": {
+      "type": "string",
+      "enum": ["relic_instance", "target", "source"]
+    },
+    "TriggerLimit": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "scope": { "$ref": "#/$defs/TriggerScope" },
+        "count": { "type": "integer", "minimum": 1 },
+        "keying": { "$ref": "#/$defs/TriggerKeying" }
+      },
+      "required": ["scope", "count", "keying"]
+    },
+    "Condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 1,
+      "properties": {
+        "target_has_status": { "$ref": "#/$defs/StatusId" },
+        "source_owner": { "enum": ["source", "shaper", "crew"] },
+        "ingredient": { "$ref": "#/$defs/IngredientReference" },
+        "event": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "has_card_tag": { "$ref": "#/$defs/CardTag" }
+      }
+    },
+    "Predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "maxProperties": 1,
+      "properties": {
+        "has_flag": { "$ref": "#/$defs/StableId" },
+        "standing_at_least": { "$ref": "#/$defs/StandingRequirement" },
+        "has_card_tag": { "$ref": "#/$defs/CardTag" },
+        "has_protocol": { "type": "boolean" },
+        "has_graft": { "type": "boolean" },
+        "can_pay": { "$ref": "#/$defs/PaymentRequirement" },
+        "act_is": { "enum": ["act_1", "act_2"] },
+        "all": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Predicate" },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "any": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Predicate" },
+          "minItems": 1,
+          "maxItems": 8
+        }
+      }
+    },
+    "StandingRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "factionId": { "$ref": "#/$defs/FactionId" },
+        "amount": { "type": "integer", "minimum": -3, "maximum": 3 }
+      },
+      "required": ["factionId", "amount"]
+    },
+    "PaymentRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resource": { "$ref": "#/$defs/CostResource" },
+        "amount": { "type": "integer", "minimum": 0 },
+        "minimumRemaining": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["resource", "amount"]
+    },
+    "CardTag": {
+      "type": "string",
+      "enum": ["attack", "skill", "protocol", "status", "grafted"]
+    }
+  }
+}

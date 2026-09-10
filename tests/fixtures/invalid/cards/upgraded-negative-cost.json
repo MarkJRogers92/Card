@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "card.upgraded_negative_cost",
+  "name": "Upgraded Negative Cost",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {
+    "cost": { "base": 1, "upgraded": -1 }
+  },
+  "energyCost": { "param": "cost" },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    { "op": "block", "target": "owner", "amount": { "const": 1 } }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.upgraded_negative_cost_art"
+}

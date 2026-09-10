@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "card.scheduled_packet_reserved_key",
+  "name": "Scheduled Packet Reserved Key",
+  "owner": "source",
+  "category": "protocol",
+  "rarity": "common",
+  "parameters": {},
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    {
+      "op": "schedule_packet",
+      "timing": "next_player_turn_start",
+      "packet": {
+        "effects": [
+          { "op": "block", "target": "owner", "amount": { "const": 1 } }
+        ],
+        "multiply": { "const": 1 }
+      }
+    }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.scheduled_packet_reserved_key_art"
+}

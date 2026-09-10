@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joint-liability.local/schemas/enemy.schema.json",
+  "title": "Joint Liability enemy definition",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "LocalId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_-]*$",
+      "minLength": 1,
+      "maxLength": 80
+    },
+    "IntentTarget": {
+      "enum": ["front", "reserve", "both", "locked_character", "self"]
+    },
+    "Move": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/LocalId" },
+        "label": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Text" },
+        "target": { "$ref": "#/$defs/IntentTarget" },
+        "effects": {
+          "type": "array",
+          "items": { "$ref": "https://joint-liability.local/schemas/effect.schema.json#/$defs/Effect" },
+          "minItems": 1,
+          "maxItems": 32
+        }
+      },
+      "required": ["id", "label", "target", "effects"]
+    },
+    "CycleAi": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "cycle" },
+        "moveIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LocalId" },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "startIndex": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["kind", "moveIds", "startIndex"]
+    },
+    "OpeningCycleAi": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "opening_cycle" },
+        "openingMoveId": { "$ref": "#/$defs/LocalId" },
+        "moveIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LocalId" },
+          "minItems": 1,
+          "maxItems": 32
+        },
+        "startIndex": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["kind", "openingMoveId", "moveIds", "startIndex"]
+    },
+    "Phase": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/LocalId" },
+        "hpAtMost": { "type": "integer", "minimum": 1 },
+        "moveIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/LocalId" },
+          "minItems": 1,
+          "maxItems": 32
+        }
+      },
+      "required": ["id", "hpAtMost", "moveIds"]
+    }
+  },
+  "properties": {
+    "schemaVersion": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/SchemaVersion" },
+    "id": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" },
+    "name": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/Text" },
+    "maxHp": { "type": "integer", "minimum": 1 },
+    "startingBlock": { "type": "integer", "minimum": 0 },
+    "moves": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Move" },
+      "minItems": 1,
+      "maxItems": 32
+    },
+    "ai": {
+      "oneOf": [
+        { "$ref": "#/$defs/CycleAi" },
+        { "$ref": "#/$defs/OpeningCycleAi" }
+      ]
+    },
+    "traits": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9_-]*$", "maxLength": 80 },
+      "uniqueItems": true,
+      "maxItems": 16
+    },
+    "phases": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Phase" },
+      "maxItems": 8
+    },
+    "artId": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/StableId" }
+  },
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "maxHp",
+    "startingBlock",
+    "moves",
+    "ai",
+    "traits",
+    "phases",
+    "artId"
+  ]
+}

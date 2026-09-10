@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "event.invalid_predicate",
+  "title": "Invalid Predicate",
+  "body": "This event has an intentionally unstructured predicate.",
+  "eligibility": { "when": "free text" },
+  "choices": [
+    {
+      "id": "event.invalid_predicate_choice",
+      "label": "Proceed.",
+      "requirements": { "act_is": "act_1" },
+      "costs": [],
+      "selections": [],
+      "effects": [ { "op": "gain_scrap", "amount": { "const": 1 } } ],
+      "consequenceSummary": { "immediate": "Gain 1 Scrap.", "delayed": "None." }
+    }
+  ],
+  "weight": 1,
+  "oncePerRun": false,
+  "followUpPlacement": "none"
+}

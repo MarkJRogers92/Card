@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "card.invalid_effect",
+  "name": "Invalid Effect",
+  "owner": "source",
+  "category": "attack",
+  "rarity": "common",
+  "parameters": { "damage": { "base": 2, "upgraded": 3 } },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    { "op": "damage", "target": "selected_enemy", "amount": { "param": "damage" }, "hits": 0, "category": "attack" }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.invalid_effect_art"
+}

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.missing_trigger_filter",
+  "name": "Missing Trigger Filter",
+  "rarity": "common",
+  "family": "anatomy",
+  "modifiers": [],
+  "triggers": [
+    {
+      "event": "after_primary_reaction",
+      "effects": [
+        { "op": "block", "target": "front", "amount": { "const": 1 } }
+      ],
+      "limit": { "scope": "turn", "count": 1, "keying": "relic_instance" },
+      "priority": 10
+    }
+  ],
+  "unlockId": null,
+  "artId": "relic.missing_trigger_filter_art"
+}

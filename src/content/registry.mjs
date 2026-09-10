@@ -828,6 +828,23 @@ function semanticDiagnostics(kind, data, source, context) {
     if (data.ingredient) {
       validateIngredient(data.ingredient, "/ingredient", diagnostics, source, kind);
       validateExpression(data.ingredient.prime, "/ingredient/prime", parameters, diagnostics, source, kind);
+      const expectedKind = data.owner === "source" ? "material" : data.owner === "shaper" ? "form" : null;
+      if (expectedKind === null || data.ingredient.kind !== expectedKind) {
+        diagnostics.push(
+          makeDiagnostic({
+            phase: "semantic",
+            source,
+            kind,
+            path: "/ingredient/kind",
+            keyword: "ownership",
+            code: "owner_ingredient_mismatch",
+            message:
+              data.owner === "crew"
+                ? "Crew cards cannot carry an ingredient."
+                : `${data.owner} cards must carry a ${expectedKind} ingredient.`,
+          }),
+        );
+      }
     }
     if (Array.isArray(data.additionalCosts)) {
       data.additionalCosts.forEach((cost, index) =>

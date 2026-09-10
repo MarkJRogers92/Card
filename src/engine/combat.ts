@@ -18,8 +18,9 @@ import type {
 } from "./enemies";
 import type { AuthoritativeState } from "./state";
 import { decayDurationStatusesForSide } from "./status-runtime";
+import type { Imprint } from "./imprint";
 
-export const COMBAT_STATE_VERSION = 4 as const;
+export const COMBAT_STATE_VERSION = 5 as const;
 export const DEFAULT_ENERGY_PER_TURN = 3 as const;
 export const DEFAULT_CARDS_PER_TURN = 5 as const;
 export const DEFAULT_MAX_HAND_SIZE = 10 as const;
@@ -45,10 +46,13 @@ export interface CombatState {
   readonly actors: Readonly<Record<string, CombatActor>>;
   readonly playerCharacterIds: readonly [string, string] | null;
   readonly frontCharacterId: string | null;
+  readonly enemySpawnOrder: readonly string[];
   readonly enemyOrder: readonly string[];
   readonly enemyControllers: Readonly<Record<string, EnemyControllerState>>;
   readonly selectedEnemyIntents: readonly SelectedEnemyIntent[];
   readonly enemyPhaseResolved: boolean;
+  readonly manualSwapsUsedThisTurn: number;
+  readonly imprint: Imprint | null;
 }
 
 export interface CombatRuleOverrides {
@@ -129,10 +133,13 @@ export function startCombat(
     actors: {},
     playerCharacterIds: null,
     frontCharacterId: null,
+    enemySpawnOrder: [],
     enemyOrder: [],
     enemyControllers: {},
     selectedEnemyIntents: [],
     enemyPhaseResolved: true,
+    manualSwapsUsedThisTurn: 0,
+    imprint: null,
   };
   assertCardConservation(combat.deck);
 
@@ -179,6 +186,7 @@ export function initializeCombatActors(
       actors,
       playerCharacterIds,
       frontCharacterId: setup.frontCharacterId,
+      enemySpawnOrder: enemies.map((enemy) => enemy.actorId),
     },
   };
 }
@@ -188,6 +196,11 @@ export function setFrontCharacter(
   actorId: string,
 ): AuthoritativeState {
   const combat = requireCombat(state);
+  if (combat.phase !== "setup") {
+    throw new Error(
+      "setFrontCharacter is setup-only; use swapCharacters for player actions.",
+    );
+  }
   if (combat.playerCharacterIds === null) {
     throw new Error("Player formation has not been initialized.");
   }
@@ -232,6 +245,7 @@ export function beginPlayerTurn(state: AuthoritativeState): AuthoritativeState {
     phase: "player",
     energy: combat.rules.energyPerTurn,
     deck: draw.deck,
+    manualSwapsUsedThisTurn: 0,
   };
   assertCardConservation(nextCombat.deck);
 

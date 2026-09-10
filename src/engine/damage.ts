@@ -42,6 +42,15 @@ export interface AttackDamageCalculation {
   readonly amount: number;
 }
 
+export interface ReactionDamageCalculation {
+  readonly targetActorId: string;
+  readonly coefficient: number;
+  readonly potency: number;
+  readonly exposedApplied: boolean;
+  readonly targetMultiplierBps: number;
+  readonly amount: number;
+}
+
 function assertNonnegativeInteger(label: string, value: number): void {
   if (!Number.isSafeInteger(value) || value < 0) {
     throw new RangeError(`${label} must be a nonnegative safe integer.`);
@@ -92,6 +101,7 @@ function finalizeCombat(
     actors,
     outcome,
     phase: outcome === "active" ? combat.phase : "ended",
+    imprint: outcome === "active" ? combat.imprint : null,
   };
 }
 
@@ -200,6 +210,37 @@ export function createDirectDamagePacket(amount: number): DirectDamagePacket {
     packetVersion: DAMAGE_PACKET_VERSION,
     kind: "direct",
     amount,
+  };
+}
+
+export function calculateReactionDamage(
+  combat: CombatState,
+  targetActorId: string,
+  coefficient: number,
+  potency: number,
+): ReactionDamageCalculation {
+  assertNonnegativeInteger("Reaction damage coefficient", coefficient);
+  if (!Number.isSafeInteger(potency) || potency < 1 || potency > 3) {
+    throw new RangeError("Reaction Potency must be an integer from 1 to 3.");
+  }
+  const target = requireActor(combat, targetActorId);
+  const exposedApplied = getStatusAmount(target.statuses, "exposed") > 0;
+  const targetMultiplierBps = exposedApplied
+    ? EXPOSED_MULTIPLIER_BPS
+    : DAMAGE_MULTIPLIER_BASIS;
+  const resolved =
+    (BigInt(coefficient) * BigInt(potency) * BigInt(targetMultiplierBps)) /
+    BigInt(DAMAGE_MULTIPLIER_BASIS);
+  if (resolved > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError("Resolved Reaction damage exceeds the safe integer range.");
+  }
+  return {
+    targetActorId,
+    coefficient,
+    potency,
+    exposedApplied,
+    targetMultiplierBps,
+    amount: Number(resolved),
   };
 }
 

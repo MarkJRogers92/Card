@@ -23,6 +23,15 @@ React owns menus and accessible controls. PixiJS will own battlefield
 presentation when that adapter is introduced. Neither layer owns HP, deck order,
 Energy, targeting, damage, or other authoritative state.
 
+## M07 duo and Reaction boundary
+
+- `src/engine/duo.ts` owns formation-derived card classification and atomic swap accounting.
+- `src/engine/imprint.ts` owns the typed shared Imprint and Potency invariants.
+- `src/engine/reactions.ts` owns declarative Reaction recipes and generic ordered effect resolution.
+- A card-resolution context snapshots Lead/Support/Crew classification before base effects. The post-card ingredient step consumes that internal snapshot after base effects, preserving specified timing even when the card swaps formation.
+- `enemySpawnOrder` is serialized separately from displayed enemy execution order and supplies deterministic primary-Reaction reacquisition.
+- The M07 resolver exposes engine operations, not content-ID conditionals or UI behavior. The future card compiler will map validated card definitions into these operations.
+
 ## M00 implementation
 
 - src/engine/bootstrap.ts exports the versioned, frozen bootstrap snapshot.

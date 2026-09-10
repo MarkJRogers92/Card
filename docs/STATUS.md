@@ -2,9 +2,26 @@
 
 ## Current milestone
 
-**M06 — status timing and escalation**
+**M07 — duo handoffs, Imprints, and Needle Reactions**
 
-M06 builds on accepted M02–M05 deterministic state, deck/turn, HP/Block/targeting, and fixed-intent infrastructure. It adds Bleed, Poison, Weak, Exposed, Strength, duration decay, attack modifiers, status timing, and phase-7 anti-stall escalation while preserving revealed-intent snapshots.
+M07 builds on accepted M02–M06 infrastructure. The implementation is complete locally on `codex/m07-imprint-needle-reactions`; cloud acceptance is pending the branch workflow.
+
+## M07 acceptance checklist
+
+- [x] Lead/Support/Crew classification comes from authoritative formation
+- [x] Classification is snapshotted before base effects
+- [x] Support and Crew never Prime or trigger Reactions
+- [x] Shared Imprint creates, reinforces to Potency 3, replaces, and persists across phases
+- [x] First manual swap is free; later manual swaps cost 1 Energy atomically
+- [x] Card-driven free swaps preserve the manual allowance
+- [x] Four Needle recipes are declarative and resolve at stored Potency in both directions
+- [x] Reaction damage ignores Strength/Weak and respects Exposed/Block
+- [x] Duplicate Claim resolves as two distinct hits
+- [x] Base-effect kill retargeting uses authoritative spawn order
+- [x] Imprint clears when combat ends
+- [x] Prior M00–M06 suites pass locally
+- [x] Production build passes locally
+- [ ] GitHub Actions passes against the pushed M07 head
 
 ## M06 acceptance checklist
 
@@ -29,6 +46,7 @@ M06 builds on accepted M02–M05 deterministic state, deck/turn, HP/Block/target
 - **M03 — deck, Energy, and turn foundation**: accepted 2026-09-10 on `codex/m03-deck-turn-foundation`; GitHub Actions run `34484850623` passed prior suites, focused M03 tests, and production build.
 - **M04 — HP, Block, damage, and targeting**: accepted 2026-09-10 on `codex/m04-hp-damage-targeting`; final GitHub Actions run `34496069587` passed prior suites, focused M04 tests, and production build.
 - **M05 — enemy move cycles and fixed intents**: accepted 2026-09-10 on `codex/m05-enemy-intents`; final GitHub Actions run `34498521927` passed prior suites, focused M05 tests, and production build.
+- **M06 — status timing and escalation**: accepted 2026-09-10 on `codex/m06-status-timing`; final GitHub Actions run `34501385073` passed prior suites, focused M06 tests, and production build.
 
 ## M06 verification record
 
@@ -50,8 +68,8 @@ The acceptance run passed:
 
 The M06 suite verifies Poison-before-action, damage-over-time Block bypass, one Bleed tick per attack move regardless of hit count, player/enemy Weak and Exposed duration decay, persistent Strength, one-floor basis-point damage arithmetic, and visible phase-7 escalation forecasts. The property suite independently checks randomized Strength/Weak/Exposed combinations against the exact integer formula.
 
-`main` remains unchanged by M02–M06 work.
+`main` remains unchanged by M02–M07 work.
 
 ## Next eligible milestone
 
-**M07 — Lead/Support classification, manual swaps, Imprint storage, and the four Needle Reactions.** Preserve all M02–M06 deterministic/timing contracts and do not begin the remaining twelve Reactions until M08.
+None until M07 cloud acceptance. After acceptance: **M08 — the remaining twelve Reactions and serializable delayed packets.**

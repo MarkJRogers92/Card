@@ -55,6 +55,21 @@ export type {
   CombatState,
 } from "./combat";
 export {
+  ADDITIONAL_MANUAL_SWAP_COST,
+  CARD_RESOLUTION_CONTEXT_VERSION,
+  FIRST_MANUAL_SWAP_COST,
+  classifyCardPosition,
+  snapshotCardResolutionContext,
+  swapCharacters,
+} from "./duo";
+export type {
+  CardCombatOwner,
+  CardPositionClassification,
+  CardResolutionContext,
+  SwapMode,
+  SwapResolution,
+} from "./duo";
+export {
   COMMAND_ID_VERSION,
   commitCommand,
   createCommand,
@@ -69,6 +84,7 @@ export {
   applyDirectDamage,
   applyDirectDamageToRule,
   applyHpLossBypassingBlock,
+  calculateReactionDamage,
   calculateAttackDamage,
   createDirectDamagePacket,
   gainBlock,
@@ -79,6 +95,7 @@ export type {
   DamageResolution,
   DamageResult,
   DirectDamagePacket,
+  ReactionDamageCalculation,
 } from "./damage";
 export {
   CARD_ZONES,
@@ -123,6 +140,34 @@ export {
   EVENT_RECORD_VERSION,
   createEventRecords,
 } from "./events";
+export {
+  FORM_INGREDIENT_IDS,
+  IMPRINT_STATE_VERSION,
+  MATERIAL_INGREDIENT_IDS,
+  MAX_IMPRINT_POTENCY,
+  createImprint,
+  ingredientsAreCompatible,
+  storeOrReinforceImprint,
+} from "./imprint";
+export type {
+  FormIngredientId,
+  Imprint,
+  ImprintIngredient,
+  Ingredient,
+  MaterialIngredientId,
+} from "./imprint";
+export {
+  NEEDLE_REACTION_RECIPES,
+  REACTION_RECIPE_VERSION,
+  resolvePostCardIngredient,
+} from "./reactions";
+export type {
+  NeedleReactionEffect,
+  NeedleReactionRecipe,
+  PostCardIngredientInput,
+  PostCardIngredientResolution,
+  PrimaryReactionResolution,
+} from "./reactions";
 export type {
   EngineEventDraft,
   EngineEventRecord,

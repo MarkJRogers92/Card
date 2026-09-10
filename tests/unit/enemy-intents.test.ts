@@ -9,7 +9,7 @@ import {
   initializeCombatActors,
   initializeEnemyControllers,
   projectSelectedEnemyIntents,
-  setFrontCharacter,
+  swapCharacters,
   startCombat,
   type AuthoritativeState,
   type CardInstance,
@@ -162,7 +162,7 @@ describe("M05 enemy move cycles and fixed intents", () => {
     expect(projectSelectedEnemyIntents(state)[0]?.targetActorIds).toStrictEqual(["source"]);
 
     state = beginPlayerTurn(state);
-    state = setFrontCharacter(state, "shaper");
+    state = swapCharacters(state, "manual").state;
     expect(projectSelectedEnemyIntents(state)[0]?.targetActorIds).toStrictEqual(["source"]);
     state = endPlayerTurn(state);
     const phase = executeEnemyPhase(state, registry);
@@ -191,7 +191,7 @@ describe("M05 enemy move cycles and fixed intents", () => {
     expect(projectSelectedEnemyIntents(state)[0]?.moveId).toBe("hit_front");
 
     state = beginPlayerTurn(state);
-    state = setFrontCharacter(state, "shaper");
+    state = swapCharacters(state, "manual").state;
     expect(projectSelectedEnemyIntents(state)[0]?.targetActorIds).toStrictEqual(["shaper"]);
     expect(projectSelectedEnemyIntents(state)[0]?.moveId).toBe("hit_front");
     state = endPlayerTurn(state);

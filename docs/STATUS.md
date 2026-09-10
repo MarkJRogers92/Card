@@ -2,26 +2,24 @@
 
 ## Current milestone
 
-**M09 — bounded trigger/modifier dispatch and initial passives — accepted**
+**M10 — minimal playable browser combat — accepted**
 
-M09 is accepted on `codex/m09-trigger-passives`. GitHub Actions run `34526001392` passed the substantive implementation at `05269a1bc118792ca727b427b7b2d1b99d4f961c` after an accidental package dependency omission was corrected without changing rules or weakening tests.
+M10 is accepted on `codex/m10-playable-combat`. GitHub Actions run `34529248894` passed the substantive browser checkpoint at `f0f9296083dd3cfc7ad18c011fb9657c89571945`, including the first real Playwright combat acceptance.
 
-## M09 acceptance checklist
+## M10 acceptance checklist
 
-- [x] Morrow's first Gore Lead card each player turn grants Morrow 2 Block
-- [x] Switch's first ingredient-bearing Shaper Lead card each player turn draws 1
-- [x] Shared Warranty grants incoming Front 3 Block on the first swap each player turn
-- [x] Card-driven free swaps can trigger Shared Warranty without consuming the manual free-swap allowance
-- [x] Support cards do not consume Morrow/Switch matching trigger limits
-- [x] Turn-scoped trigger counters reset at player-turn start
-- [x] Combat-scoped trigger counters are serialized separately from turn counters
-- [x] Trigger ties resolve by priority, stable source ID, then stable trigger ID
-- [x] Preview uses the same eligibility/order path without consuming counters or RNG
-- [x] Trigger dispatch fails diagnostically rather than silently dropping work beyond the 256-event development ceiling
-- [x] Modifier collection is deterministic by channel, condition, priority, source ID, and modifier ID
-- [x] M07 classification snapshot / swap atomicity remain intact
-- [x] M08 delayed-packet timing and serialization remain intact
-- [x] Prior M00–M08 suites continue to pass
+- [x] Browser opens directly into a deterministic Morrow/Switch vs Claims Adjuster fight
+- [x] Starter 10-card deck is represented with real authoritative card instances/zones
+- [x] Hand displays owner, Lead/Support/Crew classification, Energy cost, and ingredient
+- [x] Enemy target, HP/Block, and selected intent are visible
+- [x] Morrow/Switch HP, Block, and Front/Reserve state are visible
+- [x] Manual Swap uses the M07/M09 atomic swap + Shared Warranty path
+- [x] Starter card plays use real Energy, attack damage, Block, Imprint, Reaction, and passive operations
+- [x] End Turn resolves the real enemy phase and begins the next player turn when combat remains active
+- [x] Restart reconstructs the deterministic opening state and clears the UI command log
+- [x] Browser command log replays headlessly to the exact same authoritative-state hash
+- [x] Scripted Playwright fight defeats the Claims Adjuster through real UI controls
+- [x] Prior M00–M09 suites continue to pass
 - [x] Production build passes
 
 ## Prior accepted milestones
@@ -33,17 +31,20 @@ M09 is accepted on `codex/m09-trigger-passives`. GitHub Actions run `34526001392
 - **M04 — HP, Block, damage, and targeting**: accepted on `codex/m04-hp-damage-targeting`; final GitHub Actions run `34496069587`.
 - **M05 — enemy move cycles and fixed intents**: accepted on `codex/m05-enemy-intents`; final GitHub Actions run `34498521927`.
 - **M06 — status timing and escalation**: accepted on `codex/m06-status-timing`; final GitHub Actions run `34501385073`.
-- **M07 — duo handoffs, Imprints, and Needle Reactions**: accepted on `codex/m07-imprint-needle-reactions`; final head `e35ac7b0c5561e27790dd2877b1d68da6bda60fd` passed GitHub Actions run `34506507341`.
-- **M08 — remaining Reactions and serializable delayed packets**: accepted on `codex/m08-reactions-delayed-packets`; final head `cbd5eed93a57b21bca3fbac7b2dea70bbb4b2977` passed GitHub Actions run `34524502196`.
+- **M07 — duo handoffs, Imprints, and Needle Reactions**: accepted on `codex/m07-imprint-needle-reactions`; final GitHub Actions run `34506507341`.
+- **M08 — remaining Reactions and serializable delayed packets**: accepted on `codex/m08-reactions-delayed-packets`; final GitHub Actions run `34524502196`.
+- **M09 — bounded trigger/modifier dispatch and initial passives**: accepted on `codex/m09-trigger-passives`; final GitHub Actions run `34526337720`.
 
-## M09 verification record
+## M10 verification record
 
-M09 introduces a generic data-bound trigger layer rather than hard-coded card/relic branches. `after_swap` is emitted from the atomic swap resolver; `card_played` is emitted after the accepted M08 post-card/Reaction step through the M09 wrapper. Turn limits are serialized/reset authoritatively, previews are non-consuming, and generic modifier matching has stable ordering while leaving channel-specific arithmetic to the channel owner.
+`src/engine/m10-fight.ts` is a bounded checkpoint orchestration layer for the six starter definitions and the Claims Adjuster fixture. It composes existing authoritative engine operations rather than putting rules in React. The UI submits the same `play_card`, `swap`, and `end_turn` commands used by the headless replay path.
 
-The corrected substantive branch passed the complete locked suite in GitHub Actions run `34526001392`, including every focused M03–M09 command and the production build.
+GitHub Actions run `34529248894` passed installation, type/generated-content checks, every general and focused M03–M10 engine suite, the production build, Chromium installation, and two Playwright browser tests. The main browser fixture wins the Claims Adjuster fight through rendered controls, reads the resulting command log, replays it headlessly, and requires the final authoritative hashes to match exactly.
 
-`main` remains unchanged by M02–M09 work.
+M10 intentionally does not implement the general keyword lifecycle. `Change of Shift` uses a checkpoint-local post-play exhaust destination only; Exhaust/Retain/Fleeting/Unplayable/Protocol rules remain M11 work. Claims Adjuster's Invoice insertion remains deferred to M13 as previously specified.
+
+`main` remains unchanged by M02–M10 work.
 
 ## Next eligible milestone
 
-**M10 — minimal browser combat screen with starter deck, targets, swaps, End Turn, and restart.** The React debug UI must drive real engine commands; UI/animation must not own combat rules. Acceptance requires a scripted UI victory over a Claims Adjuster whose final authoritative-state hash matches a headless replay.
+**M11 — Exhaust, Retain, Fleeting, Unplayable, Protocol deployment, and additional HP costs.** Preserve the M10 browser/headless command parity and do not begin M12 card-pool production until M11 is accepted.

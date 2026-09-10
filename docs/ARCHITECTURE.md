@@ -53,12 +53,23 @@ Energy, targeting, damage, triggers, or other authoritative state.
 - Modifier dispatch currently performs deterministic channel/condition selection and ordering. Arithmetic remains with the channel owner so rules such as one-final-floor damage calculation are not accidentally generalized incorrectly.
 - Run- and command-scoped counter lifetime is not faked inside combat state. Those scopes are completed when the corresponding command/run orchestration exists.
 
+## M10 playable-checkpoint boundary
+
+- `src/engine/m10-fight.ts` is a bounded first-playable orchestration layer. It owns the six starter-card checkpoint definitions, the Claims Adjuster checkpoint behavior registry, fight setup, and the `play_card` / `swap` / `end_turn` command surface.
+- The M10 card table is data-driven and resolves through existing engine operations; React does not calculate Energy, damage, Block, Imprints, Reactions, swaps, passives, enemy actions, or turn timing.
+- M10 does not pretend to be the final general card compiler. The narrow starter effect set exists only to make the first fight playable before M11–M13 complete keyword lifecycle and production card data.
+- `src/client/App.tsx` is a projection/control layer over authoritative state. It renders combatants, intent, target selection, Imprint, hand, resources, and controls, then submits M10 commands back to the engine.
+- The browser exposes the authoritative hash and its ordered M10 command log for test/debug verification. `tests/browser/m10-combat.spec.ts` replays the browser-produced command log through the same headless M10 command API and requires identical final hashes.
+- Restart constructs a fresh deterministic M10 fight rather than mutating the previous combat snapshot.
+- `Change of Shift` has a checkpoint-local post-play exhaust destination so the starter deck can be represented faithfully enough for M10. The general Exhaust/Retain/Fleeting/Unplayable/Protocol lifecycle remains explicitly deferred to M11.
+- Chromium is the M10 scripted-browser acceptance target. Broader cross-browser release verification remains a later release gate.
+
 ## M00 implementation
 
 - src/engine/bootstrap.ts exports the versioned, frozen bootstrap snapshot.
 - src/engine/index.ts is the public engine entry point.
-- src/client/App.tsx renders the deliberately non-playable foundation shell.
-- src/main.tsx mounts the React shell.
+- src/client/App.tsx began as the M00 foundation shell and is now the M10 playable debug combat screen.
+- src/main.tsx mounts the React client.
 - tests/unit/engine-bootstrap.test.ts verifies the version boundary.
 - tools/not-implemented.mjs gives future scripts honest nonzero exits.
 

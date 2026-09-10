@@ -1,12 +1,12 @@
 # M08 — Remaining Reactions and Serializable Delayed Packets
 
-Status: **in progress**
+Status: **accepted**
 
 ## Scope
 
 M08 completes the sixteen-recipe material/form Reaction matrix by adding Burst, Siphon, and Loop for Gore, Volt, Rot, and Echo. It also adds serializable delayed packets for the four Loop Reactions.
 
-M08 preserves M07's classification snapshot, swap atomicity, shared Imprint lifecycle, stored-Potency calculation, generic data-defined recipe resolution, and deterministic primary-Reaction spawn-order reacquisition. It does not begin M09 trigger/passive work.
+M08 preserves M07's classification snapshot, swap atomicity, shared Imprint lifecycle, stored-Potency calculation, generic data-defined recipe resolution, and deterministic primary-Reaction spawn-order reacquisition. M09 trigger/passive work was not started.
 
 ## Reaction matrix added in M08
 
@@ -31,17 +31,28 @@ M08 preserves M07's classification snapshot, swap atomicity, shared Imprint life
 - Due packets resolve after player Block expiry/Energy and manual-swap reset but before the normal draw at player-turn start.
 - Scheduled packets are cleared with the rest of combat-only state when combat ends.
 
-## Acceptance target
+## Acceptance record
 
-M08 is accepted only when the locked GitHub Actions run passes every prior suite plus `npm run test:m08` and the production build. Acceptance coverage must include:
+M08 was accepted on 2026-09-10. GitHub Actions run `34524366346` passed the substantive M08 branch at commit `ce875b8ed3eff9535627aba8d3f274b7d73ac8f4` using Node 24.20.0 on Ubuntu.
 
-- all twelve new recipes at Potencies 1–3 in both handoff directions;
-- the accepted M07 Needle matrix remaining green, giving independent coverage of all sixteen recipes at Potencies 1–3;
-- all-enemy living-target behavior and deterministic spawn ordering;
-- Siphon healing and Power Transfer Block values;
-- each Loop recipe's immediate and delayed values;
-- delayed packet JSON/hash round-trip stability;
-- target-side Exposed reevaluation on delayed Reaction damage;
-- dead delayed targets fizzling without retargeting;
-- structural prevention of recursive repeats;
-- all M00–M07 regressions and production build remaining green.
+The locked run passed:
+
+- `npm ci`
+- `npm run check`
+- `npm run test:engine`
+- `npm run test:content`
+- `npm run test:replay`
+- `npm run test:properties`
+- `npm run test:m03`
+- `npm run test:m04`
+- `npm run test:m05`
+- `npm run test:m06`
+- `npm run test:m07`
+- `npm run test:m08`
+- `npm run build`
+
+The focused M08 suite covers all twelve new recipes at Potencies 1–3 in both handoff directions, all-enemy living-target behavior, Siphon healing and Block, each Loop recipe's immediate/delayed values, JSON/hash round trips, delayed Exposed reevaluation, fixed-target fizzle behavior, and structural prevention of recursive repeats. The accepted M07 Needle matrix remains part of the same regression run, so all sixteen recipes are covered at Potencies 1–3.
+
+## Next milestone
+
+**M09 — bounded trigger/modifier dispatch and initial character passives.**

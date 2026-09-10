@@ -1,6 +1,6 @@
 # M03 — Deck, Energy, and Turn Foundation
 
-Status: **in progress**
+Status: **accepted**
 
 ## Scope
 
@@ -33,15 +33,30 @@ The authoritative design values used here are:
   hand overflow, illegal costs, phase transitions, duplicate IDs, and repeated
   card-conservation checks.
 
-## Acceptance target
+## Acceptance verification
 
-M03 is complete only when the locked GitHub Actions run passes all prior M00–M02
-checks plus the M03 focused suite and demonstrates:
+GitHub Actions run `34484850623` completed successfully on 2026-09-10 using
+Node 24.20.0 on an Ubuntu GitHub-hosted runner.
 
-- reshuffle behavior is deterministic;
-- empty draw/discard stops cleanly;
-- hand overflow routes directly to discard;
-- illegal Energy costs are rejected;
-- no card instance occupies two zones and every registered combat card occupies
-  exactly one zone;
-- repeated seeded turn sequences produce identical authoritative-state hashes.
+The run passed:
+
+- `npm ci`
+- `npm run check`
+- `npm run test:engine`
+- `npm run test:content`
+- `npm run test:replay`
+- `npm run test:properties`
+- `npm run test:m03`
+- `npm run build`
+
+The accepted tests demonstrate:
+
+- deterministic combat-stream shuffle and reshuffle behavior;
+- clean handling when both draw and discard are empty;
+- hand overflow routing directly to discard;
+- rejection of illegal Energy costs without state mutation;
+- strict conservation across draw, hand, discard, exhaust, and deployed zones;
+- rejection of duplicate runtime card instance IDs;
+- deterministic authoritative-state hashes across repeated seeded turn sequences.
+
+M04 remains out of scope for this branch.

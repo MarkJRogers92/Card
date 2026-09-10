@@ -124,6 +124,17 @@ function clearBlockForSide(
   return changed ? next : actors;
 }
 
+function assertSameCardRegistry(current: DeckState, next: DeckState): void {
+  const currentIds = Object.keys(current.instances).sort();
+  const nextIds = Object.keys(next.instances).sort();
+  if (
+    currentIds.length !== nextIds.length ||
+    currentIds.some((instanceId, index) => instanceId !== nextIds[index])
+  ) {
+    throw new Error("Settled hand cannot change the combat card registry.");
+  }
+}
+
 export function startCombat(
   state: AuthoritativeState,
   cards: readonly CardInstance[],
@@ -314,13 +325,17 @@ export function payEnergyCost(
   };
 }
 
-export function endPlayerTurn(state: AuthoritativeState): AuthoritativeState {
+export function endPlayerTurnWithSettledHand(
+  state: AuthoritativeState,
+  settledDeck: DeckState,
+): AuthoritativeState {
   const combat = requireCombat(state);
   if (combat.phase !== "player") {
     throw new Error("Player turn can only end during the player phase.");
   }
+  assertCardConservation(settledDeck);
+  assertSameCardRegistry(combat.deck, settledDeck);
 
-  const deck = discardHand(combat.deck);
   const afterPlayerDurations = decayDurationStatusesForSide(
     combat.actors,
     "player",
@@ -331,7 +346,7 @@ export function endPlayerTurn(state: AuthoritativeState): AuthoritativeState {
     actors,
     phase: "enemy",
     energy: 0,
-    deck,
+    deck: settledDeck,
     enemyPhaseNumber: combat.enemyPhaseNumber + 1,
     enemyPhaseResolved: combat.enemyOrder.length === 0,
   };
@@ -341,4 +356,12 @@ export function endPlayerTurn(state: AuthoritativeState): AuthoritativeState {
     ...state,
     combat: nextCombat,
   };
+}
+
+export function endPlayerTurn(state: AuthoritativeState): AuthoritativeState {
+  const combat = requireCombat(state);
+  if (combat.phase !== "player") {
+    throw new Error("Player turn can only end during the player phase.");
+  }
+  return endPlayerTurnWithSettledHand(state, discardHand(combat.deck));
 }

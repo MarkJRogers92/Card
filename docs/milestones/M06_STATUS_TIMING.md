@@ -1,6 +1,6 @@
 # M06 — Status Timing and Escalation
 
-Status: **in progress**
+Status: **accepted**
 
 ## Scope
 
@@ -35,6 +35,22 @@ Player Weak/Exposed durations decrement when the player turn ends.
 
 Intent projections retain printed damage and additionally expose projected per-target damage using the same integer calculation as execution. Projections include the +2 Strength that will be granted at the beginning of an upcoming phase 7+ so the anti-stall escalation is forecast rather than hidden.
 
-## Acceptance target
+## Verification
 
-M06 is accepted only when the locked GitHub Actions run passes all prior suites plus `npm run test:m06` and the production build. Focused fixtures must prove Poison-before-action, Bleed once per multi-hit move, duration expiry, single-floor Weak/Exposed multiplication, persistent Strength, Block bypass for damage-over-time, and phase-7 escalation forecasts/execution.
+M06 was accepted on 2026-09-10. GitHub Actions run `34501258403` passed at implementation commit `7020304c` using Node 24.20.0 on Ubuntu.
+
+The run passed:
+
+- `npm ci`
+- `npm run check`
+- `npm run test:engine`
+- `npm run test:content`
+- `npm run test:replay`
+- `npm run test:properties`
+- `npm run test:m03`
+- `npm run test:m04`
+- `npm run test:m05`
+- `npm run test:m06`
+- `npm run build`
+
+The focused M06 fixtures prove Poison-before-action, Poison/Block bypass, exactly one Bleed tick after a multi-hit attack move, side-specific Weak/Exposed duration decay, Strength persistence, single-floor Weak × Exposed arithmetic, and phase-7 escalation forecasting/execution. The property suite independently checks the exact basis-point attack formula across randomized Strength/Weak/Exposed combinations.

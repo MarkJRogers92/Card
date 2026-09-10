@@ -1,47 +1,249 @@
-import { createEngineBootstrap } from "../engine";
+import { useMemo, useState } from "react";
+import {
+  M10_CLAIMS_ADJUSTER_ID,
+  M10_MORROW_ID,
+  M10_SWITCH_ID,
+  applyM10Command,
+  createM10Fight,
+  getM10Hand,
+  hashM10Fight,
+  projectSelectedEnemyIntents,
+  type AuthoritativeState,
+  type M10Command,
+} from "../engine";
 import "./App.css";
 
-const bootstrap = createEngineBootstrap();
+function actorLabel(actorId: string): string {
+  if (actorId === M10_MORROW_ID) return "Morrow";
+  if (actorId === M10_SWITCH_ID) return "Switch";
+  if (actorId === M10_CLAIMS_ADJUSTER_ID) return "Claims Adjuster";
+  return actorId;
+}
+
+function positionLabel(
+  actorId: string,
+  frontCharacterId: string | null,
+): "FRONT" | "RESERVE" {
+  return actorId === frontCharacterId ? "FRONT" : "RESERVE";
+}
 
 export function App() {
+  const [state, setState] = useState<AuthoritativeState>(() => createM10Fight());
+  const [commands, setCommands] = useState<readonly M10Command[]>([]);
+  const [selectedTarget, setSelectedTarget] = useState(M10_CLAIMS_ADJUSTER_ID);
+  const [error, setError] = useState<string | null>(null);
+
+  const combat = state.combat;
+  const hash = useMemo(() => hashM10Fight(state), [state]);
+  if (combat === null) {
+    return <main className="combat-shell">Combat state unavailable.</main>;
+  }
+
+  const active = combat.outcome === "active";
+  const hand = active ? getM10Hand(state) : [];
+  const intents = active ? projectSelectedEnemyIntents(state) : [];
+  const currentIntent = intents[0] ?? null;
+  const morrow = combat.actors[M10_MORROW_ID];
+  const switchActor = combat.actors[M10_SWITCH_ID];
+  const enemy = combat.actors[M10_CLAIMS_ADJUSTER_ID];
+
+  function commit(command: M10Command): void {
+    try {
+      const result = applyM10Command(state, command);
+      setState(result.state);
+      setCommands((current) => [...current, command]);
+      setError(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
+  function restart(): void {
+    setState(createM10Fight());
+    setCommands([]);
+    setSelectedTarget(M10_CLAIMS_ADJUSTER_ID);
+    setError(null);
+  }
+
+  const imprint = combat.imprint;
+  const imprintText =
+    imprint === null
+      ? "No Imprint"
+      : `${imprint.ingredient.id.toUpperCase()} P${imprint.potency} · ${actorLabel(imprint.ownerCharacterId)}`;
+
   return (
-    <main className="foundation-shell">
-      <header className="foundation-header">
-        <p className="eyebrow">M00 FOUNDATION</p>
-        <h1>Joint Liability</h1>
-        <p className="lede">
-          Two bodies. One nervous system. An implementation boundary ready for
-          the first fight.
-        </p>
+    <main className="combat-shell">
+      <header className="combat-header">
+        <div>
+          <p className="eyebrow">M10 PLAYABLE CHECKPOINT</p>
+          <h1>Joint Liability</h1>
+        </div>
+        <div className="header-actions">
+          <span className="turn-pill" data-testid="turn-number">
+            Turn {combat.turnNumber}
+          </span>
+          <button className="secondary-button" type="button" onClick={restart}>
+            Restart
+          </button>
+        </div>
       </header>
 
-      <section className="status-card" aria-labelledby="status-heading">
-        <p className="eyebrow">BUILD STATUS</p>
-        <h2 id="status-heading">The foundation is in place.</h2>
-        <p>
-          This shell confirms that the browser build and rendering-independent
-          engine boundary are connected. Combat systems are intentionally not
-          included in M00.
-        </p>
-        <dl className="version-grid">
-          <div>
-            <dt>Engine</dt>
-            <dd>{bootstrap.engineVersion}</dd>
+      <section className="battlefield" aria-label="Combatants">
+        <article className={`fighter ${combat.frontCharacterId === M10_MORROW_ID ? "front" : "reserve"}`}>
+          <div className="fighter-topline">
+            <span>{positionLabel(M10_MORROW_ID, combat.frontCharacterId)}</span>
+            <span>Source</span>
           </div>
-          <div>
-            <dt>Content</dt>
-            <dd>{bootstrap.contentVersion}</dd>
+          <h2>Morrow</h2>
+          <p className="vital" data-testid="morrow-hp">
+            {morrow?.hp ?? 0}/{morrow?.maxHp ?? 0} HP
+          </p>
+          <p className="block-readout">{morrow?.block ?? 0} Block</p>
+        </article>
+
+        <div className="imprint-panel" aria-label="Shared Imprint">
+          <span>Shared Imprint</span>
+          <strong data-testid="imprint">{imprintText}</strong>
+        </div>
+
+        <article className={`fighter ${combat.frontCharacterId === M10_SWITCH_ID ? "front" : "reserve"}`}>
+          <div className="fighter-topline">
+            <span>{positionLabel(M10_SWITCH_ID, combat.frontCharacterId)}</span>
+            <span>Shaper</span>
           </div>
-          <div>
-            <dt>Phase</dt>
-            <dd>{bootstrap.phase}</dd>
-          </div>
-        </dl>
+          <h2>Switch</h2>
+          <p className="vital" data-testid="switch-hp">
+            {switchActor?.hp ?? 0}/{switchActor?.maxHp ?? 0} HP
+          </p>
+          <p className="block-readout">{switchActor?.block ?? 0} Block</p>
+        </article>
+
+        <button
+          type="button"
+          className={`enemy-card ${selectedTarget === M10_CLAIMS_ADJUSTER_ID ? "selected" : ""}`}
+          aria-pressed={selectedTarget === M10_CLAIMS_ADJUSTER_ID}
+          onClick={() => setSelectedTarget(M10_CLAIMS_ADJUSTER_ID)}
+          data-testid="enemy-target"
+          disabled={!active}
+        >
+          <span className="enemy-label">TARGET</span>
+          <strong>Claims Adjuster</strong>
+          <span data-testid="enemy-hp">
+            {enemy?.hp ?? 0}/{enemy?.maxHp ?? 0} HP · {enemy?.block ?? 0} Block
+          </span>
+          <span className="intent" data-testid="enemy-intent">
+            {currentIntent === null
+              ? combat.outcome === "victory"
+                ? "Claim denied permanently."
+                : "No intent"
+              : `${currentIntent.label} · ${currentIntent.target.kind.toUpperCase()}`}
+          </span>
+        </button>
       </section>
 
-      <footer className="foundation-footer">
-        <span>Design snapshot: docs/DESIGN.md</span>
-        <span>Next eligible milestone: M01 — content schemas</span>
+      <section className="command-bar" aria-label="Player controls">
+        <div className="resource-strip">
+          <div>
+            <span>Energy</span>
+            <strong data-testid="energy">{combat.energy}</strong>
+          </div>
+          <div>
+            <span>Phase</span>
+            <strong>{combat.phase}</strong>
+          </div>
+          <div>
+            <span>Outcome</span>
+            <strong data-testid="outcome">{combat.outcome}</strong>
+          </div>
+        </div>
+
+        <div className="primary-controls">
+          <button
+            type="button"
+            className="swap-button"
+            disabled={!active || combat.phase !== "player"}
+            onClick={() => commit({ kind: "swap" })}
+            data-testid="swap"
+          >
+            Swap
+            <small>
+              {combat.manualSwapsUsedThisTurn === 0 ? "Free" : "1 Energy"}
+            </small>
+          </button>
+          <button
+            type="button"
+            className="end-turn-button"
+            disabled={!active || combat.phase !== "player"}
+            onClick={() => commit({ kind: "end_turn" })}
+            data-testid="end-turn"
+          >
+            End Turn
+          </button>
+        </div>
+      </section>
+
+      <section className="hand-section" aria-labelledby="hand-heading">
+        <div className="section-heading">
+          <div>
+            <p className="eyebrow">SHARED DECK</p>
+            <h2 id="hand-heading">Hand</h2>
+          </div>
+          <span>{combat.deck.zones.draw.length} draw · {combat.deck.zones.discard.length} discard · {combat.deck.zones.exhaust.length} exhaust</span>
+        </div>
+
+        <div className="hand" data-testid="hand">
+          {hand.map((card) => {
+            const disabled = !active || card.energyCost > combat.energy;
+            return (
+              <button
+                key={card.instanceId}
+                type="button"
+                className={`play-card owner-${card.owner}`}
+                disabled={disabled}
+                onClick={() =>
+                  commit({
+                    kind: "play_card",
+                    instanceId: card.instanceId,
+                    targetActorId: selectedTarget,
+                  })
+                }
+                data-testid={`card-${card.instanceId}`}
+                data-card-name={card.name}
+                data-card-damage={card.isDamageCard ? "true" : "false"}
+              >
+                <span className="card-cost">{card.energyCost}</span>
+                <span className="card-owner">{card.owner}</span>
+                <strong>{card.name}</strong>
+                <span className="card-classification">{card.classification}</span>
+                <span className="card-ingredient">
+                  {card.ingredient === null
+                    ? "No ingredient"
+                    : `${card.ingredient.id} · Prime ${card.ingredient.prime}`}
+                </span>
+              </button>
+            );
+          })}
+          {hand.length === 0 && (
+            <p className="empty-hand">
+              {active ? "No cards in hand." : "Combat complete."}
+            </p>
+          )}
+        </div>
+      </section>
+
+      {error !== null && (
+        <p className="error-banner" role="alert">
+          {error}
+        </p>
+      )}
+
+      <footer className="debug-footer">
+        <span>Authoritative hash</span>
+        <output data-testid="state-hash">{hash}</output>
+        <details>
+          <summary>Command log</summary>
+          <pre data-testid="command-log">{JSON.stringify(commands)}</pre>
+        </details>
       </footer>
     </main>
   );

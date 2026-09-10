@@ -17,8 +17,9 @@ import type {
   SelectedEnemyIntent,
 } from "./enemies";
 import type { AuthoritativeState } from "./state";
+import { decayDurationStatusesForSide } from "./status-runtime";
 
-export const COMBAT_STATE_VERSION = 3 as const;
+export const COMBAT_STATE_VERSION = 4 as const;
 export const DEFAULT_ENERGY_PER_TURN = 3 as const;
 export const DEFAULT_CARDS_PER_TURN = 5 as const;
 export const DEFAULT_MAX_HAND_SIZE = 10 as const;
@@ -35,6 +36,7 @@ export interface CombatRules {
 export interface CombatState {
   readonly combatVersion: typeof COMBAT_STATE_VERSION;
   readonly turnNumber: number;
+  readonly enemyPhaseNumber: number;
   readonly phase: CombatPhase;
   readonly outcome: CombatOutcome;
   readonly energy: number;
@@ -118,6 +120,7 @@ export function startCombat(
   const combat: CombatState = {
     combatVersion: COMBAT_STATE_VERSION,
     turnNumber: 0,
+    enemyPhaseNumber: 0,
     phase: "setup",
     outcome: "active",
     energy: 0,
@@ -270,12 +273,18 @@ export function endPlayerTurn(state: AuthoritativeState): AuthoritativeState {
   }
 
   const deck = discardHand(combat.deck);
+  const afterPlayerDurations = decayDurationStatusesForSide(
+    combat.actors,
+    "player",
+  );
+  const actors = clearBlockForSide(afterPlayerDurations, "enemy");
   const nextCombat: CombatState = {
     ...combat,
-    actors: clearBlockForSide(combat.actors, "enemy"),
+    actors,
     phase: "enemy",
     energy: 0,
     deck,
+    enemyPhaseNumber: combat.enemyPhaseNumber + 1,
     enemyPhaseResolved: combat.enemyOrder.length === 0,
   };
   assertCardConservation(nextCombat.deck);

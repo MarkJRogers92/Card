@@ -2,11 +2,20 @@ import type { CombatActor } from "./actors";
 import type { CombatState } from "./combat";
 import {
   applyDirectDamage,
-  applyDirectDamageToRule,
+  calculateAttackDamage,
   createDirectDamagePacket,
   gainBlock,
 } from "./damage";
 import type { AuthoritativeState } from "./state";
+import {
+  ENEMY_PHASE_ESCALATION_START,
+  ENEMY_PHASE_ESCALATION_STRENGTH,
+  applyEnemyPhaseEscalation,
+  decayDurationStatusesForSide,
+  tickBleedAfterEnemyAttackMove,
+  tickPoisonAtEnemyPhaseStart,
+  type StatusTick,
+} from "./status-runtime";
 import { resolveTargetRule, type TargetRule } from "./targeting";
 
 export const ENEMY_CONTROLLER_VERSION = 1 as const;
@@ -80,12 +89,18 @@ export interface SelectedEnemyIntent {
   readonly effects: readonly EnemyMoveEffect[];
 }
 
+export interface ProjectedTargetDamage {
+  readonly targetActorId: string;
+  readonly amount: number;
+}
+
 export type EnemyIntentEffectProjection =
   | {
       readonly op: "damage";
       readonly amount: number;
       readonly hits: number;
       readonly targetActorIds: readonly string[];
+      readonly projectedDamageByTarget: readonly ProjectedTargetDamage[];
     }
   | {
       readonly op: "block";
@@ -116,6 +131,9 @@ export interface EnemyMoveExecution {
 export interface EnemyPhaseResolution {
   readonly state: AuthoritativeState;
   readonly executions: readonly EnemyMoveExecution[];
+  readonly poisonTicks: readonly StatusTick[];
+  readonly bleedTicks: readonly StatusTick[];
+  readonly escalationActorIds: readonly string[];
 }
 
 function assertNonEmpty(label: string, value: string): void {
@@ -212,20 +230,19 @@ function validateDefinition(definition: EnemyBehaviorDefinition): void {
     moves.set(move.id, move);
   }
 
-  const cycleIds = definition.ai.moveIds;
-  if (cycleIds.length === 0) {
+  if (definition.ai.moveIds.length === 0) {
     throw new Error(`Enemy definition ${definition.id} has an empty AI cycle.`);
   }
   if (
     !Number.isSafeInteger(definition.ai.startIndex) ||
     definition.ai.startIndex < 0 ||
-    definition.ai.startIndex >= cycleIds.length
+    definition.ai.startIndex >= definition.ai.moveIds.length
   ) {
     throw new RangeError(
       `Enemy definition ${definition.id} has invalid AI startIndex ${definition.ai.startIndex}.`,
     );
   }
-  for (const moveId of cycleIds) {
+  for (const moveId of definition.ai.moveIds) {
     if (!moves.has(moveId)) {
       throw new Error(
         `Enemy definition ${definition.id} AI references unknown move ${moveId}.`,
@@ -442,11 +459,37 @@ function intentTargets(
   return resolveTargetRule(combat, intent.target);
 }
 
+function upcomingEnemyPhaseNumber(combat: CombatState): number {
+  if (combat.phase === "enemy" && !combat.enemyPhaseResolved) {
+    return combat.enemyPhaseNumber;
+  }
+  return combat.enemyPhaseNumber + 1;
+}
+
+function pendingEscalationBonus(
+  combat: CombatState,
+  enemyActorId: string,
+): number {
+  const actor = combat.actors[enemyActorId];
+  if (
+    combat.outcome !== "active" ||
+    actor === undefined ||
+    actor.side !== "enemy" ||
+    actor.hp === 0
+  ) {
+    return 0;
+  }
+  return upcomingEnemyPhaseNumber(combat) >= ENEMY_PHASE_ESCALATION_START
+    ? ENEMY_PHASE_ESCALATION_STRENGTH
+    : 0;
+}
+
 export function projectEnemyIntent(
   combat: CombatState,
   intent: SelectedEnemyIntent,
 ): EnemyIntentProjection {
   const targetActorIds = intentTargets(combat, intent);
+  const escalationBonus = pendingEscalationBonus(combat, intent.enemyActorId);
   const effects: EnemyIntentEffectProjection[] = intent.effects.map((effect) => {
     if (effect.op === "damage") {
       return {
@@ -454,6 +497,16 @@ export function projectEnemyIntent(
         amount: effect.amount,
         hits: effect.hits,
         targetActorIds,
+        projectedDamageByTarget: targetActorIds.map((targetActorId) => ({
+          targetActorId,
+          amount: calculateAttackDamage(
+            combat,
+            intent.enemyActorId,
+            targetActorId,
+            effect.amount,
+            escalationBonus,
+          ).amount,
+        })),
       };
     }
     return {
@@ -520,15 +573,28 @@ function executeIntent(
       continue;
     }
 
-    const packet = createDirectDamagePacket(effect.amount);
     for (let hit = 0; hit < effect.hits; hit += 1) {
       if (current.combat?.outcome !== "active") {
         break;
       }
-      if (intent.target.kind === "self") {
-        current = applyDirectDamage(current, intent.enemyActorId, packet).state;
-      } else {
-        current = applyDirectDamageToRule(current, intent.target, packet).state;
+      const combat = requireActiveCombat(current);
+      const targets = intentTargets(combat, intent);
+      for (const targetActorId of targets) {
+        if (current.combat?.outcome !== "active") {
+          break;
+        }
+        const liveCombat = requireActiveCombat(current);
+        const damage = calculateAttackDamage(
+          liveCombat,
+          intent.enemyActorId,
+          targetActorId,
+          effect.amount,
+        ).amount;
+        current = applyDirectDamage(
+          current,
+          targetActorId,
+          createDirectDamagePacket(damage),
+        ).state;
       }
       damageHitsResolved += 1;
     }
@@ -554,9 +620,18 @@ export function executeEnemyPhase(
   }
 
   const selectedAtPhaseStart = combat.selectedEnemyIntents;
-  let current = state;
-  const executions: EnemyMoveExecution[] = [];
+  const poison = tickPoisonAtEnemyPhaseStart(state);
+  let current = poison.state;
+  const bleedTicks: StatusTick[] = [];
+  let escalationActorIds: readonly string[] = [];
 
+  if (current.combat?.outcome === "active") {
+    const escalation = applyEnemyPhaseEscalation(current);
+    current = escalation.state;
+    escalationActorIds = escalation.affectedActorIds;
+  }
+
+  const executions: EnemyMoveExecution[] = [];
   for (const actorId of combat.enemyOrder) {
     const currentCombat = requireCombatSnapshot(current);
     if (currentCombat.outcome !== "active") {
@@ -590,6 +665,15 @@ export function executeEnemyPhase(
       effectsResolved: execution.effectsResolved,
       damageHitsResolved: execution.damageHitsResolved,
     });
+
+    if (
+      execution.damageHitsResolved > 0 &&
+      current.combat?.outcome === "active"
+    ) {
+      const bleed = tickBleedAfterEnemyAttackMove(current, actorId);
+      current = bleed.state;
+      bleedTicks.push(...bleed.ticks);
+    }
   }
 
   const afterExecution = requireCombatSnapshot(current);
@@ -604,10 +688,17 @@ export function executeEnemyPhase(
         },
       },
       executions,
+      poisonTicks: poison.ticks,
+      bleedTicks,
+      escalationActorIds,
     };
   }
 
-  const withNextIntents = selectNextIntentsForCombat(afterExecution, registry);
+  const afterDurations: CombatState = {
+    ...afterExecution,
+    actors: decayDurationStatusesForSide(afterExecution.actors, "enemy"),
+  };
+  const withNextIntents = selectNextIntentsForCombat(afterDurations, registry);
   return {
     state: {
       ...current,
@@ -617,5 +708,8 @@ export function executeEnemyPhase(
       },
     },
     executions,
+    poisonTicks: poison.ticks,
+    bleedTicks,
+    escalationActorIds,
   };
 }

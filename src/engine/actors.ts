@@ -1,4 +1,10 @@
-export const ACTOR_STATE_VERSION = 1 as const;
+import {
+  createCombatStatuses,
+  type CombatStatusInput,
+  type CombatStatuses,
+} from "./status";
+
+export const ACTOR_STATE_VERSION = 2 as const;
 
 export type ActorSide = "player" | "enemy";
 
@@ -9,6 +15,7 @@ export interface CombatActor {
   readonly maxHp: number;
   readonly hp: number;
   readonly block: number;
+  readonly statuses: CombatStatuses;
 }
 
 export interface ActorVitalityInput {
@@ -16,6 +23,7 @@ export interface ActorVitalityInput {
   readonly maxHp: number;
   readonly hp?: number;
   readonly block?: number;
+  readonly statuses?: CombatStatusInput;
 }
 
 function assertNonEmpty(label: string, value: string): void {
@@ -55,5 +63,6 @@ export function createCombatActor(
     maxHp: input.maxHp,
     hp,
     block,
+    statuses: createCombatStatuses(input.statuses),
   };
 }

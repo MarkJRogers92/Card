@@ -62,14 +62,20 @@ export {
 } from "./commands";
 export type { CommandId, EngineCommand } from "./commands";
 export {
+  DAMAGE_MULTIPLIER_BASIS,
   DAMAGE_PACKET_VERSION,
+  EXPOSED_MULTIPLIER_BPS,
+  WEAK_MULTIPLIER_BPS,
   applyDirectDamage,
   applyDirectDamageToRule,
+  applyHpLossBypassingBlock,
+  calculateAttackDamage,
   createDirectDamagePacket,
   gainBlock,
   paySelfHpCost,
 } from "./damage";
 export type {
+  AttackDamageCalculation,
   DamageResolution,
   DamageResult,
   DirectDamagePacket,
@@ -110,6 +116,7 @@ export type {
   EnemyMoveExecution,
   EnemyMoveTarget,
   EnemyPhaseResolution,
+  ProjectedTargetDamage,
   SelectedEnemyIntent,
 } from "./enemies";
 export {
@@ -152,6 +159,36 @@ export type {
   AuthoritativeState,
   AuthoritativeStateOptions,
 } from "./state";
+export {
+  COMBAT_STATUS_IDS,
+  STATUS_STATE_VERSION,
+  addStatusAmount,
+  createCombatStatuses,
+  decayTurnDurationStatuses,
+  decrementStatusAmount,
+  getStatusAmount,
+  setStatusAmount,
+} from "./status";
+export type {
+  CombatStatusId,
+  CombatStatusInput,
+  CombatStatuses,
+} from "./status";
+export {
+  ENEMY_PHASE_ESCALATION_START,
+  ENEMY_PHASE_ESCALATION_STRENGTH,
+  applyCombatStatus,
+  applyEnemyPhaseEscalation,
+  decayDurationStatusesForSide,
+  setCombatStatusForTesting,
+  tickBleedAfterEnemyAttackMove,
+  tickPoisonAtEnemyPhaseStart,
+} from "./status-runtime";
+export type {
+  EscalationResolution,
+  StatusTick,
+  StatusTickResolution,
+} from "./status-runtime";
 export {
   TARGET_RULE_KINDS,
   getReserveCharacterId,

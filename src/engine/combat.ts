@@ -23,8 +23,14 @@ import {
 } from "./scheduled";
 import type { AuthoritativeState } from "./state";
 import { decayDurationStatusesForSide } from "./status-runtime";
+import {
+  createTriggerCounters,
+  resetTurnTriggerCounters,
+  type TriggerBinding,
+  type TriggerCounters,
+} from "./triggers";
 
-export const COMBAT_STATE_VERSION = 6 as const;
+export const COMBAT_STATE_VERSION = 7 as const;
 export const DEFAULT_ENERGY_PER_TURN = 3 as const;
 export const DEFAULT_CARDS_PER_TURN = 5 as const;
 export const DEFAULT_MAX_HAND_SIZE = 10 as const;
@@ -59,6 +65,8 @@ export interface CombatState {
   readonly imprint: Imprint | null;
   readonly scheduledPackets: readonly ScheduledReactionPacket[];
   readonly nextScheduledPacketOrdinal: number;
+  readonly triggerBindings: readonly TriggerBinding[];
+  readonly triggerCounters: TriggerCounters;
 }
 
 export interface CombatRuleOverrides {
@@ -148,6 +156,8 @@ export function startCombat(
     imprint: null,
     scheduledPackets: [],
     nextScheduledPacketOrdinal: 1,
+    triggerBindings: [],
+    triggerCounters: createTriggerCounters(),
   };
   assertCardConservation(combat.deck);
 
@@ -249,6 +259,7 @@ export function beginPlayerTurn(state: AuthoritativeState): AuthoritativeState {
       phase: "player",
       energy: combat.rules.energyPerTurn,
       manualSwapsUsedThisTurn: 0,
+      triggerCounters: resetTurnTriggerCounters(combat.triggerCounters),
     },
   };
   const scheduled = resolveScheduledPacketsAtPlayerTurnStart(turnStartState);

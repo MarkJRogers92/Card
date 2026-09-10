@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "shaper.fan_service",
+  "name": "Fan Service",
+  "owner": "shaper",
+  "category": "attack",
+  "rarity": "common",
+  "parameters": {
+    "damage": { "base": 4, "upgraded": 6 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "all_enemies",
+  "ingredient": {
+    "kind": "form",
+    "id": "burst",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "all_enemies",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.fan_service"
+}

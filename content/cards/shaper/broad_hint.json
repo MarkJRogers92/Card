@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "shaper.broad_hint",
+  "name": "Broad Hint",
+  "owner": "shaper",
+  "category": "attack",
+  "rarity": "uncommon",
+  "parameters": {
+    "damage": { "base": 7, "upgraded": 10 },
+    "weak": { "base": 1, "upgraded": 1 }
+  },
+  "energyCost": { "const": 2 },
+  "additionalCosts": [],
+  "target": "all_enemies",
+  "ingredient": {
+    "kind": "form",
+    "id": "burst",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "all_enemies",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    },
+    {
+      "op": "apply_status",
+      "target": "all_enemies",
+      "status": "weak",
+      "amount": { "param": "weak" }
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.broad_hint"
+}

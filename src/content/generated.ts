@@ -92,7 +92,7 @@ export namespace CommonSchema {
    * This interface was referenced by `JointLiabilityCommonContentPrimitives`'s JSON-Schema
    * via the `definition` "Keyword".
    */
-  export type Keyword = "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol";
+  export type Keyword = "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability";
   /**
    * This interface was referenced by `JointLiabilityCommonContentPrimitives`'s JSON-Schema
    * via the `definition` "Destination".
@@ -557,28 +557,28 @@ export namespace CardSchema {
      */
     keywords:
       | []
-      | ["exhaust" | "retain" | "fleeting" | "unplayable" | "protocol"]
+      | ["exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability"]
       | [
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol"
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability"
         ]
       | [
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol"
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability"
         ]
       | [
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol"
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability"
         ]
       | [
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol"
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability"
         ];
     /**
      * @minItems 1

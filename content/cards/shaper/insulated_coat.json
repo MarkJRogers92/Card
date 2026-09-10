@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "shaper.insulated_coat",
+  "name": "Insulated Coat",
+  "owner": "shaper",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {
+    "block": { "base": 7, "upgraded": 10 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    {
+      "op": "block",
+      "target": "owner",
+      "amount": { "param": "block" }
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.insulated_coat"
+}

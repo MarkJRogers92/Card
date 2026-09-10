@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "id": "junk.fine_print",
+  "name": "Fine Print",
+  "owner": "crew",
+  "category": "status",
+  "rarity": "generated",
+  "parameters": {
+    "hpLoss": { "base": 1, "upgraded": 1 }
+  },
+  "energyCost": { "const": 0 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": ["unplayable", "liability"],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "front",
+      "amount": { "param": "hpLoss" },
+      "hits": 1,
+      "category": "direct"
+    }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.fine_print"
+}

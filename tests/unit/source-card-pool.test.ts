@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import {
   assertCardConservation,
   beginPlayerTurn,
+  cardLifecycleSpecFor,
   createAuthoritativeState,
   createCardInstance,
   createCardInstanceId,
@@ -637,15 +638,9 @@ describe("Card conservation across all zones", () => {
     current = play(current, exhausting).state;
     current = play(current, protocol).state;
 
-    const lifecycleFor = (definitionId: string): CardLifecycleSpec => {
-      const definition = requireDefinition(definitionId);
-      return {
-        category: definition.category,
-        keywords: definition.keywords,
-        additionalHpCosts: [],
-      };
-    };
-    current = endPlayerTurnWithCardLifecycle(current, (instance) => lifecycleFor(instance.definitionId));
+    current = endPlayerTurnWithCardLifecycle(current, (instance) =>
+      cardLifecycleSpecFor(requireDefinition(instance.definitionId), []),
+    );
 
     const deck = deckOf(current);
     expect(Object.keys(deck.instances)).toHaveLength(cards.length);

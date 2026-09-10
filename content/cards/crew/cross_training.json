@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "crew.cross_training",
+  "name": "Cross Training",
+  "owner": "crew",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {
+    "drawAmount": { "base": 2, "upgraded": 3 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    { "op": "draw", "amount": { "param": "drawAmount" } }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.cross_training"
+}

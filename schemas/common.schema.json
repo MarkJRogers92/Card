@@ -196,7 +196,7 @@
     },
     "Keyword": {
       "type": "string",
-      "enum": ["exhaust", "retain", "fleeting", "unplayable", "protocol"]
+      "enum": ["exhaust", "retain", "fleeting", "unplayable", "protocol", "liability"]
     },
     "Destination": {
       "type": "string",

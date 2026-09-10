@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "junk.invoice",
+  "name": "Invoice",
+  "owner": "crew",
+  "category": "status",
+  "rarity": "generated",
+  "parameters": {},
+  "energyCost": { "const": 0 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": ["unplayable", "fleeting"],
+  "effects": [
+    { "op": "block", "target": "none", "amount": { "const": 0 } }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.invoice"
+}

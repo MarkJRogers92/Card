@@ -38,6 +38,12 @@ function assertPrime(prime: number): void {
   }
 }
 
+function assertNonnegativeInteger(label: string, value: number): void {
+  if (!Number.isSafeInteger(value) || value < 0) {
+    throw new RangeError(`${label} must be a nonnegative safe integer.`);
+  }
+}
+
 function requireCombat(state: AuthoritativeState) {
   if (state.combat === null) {
     throw new Error("No combat is active.");
@@ -96,6 +102,27 @@ export function storeOrReinforceImprint(
       }
     : createImprint(ownerCharacterId, ingredient);
   return { ...state, combat: { ...combat, imprint } };
+}
+
+export function boostImprintPotency(
+  state: AuthoritativeState,
+  amount: number,
+): AuthoritativeState {
+  assertNonnegativeInteger("Imprint Potency boost", amount);
+  const combat = requireCombat(state);
+  if (combat.outcome !== "active" || combat.imprint === null) {
+    return state;
+  }
+  return {
+    ...state,
+    combat: {
+      ...combat,
+      imprint: {
+        ...combat.imprint,
+        potency: Math.min(MAX_IMPRINT_POTENCY, combat.imprint.potency + amount),
+      },
+    },
+  };
 }
 
 export function ingredientsAreCompatible(

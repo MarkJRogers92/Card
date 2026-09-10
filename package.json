@@ -31,6 +31,7 @@
     "test:m10": "vitest run tests/unit/m10-fight.test.ts",
     "test:m11": "vitest run tests/unit/card-lifecycle.test.ts",
     "test:m12": "vitest run tests/unit/source-card-pool.test.ts",
+    "test:m13": "vitest run tests/unit/shaper-crew-junk-pool.test.ts",
     "simulate": "node tools/not-implemented.mjs M33 \"simulation\"",
     "assets:audit": "node tools/not-implemented.mjs M35 \"asset audit\"",
     "build": "vite build"

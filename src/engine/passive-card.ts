@@ -23,7 +23,23 @@ export function resolvePostCardIngredientWithTriggers(
     return resolved;
   }
 
-  const dispatched = dispatchTriggerEvent(resolved.state, {
+  // A primary Reaction is itself part of the completed card play, so its
+  // trigger dispatches first; card_played then represents the overall play
+  // having finished. Neither event can observe a Protocol installed by this
+  // same card, since that installation happens later in finishCardPlayLifecycle.
+  let current = resolved.state;
+  if (resolved.reaction !== null && combat.frontCharacterId !== null) {
+    current = dispatchTriggerEvent(current, {
+      eventVersion: TRIGGER_EVENT_VERSION,
+      kind: "primary_reaction",
+      frontActorId: combat.frontCharacterId,
+    }).state;
+  }
+  if (current.combat === null || current.combat.outcome !== "active") {
+    return { ...resolved, state: current, resultingImprint: current.combat?.imprint ?? null };
+  }
+
+  const dispatched = dispatchTriggerEvent(current, {
     eventVersion: TRIGGER_EVENT_VERSION,
     kind: "card_played",
     cardOwnerActorId:

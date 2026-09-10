@@ -193,6 +193,7 @@ export {
   IMPRINT_STATE_VERSION,
   MATERIAL_INGREDIENT_IDS,
   MAX_IMPRINT_POTENCY,
+  boostImprintPotency,
   createImprint,
   ingredientsAreCompatible,
   storeOrReinforceImprint,
@@ -234,6 +235,8 @@ export { resolvePostCardIngredientWithTriggers } from "./passive-card";
 export {
   applyCardBaseEffects,
   cardLifecycleSpecFor,
+  endPlayerTurnWithContentCards,
+  isLiabilityCard,
   playContentCard,
   resolveAdditionalHpCosts,
   resolveCardParameters,
@@ -352,6 +355,7 @@ export {
 export type {
   AfterSwapTriggerEvent,
   CardPlayedTriggerEvent,
+  PrimaryReactionTriggerEvent,
   ModifierBinding,
   ModifierCondition,
   ModifierContext,

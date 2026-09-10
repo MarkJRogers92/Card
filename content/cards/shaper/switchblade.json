@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "shaper.switchblade",
+  "name": "Switchblade",
+  "owner": "shaper",
+  "category": "skill",
+  "rarity": "rare",
+  "parameters": {
+    "drawAmount": { "base": 1, "upgraded": 2 }
+  },
+  "energyCost": { "const": 0 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": ["exhaust"],
+  "effects": [
+    { "op": "swap", "mode": "free" },
+    { "op": "draw", "amount": { "param": "drawAmount" } }
+  ],
+  "graftEligible": false,
+  "unlockId": "unlock.unscheduled_work",
+  "artId": "card.switchblade"
+}

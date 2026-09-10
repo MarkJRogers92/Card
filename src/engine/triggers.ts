@@ -13,7 +13,7 @@ export const MODIFIER_BINDING_VERSION = 1 as const;
 export const MAX_GENERATED_EVENTS_PER_DISPATCH = 256 as const;
 export const MAX_MODIFIERS_PER_CHANNEL = 256 as const;
 
-export type TriggerEventKind = "card_played" | "after_swap";
+export type TriggerEventKind = "card_played" | "after_swap" | "primary_reaction";
 export type TriggerLimitScope = "turn" | "combat";
 export type TriggerSwapMode = "manual" | "card_free";
 
@@ -33,7 +33,8 @@ export type TriggerCondition =
 export type TriggerEffectTarget =
   | "source_actor"
   | "card_owner"
-  | "incoming_front";
+  | "incoming_front"
+  | "current_front";
 
 export type TriggerEffect =
   | {
@@ -84,7 +85,16 @@ export interface AfterSwapTriggerEvent {
   readonly mode: TriggerSwapMode;
 }
 
-export type TriggerEvent = CardPlayedTriggerEvent | AfterSwapTriggerEvent;
+export interface PrimaryReactionTriggerEvent {
+  readonly eventVersion: typeof TRIGGER_EVENT_VERSION;
+  readonly kind: "primary_reaction";
+  readonly frontActorId: string;
+}
+
+export type TriggerEvent =
+  | CardPlayedTriggerEvent
+  | AfterSwapTriggerEvent
+  | PrimaryReactionTriggerEvent;
 
 export interface TriggerActivationProjection {
   readonly sourceId: string;
@@ -431,6 +441,12 @@ function resolveEffectTarget(
       throw new Error("card_owner target requires a character-owned card event.");
     }
     return event.cardOwnerActorId;
+  }
+  if (target === "current_front") {
+    if (event.kind !== "primary_reaction") {
+      throw new Error("current_front target requires a primary_reaction event.");
+    }
+    return event.frontActorId;
   }
   if (event.kind !== "after_swap") {
     throw new Error("incoming_front target requires an after_swap event.");

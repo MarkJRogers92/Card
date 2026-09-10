@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "shaper.double_booking",
+  "name": "Double Booking",
+  "owner": "shaper",
+  "category": "attack",
+  "rarity": "uncommon",
+  "parameters": {
+    "damage": { "base": 7, "upgraded": 10 },
+    "prime": { "base": 2, "upgraded": 3 }
+  },
+  "energyCost": { "const": 2 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "form",
+    "id": "loop",
+    "prime": { "param": "prime" }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": "unlock.unscheduled_work",
+  "artId": "card.double_booking"
+}

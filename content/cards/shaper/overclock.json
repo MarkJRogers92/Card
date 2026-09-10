@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "shaper.overclock",
+  "name": "Overclock",
+  "owner": "shaper",
+  "category": "skill",
+  "rarity": "rare",
+  "parameters": {
+    "drawAmount": { "base": 2, "upgraded": 3 }
+  },
+  "energyCost": { "const": 0 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": ["exhaust"],
+  "effects": [
+    { "op": "draw", "amount": { "param": "drawAmount" } }
+  ],
+  "graftEligible": false,
+  "unlockId": "unlock.office_equipment",
+  "artId": "card.overclock"
+}

@@ -1,6 +1,6 @@
 # M07 — Duo Handoffs, Imprints, and Needle Reactions
 
-Status: **implementation complete; cloud verification pending**
+Status: **accepted**
 
 ## Scope
 
@@ -36,9 +36,9 @@ Reaction damage ignores Strength and Weak, uses one final floor, respects Expose
 
 Content semantic validation now rejects owner/ingredient mismatches: Source cards require Material, Shaper cards require Form, and Crew cards cannot carry an ingredient.
 
-## Local verification
+## Acceptance record
 
-The full acceptance sequence passed locally on 2026-09-10 with the locked dependencies:
+M07 was accepted on 2026-09-10. GitHub Actions run `34506188040` passed against implementation commit `c0350b4c42b571fc038fcfcfff7b1151bf7dd59d` using Node 24.20.0 on Ubuntu. The same full sequence passed locally with the locked dependencies:
 
 - `npm ci`
 - `npm run check`
@@ -52,8 +52,6 @@ The full acceptance sequence passed locally on 2026-09-10 with the locked depend
 - `npm run test:m06`
 - `npm run test:m07`
 - `npm run build`
-
-Cloud acceptance is intentionally not claimed until the branch workflow passes against the pushed commit.
 
 ## Next milestone after acceptance
 

@@ -4,7 +4,7 @@
 
 **M07 — duo handoffs, Imprints, and Needle Reactions**
 
-M07 builds on accepted M02–M06 infrastructure. The implementation is complete locally on `codex/m07-imprint-needle-reactions`; cloud acceptance is pending the branch workflow.
+M07 is accepted on `codex/m07-imprint-needle-reactions`. GitHub Actions run `34506188040` passed the full locked suite against implementation commit `c0350b4c42b571fc038fcfcfff7b1151bf7dd59d`.
 
 ## M07 acceptance checklist
 
@@ -21,7 +21,7 @@ M07 builds on accepted M02–M06 infrastructure. The implementation is complete 
 - [x] Imprint clears when combat ends
 - [x] Prior M00–M06 suites pass locally
 - [x] Production build passes locally
-- [ ] GitHub Actions passes against the pushed M07 head
+- [x] GitHub Actions passes against the pushed M07 implementation
 
 ## M06 acceptance checklist
 
@@ -68,8 +68,14 @@ The acceptance run passed:
 
 The M06 suite verifies Poison-before-action, damage-over-time Block bypass, one Bleed tick per attack move regardless of hit count, player/enemy Weak and Exposed duration decay, persistent Strength, one-floor basis-point damage arithmetic, and visible phase-7 escalation forecasts. The property suite independently checks randomized Strength/Weak/Exposed combinations against the exact integer formula.
 
+## M07 verification record
+
+M07 was implemented on `codex/m07-imprint-needle-reactions` and accepted on 2026-09-10. GitHub Actions run `34506188040` passed implementation commit `c0350b4c42b571fc038fcfcfff7b1151bf7dd59d` using Node 24.20.0 on a standard Ubuntu GitHub-hosted runner.
+
+The acceptance run passed installation, type/generated-content checks, all unit/content/replay/property suites, every focused M03–M07 suite, and the production build. The focused M07 matrix covers all four Needle recipes at Potencies 1–3 in both handoff directions, plus Support/Crew behavior, Imprint replacement and capping, swap accounting, damage modifiers, multi-hit Block, deterministic retargeting, phase persistence, and combat-end cleanup.
+
 `main` remains unchanged by M02–M07 work.
 
 ## Next eligible milestone
 
-None until M07 cloud acceptance. After acceptance: **M08 — the remaining twelve Reactions and serializable delayed packets.**
+**M08 — the remaining twelve Reactions and serializable delayed packets.**

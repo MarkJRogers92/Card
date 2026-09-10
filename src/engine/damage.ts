@@ -30,6 +30,18 @@ export interface DamageResolution {
   readonly results: readonly DamageResult[];
 }
 
+export interface HealingResult {
+  readonly targetActorId: string;
+  readonly requestedHealing: number;
+  readonly hpGained: number;
+  readonly remainingHp: number;
+}
+
+export interface HealingResolution {
+  readonly state: AuthoritativeState;
+  readonly result: HealingResult;
+}
+
 export interface AttackDamageCalculation {
   readonly attackerActorId: string;
   readonly targetActorId: string;
@@ -42,13 +54,17 @@ export interface AttackDamageCalculation {
   readonly amount: number;
 }
 
-export interface ReactionDamageCalculation {
+export interface ReactionBaseDamageCalculation {
   readonly targetActorId: string;
-  readonly coefficient: number;
-  readonly potency: number;
+  readonly amountBeforeTargetModifiers: number;
   readonly exposedApplied: boolean;
   readonly targetMultiplierBps: number;
   readonly amount: number;
+}
+
+export interface ReactionDamageCalculation extends ReactionBaseDamageCalculation {
+  readonly coefficient: number;
+  readonly potency: number;
 }
 
 function assertNonnegativeInteger(label: string, value: number): void {
@@ -102,6 +118,7 @@ function finalizeCombat(
     outcome,
     phase: outcome === "active" ? combat.phase : "ended",
     imprint: outcome === "active" ? combat.imprint : null,
+    scheduledPackets: outcome === "active" ? combat.scheduledPackets : [],
   };
 }
 
@@ -213,6 +230,35 @@ export function createDirectDamagePacket(amount: number): DirectDamagePacket {
   };
 }
 
+export function calculateReactionDamageFromBase(
+  combat: CombatState,
+  targetActorId: string,
+  amountBeforeTargetModifiers: number,
+): ReactionBaseDamageCalculation {
+  assertNonnegativeInteger(
+    "Reaction damage before target modifiers",
+    amountBeforeTargetModifiers,
+  );
+  const target = requireActor(combat, targetActorId);
+  const exposedApplied = getStatusAmount(target.statuses, "exposed") > 0;
+  const targetMultiplierBps = exposedApplied
+    ? EXPOSED_MULTIPLIER_BPS
+    : DAMAGE_MULTIPLIER_BASIS;
+  const resolved =
+    (BigInt(amountBeforeTargetModifiers) * BigInt(targetMultiplierBps)) /
+    BigInt(DAMAGE_MULTIPLIER_BASIS);
+  if (resolved > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError("Resolved Reaction damage exceeds the safe integer range.");
+  }
+  return {
+    targetActorId,
+    amountBeforeTargetModifiers,
+    exposedApplied,
+    targetMultiplierBps,
+    amount: Number(resolved),
+  };
+}
+
 export function calculateReactionDamage(
   combat: CombatState,
   targetActorId: string,
@@ -223,24 +269,19 @@ export function calculateReactionDamage(
   if (!Number.isSafeInteger(potency) || potency < 1 || potency > 3) {
     throw new RangeError("Reaction Potency must be an integer from 1 to 3.");
   }
-  const target = requireActor(combat, targetActorId);
-  const exposedApplied = getStatusAmount(target.statuses, "exposed") > 0;
-  const targetMultiplierBps = exposedApplied
-    ? EXPOSED_MULTIPLIER_BPS
-    : DAMAGE_MULTIPLIER_BASIS;
-  const resolved =
-    (BigInt(coefficient) * BigInt(potency) * BigInt(targetMultiplierBps)) /
-    BigInt(DAMAGE_MULTIPLIER_BASIS);
-  if (resolved > BigInt(Number.MAX_SAFE_INTEGER)) {
-    throw new RangeError("Resolved Reaction damage exceeds the safe integer range.");
+  const base = BigInt(coefficient) * BigInt(potency);
+  if (base > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError("Reaction base damage exceeds the safe integer range.");
   }
-  return {
+  const calculation = calculateReactionDamageFromBase(
+    combat,
     targetActorId,
+    Number(base),
+  );
+  return {
+    ...calculation,
     coefficient,
     potency,
-    exposedApplied,
-    targetMultiplierBps,
-    amount: Number(resolved),
   };
 }
 
@@ -309,6 +350,33 @@ export function applyDirectDamageToRule(
     state: { ...state, combat: nextCombat },
     targets,
     results,
+  };
+}
+
+export function healActor(
+  state: AuthoritativeState,
+  actorId: string,
+  amount: number,
+): HealingResolution {
+  assertNonnegativeInteger("Healing", amount);
+  const combat = requireCombat(state);
+  const actor = requireActor(combat, actorId);
+  const hpGained = Math.min(amount, actor.maxHp - actor.hp);
+  const nextActor: CombatActor = { ...actor, hp: actor.hp + hpGained };
+  return {
+    state: {
+      ...state,
+      combat: {
+        ...combat,
+        actors: { ...combat.actors, [actorId]: nextActor },
+      },
+    },
+    result: {
+      targetActorId: actorId,
+      requestedHealing: amount,
+      hpGained,
+      remainingHp: nextActor.hp,
+    },
   };
 }
 

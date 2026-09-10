@@ -72,7 +72,9 @@ Validated on 2026-09-10 with Node 24.20.0 and npm 11.19.0:
 - `docs/DESIGN.md` remains byte-identical to the supplied specification
   attachment (SHA-256 `e91f61fe50a37e09221b318e04eed0af70b4e7da5d756f30df37528b640e511a`).
 
-The M01 commit SHA is supplied in the session handoff; no remote push was made.
+The accepted local implementation ends at `67249386`. On 2026-09-10, the full
+accepted repository tree was published to `MarkJRogers92/Card` on GitHub
+`main`. GitHub is now the shared source for continuation in other tasks.
 
 ## Next eligible milestone
 

@@ -4,10 +4,11 @@ This repository contains the browser-first foundation for *Joint Liability*, a
 single-player roguelike deckbuilder about two medically inseparable fugitives.
 The complete design snapshot is preserved in [docs/DESIGN.md](docs/DESIGN.md).
 
-M00 is intentionally not a playable game. It establishes the strict TypeScript,
-Vite, React, PixiJS, JSON Schema/Ajv, Vitest, fast-check, and Playwright
-toolchain; the rendering-independent engine version boundary; and the
-documentation/task contract for later milestones.
+M00 and M01 are complete. The project now includes the strict TypeScript/Vite
+foundation, rendering-independent engine boundary, authoritative Draft 2020-12
+content schemas, generated types, Ajv structural and semantic validation,
+deterministic validation/report commands, and focused fixtures. It is
+intentionally not playable yet; combat state begins in M02.
 
 ## Requirements
 
@@ -21,9 +22,10 @@ baseline required by the current Vite/Vitest toolchain.
 npm ci
 npm run check
 npm run test:engine
+npm run test:content
 npm run build
 ~~~
 
-The future command surface is present now so automation can depend on stable
-names. Commands for milestones after M00 exit nonzero with an explicit
-not-implemented message until their milestone is delivered.
+See [docs/STATUS.md](docs/STATUS.md) for the accepted milestone, verification
+evidence, and next entry point. Commands for later milestones exit nonzero with
+an explicit not-implemented message until their milestone is delivered.

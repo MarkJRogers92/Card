@@ -25,6 +25,7 @@
     "test:m05": "vitest run tests/unit/enemy-intents.test.ts",
     "test:m06": "vitest run tests/unit/status-timing.test.ts tests/properties/status-damage.property.test.ts",
     "test:m07": "vitest run tests/unit/imprint-reactions.test.ts tests/properties/imprint-swap.property.test.ts",
+    "test:m08": "vitest run tests/unit/remaining-reactions-delayed.test.ts",
     "simulate": "node tools/not-implemented.mjs M33 \"simulation\"",
     "assets:audit": "node tools/not-implemented.mjs M35 \"asset audit\"",
     "build": "vite build"

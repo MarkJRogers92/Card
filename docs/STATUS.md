@@ -2,42 +2,44 @@
 
 ## Current milestone
 
-**M12 — Source card pool — accepted**
+**M13 — Shaper, Crew, and junk card pool — accepted**
 
-M12 is accepted on `claude/m12-source-card-pool`. GitHub Actions run
-[`34539977287`](https://github.com/MarkJRogers92/Card/actions/runs/34539977287)
+M13 is accepted on `claude/m13-shaper-crew-junk-pool`. GitHub Actions run
+[`34542002526`](https://github.com/MarkJRogers92/Card/actions/runs/34542002526)
 passed the substantive implementation at
-`7b844322f4aa906b3fbb51d5662111b67cc522af`, including the complete
+`c0fc846c1695886497ef6af6ea7d966ae2dd0907`, including the complete
 engine/regression stack, production build, and the M10 Chromium
 browser/replay regression.
 
-## M12 acceptance checklist
+## M13 acceptance checklist
 
-- [x] All 12 Source pool cards implemented as schema-valid production content
-      under `content/cards/source/`, matching `docs/DESIGN.md` Section 3.6
-      base and upgraded values exactly
-- [x] No card-ID branches added to the engine; all behavior flows through
-      `src/engine/card-content.ts`'s generic `effect.op` dispatch and the
-      M11 lifecycle
-- [x] Blood Bank and Unlicensed Procedure HP costs encoded through the card
-      cost/additional-cost path, preserving pay-costs-before-base-effects
-- [x] Surgical Tape (Retain) and Emergency Rebuild (Exhaust) use the M11
-      keyword lifecycle directly
-- [x] Thick Skin deploys and installs its Protocol trigger through the
-      existing M09 trigger system; non-retroactive; independently stacking
-      per copy
-- [x] Unlicensed Procedure's HP cost is collected even when its damage kills
-      the last enemy
-- [x] Multi-hit attacks (Bone Saw, Double Take) resolve as independent hits
-- [x] Lead ingredient-bearing Source cards continue to Prime/React; Support
-      Source cards perform base effects without Priming or Reacting
-- [x] Card conservation holds across all five zones
-- [x] The two genuinely missing generic primitives (`gainEnergy`,
-      `finishCardPlayLifecycle` tolerating a card's own base effect ending
-      combat) are documented and covered by tests; no other primitives were
-      added
-- [x] Prior M00–M11 suites continue to pass, including the full M11
-      lifecycle suite after the `finishCardPlayLifecycle` fix
+- [x] All 12 Shaper cards, 4 Crew cards, Invoice, and Fine Print
+      implemented as schema-valid production content, matching
+      `docs/DESIGN.md` Sections 3.7–3.9 base and upgraded values exactly
+- [x] No card-ID branches added to the engine
+- [x] Fan Service/Broad Hint correctly hit every living enemy
+- [x] Draw effects (Switchblade, Cross Examination, Overclock, Cross
+      Training) and free-swap effects (Switchblade, Sudden Exit) work
+      through existing deck/duo primitives
+- [x] Double Booking's varying Ingredient Prime (2 base / 3 upgraded)
+      Primes the Imprint correctly
+- [x] Operating Manual deploys, installs its Protocol through the
+      trigger system, targets whoever is currently Front (not its own
+      owner), respects a once-per-turn limit, and stacks independently
+      across copies
+- [x] Reservoir boosts existing Imprint Potency (capped at 3) and is a
+      documented no-op with no existing Imprint; Retain preserved
+- [x] Fine Print's turn-end hand-liability HP loss (bypassing Block)
+      resolves before the M11 Fleeting/Retain/discard settlement, for
+      one or many copies, including the case where it ends the run
+- [x] Invoice remains fully inert and unplayable
+- [x] Card conservation holds across all zones with the new content
+- [x] The five genuinely missing generic primitives (multi-target
+      resolution, `draw`/`swap`/`boost_imprint` dispatch, `direct`-category
+      damage, the `primary_reaction` Protocol event, and the `liability`
+      keyword) are documented and covered by tests; no other primitives
+      were added
+- [x] Prior M00–M12 suites continue to pass unmodified
 - [x] Production build passes
 - [x] M10 Playwright browser/headless hash parity remains green
 
@@ -55,37 +57,46 @@ browser/replay regression.
 - **M09 — bounded trigger/modifier dispatch and initial passives**: accepted on `codex/m09-trigger-passives`; final GitHub Actions run `34526337720`.
 - **M10 — minimal playable browser combat**: accepted on `codex/m10-playable-combat`; final head `105369de44b1cafa11ec5cdaf093becc01e24198` passed GitHub Actions run `34529482114`.
 - **M11 — card keyword lifecycle, Protocols, and additional HP costs**: accepted on `codex/m11-keyword-lifecycle`; final head `b40c0cc00e1cfabb1846241a9589c2eabb824c64` passed GitHub Actions run `34537126146`.
+- **M12 — Source card pool**: accepted on `claude/m12-source-card-pool`; final head `4cd56b45e5e91a7514207f9e487a999c40a483a8` passed GitHub Actions run `34540152598`.
 
-## M12 verification record
+## M13 verification record
 
-`src/engine/card-content.ts` is the reusable bridge from validated
-content-schema card definitions to the M03–M11 engine primitives. It owns
-value-expression resolution, base/upgraded parameter resolution,
-additional-HP-cost resolution, base-effect dispatch by `effect.op`, and
-the `playContentCard` orchestration that composes the M07 classification
-snapshot, the M11 cost/keyword/zone lifecycle, and the M07/M08
-ingredient/Reaction/trigger step. It does not duplicate any of those
-systems and does not branch on card ID or definition ID.
+`src/engine/card-content.ts` gained multi-target resolution
+(`all_enemies`/`both`/`front`/`reserve`, reusing `targeting.ts`), and
+dispatch for `draw`, `swap` (free mode), `boost_imprint`, and
+`direct`-category `damage` (routed through the existing
+`applyHpLossBypassingBlock`). `src/engine/imprint.ts` gained
+`boostImprintPotency`. `src/engine/triggers.ts` gained a second Protocol
+trigger event kind, `"primary_reaction"` (dispatched from
+`passive-card.ts` alongside the existing `card_played` dispatch,
+whenever a primary Reaction actually resolved), and a `"current_front"`
+trigger effect target. `schemas/common.schema.json` gained a
+`"liability"` keyword, resolved by a new `card-content.ts` export,
+`endPlayerTurnWithContentCards`, that runs before the unmodified M11
+`endPlayerTurnWithCardLifecycle`. None of these branch on card ID, and
+none altered any previously accepted behavior — the complete M00–M12
+suites were re-run and still pass unmodified.
 
-GitHub Actions run `34539977287` passed installation, type/generated-content
-checks, all general unit/content/replay/property suites, every focused
-M03–M12 command, production build, Chromium installation, and the M10
-Playwright browser/replay regression.
+GitHub Actions run `34542002526` passed installation,
+type/generated-content checks, all general unit/content/replay/property
+suites, every focused M03–M13 command, production build, Chromium
+installation, and the M10 Playwright browser/replay regression.
 
-The focused M12 fixtures independently verify all 12 cards at base and
-upgraded values, plus the boundary/integration coverage listed in the
-milestone doc (`docs/milestones/M12_SOURCE_CARD_POOL.md`).
+The focused M13 fixtures independently verify all 16 real cards plus
+Invoice and Fine Print at base and upgraded values, plus the
+boundary/integration coverage listed in the milestone doc
+(`docs/milestones/M13_SHAPER_CREW_JUNK_POOL.md`).
 
-The M10 checkpoint remains intentionally stable as a regression fixture.
-Its six-card debug table was not touched or expanded; M12 content flows
-through `src/engine/card-content.ts` instead.
+The M10 checkpoint remains intentionally stable as a regression fixture
+and was not touched.
 
-`main` remains unchanged by M02–M12 work.
+`main` remains unchanged by M02–M13 work.
 
 ## Next eligible milestone
 
-**M13 — add all 12 Shaper cards, 4 Crew cards, Invoice, and Fine Print.**
-Reuse `src/engine/card-content.ts` and the M11 lifecycle; extend its
-`effect.op` dispatch only for operations M13 content actually needs (for
-example `draw`, `boost_imprint`). Do not begin M14 relic content until
-M13 is accepted.
+**M14 — add Shared Warranty and the Anatomy/Circuit relics through Organ
+Bag and Parallel Port** (the first five relic definitions). Reuse
+existing modifier/trigger primitives where possible; extend
+`card-content.ts`/the relic-equivalent executor only for operations M14
+content genuinely needs. Do not begin M15 (the remaining five relics)
+until M14 is accepted.

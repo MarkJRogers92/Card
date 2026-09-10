@@ -1,6 +1,10 @@
 import type { CombatState } from "./combat";
 import { getReserveCharacterId } from "./targeting";
 import type { AuthoritativeState } from "./state";
+import {
+  TRIGGER_EVENT_VERSION,
+  dispatchTriggerEvent,
+} from "./triggers";
 
 export const FIRST_MANUAL_SWAP_COST = 0 as const;
 export const ADDITIONAL_MANUAL_SWAP_COST = 1 as const;
@@ -110,8 +114,17 @@ export function swapCharacters(
     energy: combat.energy - energyPaid,
     manualSwapsUsedThisTurn,
   };
+  let nextState: AuthoritativeState = { ...state, combat: nextCombat };
+  if (nextCombat.triggerBindings.length > 0) {
+    nextState = dispatchTriggerEvent(nextState, {
+      eventVersion: TRIGGER_EVENT_VERSION,
+      kind: "after_swap",
+      incomingFrontActorId: frontCharacterId,
+      mode,
+    }).state;
+  }
   return {
-    state: { ...state, combat: nextCombat },
+    state: nextState,
     mode,
     previousFrontCharacterId,
     frontCharacterId,

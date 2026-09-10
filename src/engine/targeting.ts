@@ -11,16 +11,18 @@ export type TargetRule =
 
 function requirePlayerFormation(
   combat: CombatState,
-): readonly [string, string] {
+): { readonly players: readonly [string, string]; readonly front: string } {
   if (combat.playerCharacterIds === null || combat.frontCharacterId === null) {
     throw new Error("Player formation has not been initialized.");
   }
-  return combat.playerCharacterIds;
+  return {
+    players: combat.playerCharacterIds,
+    front: combat.frontCharacterId,
+  };
 }
 
 export function getReserveCharacterId(combat: CombatState): string {
-  const players = requirePlayerFormation(combat);
-  const front = combat.frontCharacterId;
+  const { players, front } = requirePlayerFormation(combat);
   if (front === players[0]) {
     return players[1];
   }
@@ -34,8 +36,7 @@ export function resolveTargetRule(
   combat: CombatState,
   rule: TargetRule,
 ): readonly string[] {
-  const players = requirePlayerFormation(combat);
-  const front = combat.frontCharacterId;
+  const { players, front } = requirePlayerFormation(combat);
 
   switch (rule.kind) {
     case "front":

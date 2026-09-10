@@ -16,11 +16,15 @@ import type {
   EnemyControllerState,
   SelectedEnemyIntent,
 } from "./enemies";
+import type { Imprint } from "./imprint";
+import {
+  resolveScheduledPacketsAtPlayerTurnStart,
+  type ScheduledReactionPacket,
+} from "./scheduled";
 import type { AuthoritativeState } from "./state";
 import { decayDurationStatusesForSide } from "./status-runtime";
-import type { Imprint } from "./imprint";
 
-export const COMBAT_STATE_VERSION = 5 as const;
+export const COMBAT_STATE_VERSION = 6 as const;
 export const DEFAULT_ENERGY_PER_TURN = 3 as const;
 export const DEFAULT_CARDS_PER_TURN = 5 as const;
 export const DEFAULT_MAX_HAND_SIZE = 10 as const;
@@ -53,6 +57,8 @@ export interface CombatState {
   readonly enemyPhaseResolved: boolean;
   readonly manualSwapsUsedThisTurn: number;
   readonly imprint: Imprint | null;
+  readonly scheduledPackets: readonly ScheduledReactionPacket[];
+  readonly nextScheduledPacketOrdinal: number;
 }
 
 export interface CombatRuleOverrides {
@@ -140,6 +146,8 @@ export function startCombat(
     enemyPhaseResolved: true,
     manualSwapsUsedThisTurn: 0,
     imprint: null,
+    scheduledPackets: [],
+    nextScheduledPacketOrdinal: 1,
   };
   assertCardConservation(combat.deck);
 
@@ -232,25 +240,40 @@ export function beginPlayerTurn(state: AuthoritativeState): AuthoritativeState {
     throw new Error("Cannot begin the next player turn before the enemy phase resolves.");
   }
 
+  const turnStartState: AuthoritativeState = {
+    ...state,
+    combat: {
+      ...combat,
+      actors: clearBlockForSide(combat.actors, "player"),
+      turnNumber: combat.turnNumber + 1,
+      phase: "player",
+      energy: combat.rules.energyPerTurn,
+      manualSwapsUsedThisTurn: 0,
+    },
+  };
+  const scheduled = resolveScheduledPacketsAtPlayerTurnStart(turnStartState);
+  if (scheduled.state.combat?.outcome !== "active") {
+    return scheduled.state;
+  }
+  const afterScheduled = scheduled.state.combat;
+  if (afterScheduled === null) {
+    throw new Error("Scheduled packet resolution removed combat state.");
+  }
+
   const draw = drawCards(
-    combat.deck,
-    state.rng,
-    combat.rules.cardsPerTurn,
-    combat.rules.maxHandSize,
+    afterScheduled.deck,
+    scheduled.state.rng,
+    afterScheduled.rules.cardsPerTurn,
+    afterScheduled.rules.maxHandSize,
   );
   const nextCombat: CombatState = {
-    ...combat,
-    actors: clearBlockForSide(combat.actors, "player"),
-    turnNumber: combat.turnNumber + 1,
-    phase: "player",
-    energy: combat.rules.energyPerTurn,
+    ...afterScheduled,
     deck: draw.deck,
-    manualSwapsUsedThisTurn: 0,
   };
   assertCardConservation(nextCombat.deck);
 
   return {
-    ...state,
+    ...scheduled.state,
     rng: draw.rng,
     combat: nextCombat,
   };

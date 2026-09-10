@@ -32,6 +32,15 @@ Energy, targeting, damage, or other authoritative state.
 - `enemySpawnOrder` is serialized separately from displayed enemy execution order and supplies deterministic primary-Reaction reacquisition.
 - The M07 resolver exposes engine operations, not content-ID conditionals or UI behavior. The future card compiler will map validated card definitions into these operations.
 
+## M08 delayed-packet boundary
+
+- `src/engine/reactions.ts` contains all sixteen material/form recipes as declarative data consumed by the same generic resolver.
+- `src/engine/scheduled.ts` owns serializable delayed Reaction packets. Packets contain only plain authoritative data and cannot contain another scheduling operation, making recursive repeats structurally unavailable.
+- A delayed Reaction damage effect snapshots its amount after source-side calculation and before target-side direct-damage modifiers. Exposed is therefore reevaluated when the delayed hit lands without reapplying source-side modifiers.
+- Loop packets store the selected enemy actor ID at creation. A dead delayed target fizzles; scheduled packets never use primary-Reaction spawn-order reacquisition.
+- `beginPlayerTurn` clears player Block, refills Energy/resets manual swaps, resolves due player-turn-start packets, and only then draws cards. Lethal scheduled effects can therefore end combat before a new hand is drawn.
+- Scheduled packet IDs use a monotonic combat-local ordinal retained in authoritative state. Consumed packet IDs are not reused.
+
 ## M00 implementation
 
 - src/engine/bootstrap.ts exports the versioned, frozen bootstrap snapshot.

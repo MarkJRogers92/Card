@@ -21,7 +21,7 @@ not import the client.
 
 React owns menus and accessible controls. PixiJS will own battlefield
 presentation when that adapter is introduced. Neither layer owns HP, deck order,
-Energy, targeting, damage, or other authoritative state.
+Energy, targeting, damage, triggers, or other authoritative state.
 
 ## M07 duo and Reaction boundary
 
@@ -40,6 +40,18 @@ Energy, targeting, damage, or other authoritative state.
 - Loop packets store the selected enemy actor ID at creation. A dead delayed target fizzles; scheduled packets never use primary-Reaction spawn-order reacquisition.
 - `beginPlayerTurn` clears player Block, refills Energy/resets manual swaps, resolves due player-turn-start packets, and only then draws cards. Lethal scheduled effects can therefore end combat before a new hand is drawn.
 - Scheduled packet IDs use a monotonic combat-local ordinal retained in authoritative state. Consumed packet IDs are not reused.
+
+## M09 trigger/modifier boundary
+
+- `src/engine/triggers.ts` owns deterministic trigger eligibility, ordering, turn/combat counters, non-consuming previews, bounded dispatch, and generic modifier collection.
+- Trigger ties resolve by declared priority, stable source ID, then stable trigger ID. Modifier ties use the same ordering shape with modifier ID as the final key.
+- Trigger bindings and counters are authoritative combat data. Turn-scoped counters reset during `beginPlayerTurn` before scheduled M08 packets and the normal draw; combat-scoped counters persist.
+- M09 enforces a 256 generated activation/effect development ceiling per dispatcher invocation and throws rather than silently truncating work. Current M09 effects cannot emit descendant trigger events, so self-reentry is structurally unavailable in this slice. Future command-level composition must carry Section 8.12 ancestry metadata and preserve the command-wide ceiling.
+- `src/engine/initial-passives.ts` declares Morrow/Thick Blood, Switch/Open Channel, and Shared Warranty as bindings rather than card/relic-ID branches in gameplay resolvers.
+- `src/engine/duo.ts` emits a generic `after_swap` event only after the atomic Energy/formation/manual-count state is built. A card-driven free swap can therefore trigger Shared Warranty without consuming the manual free-swap allowance.
+- `src/engine/passive-card.ts` wraps the M08 post-card ingredient/Reaction resolver and emits `card_played` afterward using the already snapshotted classification. It does not reclassify after base effects.
+- Modifier dispatch currently performs deterministic channel/condition selection and ordering. Arithmetic remains with the channel owner so rules such as one-final-floor damage calculation are not accidentally generalized incorrectly.
+- Run- and command-scoped counter lifetime is not faked inside combat state. Those scopes are completed when the corresponding command/run orchestration exists.
 
 ## M00 implementation
 

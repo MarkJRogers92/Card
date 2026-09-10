@@ -26,6 +26,7 @@
     "test:m06": "vitest run tests/unit/status-timing.test.ts tests/properties/status-damage.property.test.ts",
     "test:m07": "vitest run tests/unit/imprint-reactions.test.ts tests/properties/imprint-swap.property.test.ts",
     "test:m08": "vitest run tests/unit/remaining-reactions-delayed.test.ts",
+    "test:m09": "vitest run tests/unit/trigger-passives.test.ts",
     "simulate": "node tools/not-implemented.mjs M33 \"simulation\"",
     "assets:audit": "node tools/not-implemented.mjs M35 \"asset audit\"",
     "build": "vite build"
@@ -41,7 +42,6 @@
     "@types/node": "22.20.2",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@vitejs/plugin-react": "6.1.1",
     "fast-check": "4.9.0",
     "json-schema-to-typescript": "16.0.0",
     "typescript": "7.0.2",

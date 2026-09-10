@@ -12,9 +12,13 @@ import {
   shuffleDrawPile,
   type DeckState,
 } from "./deck";
+import type {
+  EnemyControllerState,
+  SelectedEnemyIntent,
+} from "./enemies";
 import type { AuthoritativeState } from "./state";
 
-export const COMBAT_STATE_VERSION = 2 as const;
+export const COMBAT_STATE_VERSION = 3 as const;
 export const DEFAULT_ENERGY_PER_TURN = 3 as const;
 export const DEFAULT_CARDS_PER_TURN = 5 as const;
 export const DEFAULT_MAX_HAND_SIZE = 10 as const;
@@ -39,6 +43,10 @@ export interface CombatState {
   readonly actors: Readonly<Record<string, CombatActor>>;
   readonly playerCharacterIds: readonly [string, string] | null;
   readonly frontCharacterId: string | null;
+  readonly enemyOrder: readonly string[];
+  readonly enemyControllers: Readonly<Record<string, EnemyControllerState>>;
+  readonly selectedEnemyIntents: readonly SelectedEnemyIntent[];
+  readonly enemyPhaseResolved: boolean;
 }
 
 export interface CombatRuleOverrides {
@@ -118,6 +126,10 @@ export function startCombat(
     actors: {},
     playerCharacterIds: null,
     frontCharacterId: null,
+    enemyOrder: [],
+    enemyControllers: {},
+    selectedEnemyIntents: [],
+    enemyPhaseResolved: true,
   };
   assertCardConservation(combat.deck);
 
@@ -196,6 +208,13 @@ export function beginPlayerTurn(state: AuthoritativeState): AuthoritativeState {
   if (combat.phase !== "setup" && combat.phase !== "enemy") {
     throw new Error(`Cannot begin a player turn from phase ${combat.phase}.`);
   }
+  if (
+    combat.phase === "enemy" &&
+    combat.enemyOrder.length > 0 &&
+    !combat.enemyPhaseResolved
+  ) {
+    throw new Error("Cannot begin the next player turn before the enemy phase resolves.");
+  }
 
   const draw = drawCards(
     combat.deck,
@@ -257,6 +276,7 @@ export function endPlayerTurn(state: AuthoritativeState): AuthoritativeState {
     phase: "enemy",
     energy: 0,
     deck,
+    enemyPhaseResolved: combat.enemyOrder.length === 0,
   };
   assertCardConservation(nextCombat.deck);
 

@@ -90,6 +90,29 @@ export type {
   DrawResult,
 } from "./deck";
 export {
+  ENEMY_CONTROLLER_VERSION,
+  ENEMY_INTENT_VERSION,
+  executeEnemyPhase,
+  initializeEnemyControllers,
+  projectEnemyIntent,
+  projectSelectedEnemyIntents,
+} from "./enemies";
+export type {
+  EnemyAiDefinition,
+  EnemyBehaviorDefinition,
+  EnemyBehaviorRegistry,
+  EnemyControllerSetup,
+  EnemyControllerState,
+  EnemyIntentEffectProjection,
+  EnemyIntentProjection,
+  EnemyMoveDefinition,
+  EnemyMoveEffect,
+  EnemyMoveExecution,
+  EnemyMoveTarget,
+  EnemyPhaseResolution,
+  SelectedEnemyIntent,
+} from "./enemies";
+export {
   EVENT_RECORD_VERSION,
   createEventRecords,
 } from "./events";

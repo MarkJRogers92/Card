@@ -11,15 +11,15 @@
   "packageManager": "npm@11.19.0",
   "scripts": {
     "check": "npm run content:types:check && tsc --noEmit",
-    "test:engine": "vitest run tests/unit/engine-bootstrap.test.ts",
+    "test:engine": "vitest run tests/unit",
     "test:content": "vitest run tests/content/content-validation.test.ts",
     "content:types": "node tools/generate-types.mjs",
     "content:types:check": "node tools/generate-types.mjs --check",
     "content:validate": "node tools/validate-content/index.mjs",
     "content:report": "node tools/content-report/index.mjs",
-    "test:replay": "node tools/not-implemented.mjs M02 \"replay validation\"",
+    "test:replay": "vitest run tests/replay/determinism.test.ts",
     "test:browser": "node tools/not-implemented.mjs M10 \"browser automation\"",
-    "test:properties": "node tools/not-implemented.mjs M02 \"property-based engine checks\"",
+    "test:properties": "vitest run tests/properties/engine-foundation.property.test.ts",
     "simulate": "node tools/not-implemented.mjs M33 \"simulation\"",
     "assets:audit": "node tools/not-implemented.mjs M35 \"asset audit\"",
     "build": "vite build"

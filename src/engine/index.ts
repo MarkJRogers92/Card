@@ -35,12 +35,38 @@ export type {
   CardOrigin,
 } from "./cards";
 export {
+  CARD_KEYWORDS,
+  CARD_LIFECYCLE_VERSION,
+  appendProtocolTriggerBindings,
+  assertCardPlayable,
+  cardHasKeyword,
+  endPlayerTurnWithCardLifecycle,
+  finishCardPlayLifecycle,
+  movePlayedCardForLifecycle,
+  payCardCosts,
+  playedCardDestination,
+  settlePlayerHandAtTurnEnd,
+  validateCardLifecycle,
+} from "./card-lifecycle";
+export type {
+  AdditionalHpCost,
+  CardCategory,
+  CardKeyword,
+  CardLifecycleSpec,
+  FinishCardLifecycleInput,
+  FinishCardLifecycleResolution,
+  HandSettlement,
+  HpCostResource,
+  PlayedCardDestination,
+} from "./card-lifecycle";
+export {
   COMBAT_STATE_VERSION,
   DEFAULT_CARDS_PER_TURN,
   DEFAULT_ENERGY_PER_TURN,
   DEFAULT_MAX_HAND_SIZE,
   beginPlayerTurn,
   endPlayerTurn,
+  endPlayerTurnWithSettledHand,
   initializeCombatActors,
   payEnergyCost,
   setFrontCharacter,

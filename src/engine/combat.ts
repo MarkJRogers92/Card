@@ -325,6 +325,29 @@ export function payEnergyCost(
   };
 }
 
+export function gainEnergy(
+  state: AuthoritativeState,
+  amount: number,
+): AuthoritativeState {
+  const combat = requireCombat(state);
+  if (combat.phase !== "player") {
+    throw new Error("Energy can only be gained during the player phase.");
+  }
+  assertNonnegativeInteger("Energy gain", amount);
+  const nextEnergy = combat.energy + amount;
+  if (!Number.isSafeInteger(nextEnergy)) {
+    throw new RangeError("Energy total exceeds the safe integer range.");
+  }
+
+  return {
+    ...state,
+    combat: {
+      ...combat,
+      energy: nextEnergy,
+    },
+  };
+}
+
 export function endPlayerTurnWithSettledHand(
   state: AuthoritativeState,
   settledDeck: DeckState,

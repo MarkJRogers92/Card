@@ -328,12 +328,27 @@ export function appendProtocolTriggerBindings(
   };
 }
 
+function requireCombatForFinish(state: AuthoritativeState): CombatState {
+  // Unlike requirePlayerCombat, this tolerates an outcome that just turned
+  // non-active: a non-Protocol card's own base effects (for example, a
+  // lethal attack) may legitimately end combat before its M11 finish step
+  // runs, and that step still needs to resolve the post-card ingredient
+  // against the final state rather than being blocked by the ended outcome.
+  if (state.combat === null) {
+    throw new Error("No combat is active.");
+  }
+  if (state.combat.phase !== "player" && state.combat.phase !== "ended") {
+    throw new Error("Card lifecycle operations require the player phase.");
+  }
+  return state.combat;
+}
+
 export function finishCardPlayLifecycle(
   state: AuthoritativeState,
   input: FinishCardLifecycleInput,
 ): FinishCardLifecycleResolution {
   validateCardLifecycle(input.lifecycle);
-  const combat = requirePlayerCombat(state);
+  const combat = requireCombatForFinish(state);
   const protocol = input.lifecycle.category === "protocol";
   const bindings = input.protocolBindings ?? [];
 

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "source.controlled_decay",
+  "name": "Controlled Decay",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {
+    "poison": { "base": 5, "upgraded": 7 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "material",
+    "id": "rot",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "apply_status",
+      "target": "selected_enemy",
+      "status": "poison",
+      "amount": { "param": "poison" }
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.controlled_decay"
+}

@@ -67,6 +67,7 @@ export {
   beginPlayerTurn,
   endPlayerTurn,
   endPlayerTurnWithSettledHand,
+  gainEnergy,
   initializeCombatActors,
   payEnergyCost,
   setFrontCharacter,
@@ -230,6 +231,19 @@ export type {
   M10StarterCardDefinition,
 } from "./m10-fight";
 export { resolvePostCardIngredientWithTriggers } from "./passive-card";
+export {
+  applyCardBaseEffects,
+  cardLifecycleSpecFor,
+  playContentCard,
+  resolveAdditionalHpCosts,
+  resolveCardParameters,
+  resolveValueExpr,
+} from "./card-content";
+export type {
+  CardBaseEffectsResult,
+  CardEffectContext,
+  PlayContentCardInput,
+} from "./card-content";
 export {
   NEEDLE_REACTION_RECIPES,
   REACTION_RECIPES,

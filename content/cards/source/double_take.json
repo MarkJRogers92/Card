@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "source.double_take",
+  "name": "Double Take",
+  "owner": "source",
+  "category": "attack",
+  "rarity": "uncommon",
+  "parameters": {
+    "damage": { "base": 4, "upgraded": 5 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "material",
+    "id": "echo",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 2,
+      "category": "attack"
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": "unlock.alternate_current",
+  "artId": "card.double_take"
+}

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "source.ground_fault",
+  "name": "Ground Fault",
+  "owner": "source",
+  "category": "attack",
+  "rarity": "uncommon",
+  "parameters": {
+    "damage": { "base": 8, "upgraded": 11 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "material",
+    "id": "volt",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": "unlock.alternate_current",
+  "artId": "card.ground_fault"
+}

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "source.bone_saw",
+  "name": "Bone Saw",
+  "owner": "source",
+  "category": "attack",
+  "rarity": "uncommon",
+  "parameters": {
+    "damage": { "base": 4, "upgraded": 5 }
+  },
+  "energyCost": { "const": 2 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "material",
+    "id": "gore",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 3,
+      "category": "attack"
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.bone_saw"
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "source.emergency_rebuild",
+  "name": "Emergency Rebuild",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "rare",
+  "parameters": {
+    "heal": { "base": 7, "upgraded": 10 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": ["exhaust"],
+  "effects": [
+    {
+      "op": "heal",
+      "target": "owner",
+      "amount": { "param": "heal" },
+      "recoveryCategory": "exhaust"
+    }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.emergency_rebuild"
+}

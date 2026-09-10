@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "source.tenderize",
+  "name": "Tenderize",
+  "owner": "source",
+  "category": "attack",
+  "rarity": "uncommon",
+  "parameters": {
+    "damage": { "base": 5, "upgraded": 7 },
+    "exposed": { "base": 1, "upgraded": 2 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "material",
+    "id": "gore",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    },
+    {
+      "op": "apply_status",
+      "target": "selected_enemy",
+      "status": "exposed",
+      "amount": { "param": "exposed" }
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.tenderize"
+}

@@ -2,30 +2,30 @@
 
 ## Current milestone
 
-**M01 — content schemas and validator**
+**M02 — authoritative engine foundation**
 
-M01 preserves the M00 repository, locked dependency graph, operating contract,
-minimal browser shell, and rendering-independent engine boundary while adding
-schema-first content validation for cards, relics, enemies, events, and shared
-effects. No production content or game systems are included.
+M02 preserves the accepted M00/M01 repository and content-validation contracts
+while adding deterministic authoritative state, versioned RNG streams, command
+IDs, canonical hashing, basic event records, and executable replay/property
+acceptance tests. No card-zone or combat behavior is included yet.
 
-## Acceptance checklist
+## M02 acceptance checklist
 
-- [x] Clean install (npm ci)
-- [x] Generated types are committed and drift-checked
-- [x] Structural and semantic validator uses strict Ajv 2020/allErrors
-- [x] Valid fixtures cover all four definition kinds and all effect operations
-- [x] Invalid fixtures cover unknown fields, IDs, parameters, operations,
-  references, predicates, expression depth, effect payloads, static cost
-  constraints, and required trigger filters
-- [x] Focused content suite (npm run test:content)
-- [x] Engine regression suite (npm run test:engine)
-- [x] Content validation and report CLI smokes
-- [x] Typecheck (npm run check)
-- [x] Production build (npm run build)
-- [x] Future command names fail transparently until implemented
+- [x] Authoritative state is rendering- and platform-independent
+- [x] Versioned seeded PRNG implementation is committed
+- [x] Gameplay RNG streams are independent for map, encounter, combat, reward,
+  and event selection
+- [x] Cosmetic RNG is separate from authoritative gameplay RNG
+- [x] Command IDs are deterministic and sequence-derived
+- [x] Basic event record IDs are deterministic and command-scoped
+- [x] Canonical serialization and versioned deterministic hashing are implemented
+- [x] 100 repeated seeded command sequences produce identical final hashes
+- [x] Interleaved cosmetic randomness does not affect gameplay results
+- [x] Property-based isolation checks pass
+- [x] Clean install, typecheck, engine/content tests, replay/property tests, and
+  production build pass in GitHub Actions
 
-## Verification record
+## M00 verification record
 
 M00 was validated on 2026-09-10 with Node 24.20.0 and npm 11.19.0:
 
@@ -39,8 +39,8 @@ M00 was validated on 2026-09-10 with Node 24.20.0 and npm 11.19.0:
 - npm run build — PASS; Vite 8.2.2 produced dist/ successfully.
 - Future script smoke — EXPECTED NONZERO; test:replay, test:browser,
   test:properties, simulate -- --seeds 1000, and assets:audit each returned 1
-  with an explicit planned-milestone message. M01 now owns test:content and
-  content:report.
+  with an explicit planned-milestone message. M01 later took ownership of
+  test:content and content:report.
 
 ## M01 verification record
 
@@ -72,12 +72,35 @@ Validated on 2026-09-10 with Node 24.20.0 and npm 11.19.0:
 - `docs/DESIGN.md` remains byte-identical to the supplied specification
   attachment (SHA-256 `e91f61fe50a37e09221b318e04eed0af70b4e7da5d756f30df37528b640e511a`).
 
-The accepted local implementation ends at `67249386`. On 2026-09-10, the full
-accepted repository tree was published to `MarkJRogers92/Card` on GitHub
-`main`. GitHub is now the shared source for continuation in other tasks.
+The accepted M00/M01 repository tree was published to `MarkJRogers92/Card` on
+GitHub `main` on 2026-09-10. GitHub is the shared continuation source.
+
+## M02 verification record
+
+M02 was implemented on `codex/m02-engine-foundation` and accepted on 2026-09-10.
+GitHub Actions run `34478451729` completed successfully using a standard Ubuntu
+GitHub-hosted runner with Node 24.20.0.
+
+The acceptance run passed:
+
+- `npm ci`
+- `npm run check`
+- `npm run test:engine`
+- `npm run test:content`
+- `npm run test:replay`
+- `npm run test:properties`
+- `npm run build`
+
+The M02 replay suite repeats 100 seeded 80-command sequences and requires
+identical gameplay samples, event IDs, RNG state, and authoritative-state hashes.
+It repeats the same sequences with cosmetic RNG noise interleaved and requires
+identical gameplay results. The property suite independently verifies gameplay
+RNG isolation from cosmetic draws.
+
+`main` has not been changed by M02 work.
 
 ## Next eligible milestone
 
-**M02 — authoritative state, versioned RNG streams, command IDs, canonical
-hashing, and basic event records.** Keep gameplay in the engine boundary and
-preserve M01 schema/registry contracts.
+**M03 — deck cycling, Energy, hand cap, card zones, and turn transitions.** M03
+must preserve M02 deterministic-state and RNG contracts and remain inside the
+rendering-independent engine boundary.

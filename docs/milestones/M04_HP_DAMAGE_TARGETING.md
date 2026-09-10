@@ -1,6 +1,6 @@
 # M04 — HP, Block, Damage, and Targeting
 
-Status: **in progress**
+Status: **accepted**
 
 ## Scope
 
@@ -27,6 +27,22 @@ M04 adds authoritative actor vitality, Block, direct-damage packets, formation t
 - `src/engine/combat.ts` now stores actors, duo formation, front position, outcome, and Block expiry while preserving M03 deck/Energy behavior.
 - M04 unit/property fixtures cover target redirection, Locked persistence, separate Both hits, Block, death, victory, self-costs, invalid targets, and vitality bounds.
 
-## Acceptance
+## Acceptance record
 
-M04 is accepted only when the locked GitHub Actions run passes all prior suites plus `npm run test:m04` and the production build.
+M04 was accepted on 2026-09-10 after GitHub Actions run `34495930333` completed successfully on Node 24.20.0. The run passed:
+
+- `npm ci`
+- `npm run check`
+- `npm run test:engine`
+- `npm run test:content`
+- `npm run test:replay`
+- `npm run test:properties`
+- `npm run test:m03`
+- `npm run test:m04`
+- `npm run build`
+
+The first CI attempt correctly caught a TypeScript null-narrowing error in the targeting module. The implementation was fixed without weakening tests, and the full second run passed.
+
+## Next milestone
+
+**M05 — enemy move cycles and fixed-intent selection.** Preserve all M02–M04 deterministic state, deck, vitality, damage, Block, and targeting contracts.

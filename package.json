@@ -29,6 +29,7 @@
     "test:m08": "vitest run tests/unit/remaining-reactions-delayed.test.ts",
     "test:m09": "vitest run tests/unit/trigger-passives.test.ts",
     "test:m10": "vitest run tests/unit/m10-fight.test.ts",
+    "test:m11": "vitest run tests/unit/card-lifecycle.test.ts",
     "simulate": "node tools/not-implemented.mjs M33 \"simulation\"",
     "assets:audit": "node tools/not-implemented.mjs M35 \"asset audit\"",
     "build": "vite build"

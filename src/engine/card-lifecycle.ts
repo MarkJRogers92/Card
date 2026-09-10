@@ -7,9 +7,7 @@ import {
 import { assertCardConservation, type DeckState } from "./deck";
 import { paySelfHpCost } from "./damage";
 import type { CardCombatOwner } from "./duo";
-import {
-  resolvePostCardIngredientWithTriggers,
-} from "./passive-card";
+import { resolvePostCardIngredientWithTriggers } from "./passive-card";
 import type {
   PostCardIngredientInput,
   PostCardIngredientResolution,
@@ -17,7 +15,7 @@ import type {
 import type { AuthoritativeState } from "./state";
 import { getReserveCharacterId } from "./targeting";
 import {
-  appendTriggerBindings,
+  TRIGGER_BINDING_VERSION,
   type TriggerBinding,
 } from "./triggers";
 
@@ -270,6 +268,66 @@ export function movePlayedCardForLifecycle(
   return next;
 }
 
+function bindingKey(binding: TriggerBinding): string {
+  return `${binding.sourceId}::${binding.triggerId}`;
+}
+
+function cloneProtocolBinding(binding: TriggerBinding): TriggerBinding {
+  if (binding.bindingVersion !== TRIGGER_BINDING_VERSION) {
+    throw new Error(
+      `Unsupported Protocol trigger binding version: ${binding.bindingVersion}.`,
+    );
+  }
+  if (binding.sourceId.length === 0 || binding.triggerId.length === 0) {
+    throw new Error("Protocol trigger sourceId and triggerId cannot be empty.");
+  }
+  if (!Number.isSafeInteger(binding.priority)) {
+    throw new RangeError("Protocol trigger priority must be a safe integer.");
+  }
+  if (!Number.isSafeInteger(binding.limit.count) || binding.limit.count <= 0) {
+    throw new RangeError("Protocol trigger limit must be a positive safe integer.");
+  }
+  return {
+    ...binding,
+    conditions: binding.conditions.map((condition) =>
+      condition.kind === "ingredient"
+        ? { ...condition, ingredient: { ...condition.ingredient } as typeof condition.ingredient }
+        : { ...condition },
+    ),
+    effects: binding.effects.map((effect) => ({ ...effect })),
+    limit: { ...binding.limit },
+  };
+}
+
+export function appendProtocolTriggerBindings(
+  state: AuthoritativeState,
+  bindings: readonly TriggerBinding[],
+): AuthoritativeState {
+  const combat = requirePlayerCombat(state);
+  if (bindings.length === 0) {
+    throw new Error("A Protocol must install at least one trigger binding.");
+  }
+
+  const seen = new Set(combat.triggerBindings.map(bindingKey));
+  const appended = bindings.map((binding) => {
+    const cloned = cloneProtocolBinding(binding);
+    const key = bindingKey(cloned);
+    if (seen.has(key)) {
+      throw new Error(`Duplicate Protocol trigger binding: ${key}.`);
+    }
+    seen.add(key);
+    return cloned;
+  });
+
+  return {
+    ...state,
+    combat: {
+      ...combat,
+      triggerBindings: [...combat.triggerBindings, ...appended],
+    },
+  };
+}
+
 export function finishCardPlayLifecycle(
   state: AuthoritativeState,
   input: FinishCardLifecycleInput,
@@ -297,7 +355,7 @@ export function finishCardPlayLifecycle(
     return { ...post, protocolBindingsInstalled: 0 };
   }
 
-  const installed = appendTriggerBindings(post.state, bindings);
+  const installed = appendProtocolTriggerBindings(post.state, bindings);
   return {
     ...post,
     state: installed,

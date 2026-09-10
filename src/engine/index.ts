@@ -177,6 +177,32 @@ export type {
   Ingredient,
   MaterialIngredientId,
 } from "./imprint";
+export {
+  M10_CLAIMS_ADJUSTER_ID,
+  M10_CLAIMS_ADJUSTER_REGISTRY,
+  M10_DEFAULT_SEED,
+  M10_MORROW_ID,
+  M10_STARTER_CARDS,
+  M10_SWITCH_ID,
+  applyM10Command,
+  createM10Fight,
+  endM10Turn,
+  getM10CardView,
+  getM10Hand,
+  hashM10Fight,
+  playM10Card,
+  replayM10Commands,
+  swapM10Characters,
+} from "./m10-fight";
+export type {
+  M10CardDestination,
+  M10CardEffect,
+  M10CardOwner,
+  M10CardView,
+  M10Command,
+  M10CommandResult,
+  M10StarterCardDefinition,
+} from "./m10-fight";
 export { resolvePostCardIngredientWithTriggers } from "./passive-card";
 export {
   NEEDLE_REACTION_RECIPES,

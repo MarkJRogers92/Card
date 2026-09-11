@@ -1,4 +1,10 @@
 import type { AuthoritativeState } from "./state";
+import type { CombatState } from "./combat";
+import { collectApplicableModifiers } from "./triggers";
+
+// Shared channel contract between this module and relic-content.ts's compiler.
+export const IMPRINT_REINFORCE_POTENCY_BONUS_CHANNEL =
+  "imprint.reinforce.potency_bonus" as const;
 
 export const IMPRINT_STATE_VERSION = 1 as const;
 export const MAX_IMPRINT_POTENCY = 3 as const;
@@ -98,10 +104,33 @@ export function storeOrReinforceImprint(
   const imprint = sameIngredient
     ? {
         ...current,
-        potency: Math.min(MAX_IMPRINT_POTENCY, current.potency + ingredient.prime),
+        potency: Math.min(
+          MAX_IMPRINT_POTENCY,
+          current.potency +
+            ingredient.prime +
+            reinforcementPotencyBonus(combat, current.ingredient),
+        ),
       }
     : createImprint(ownerCharacterId, ingredient);
   return { ...state, combat: { ...combat, imprint } };
+}
+
+function reinforcementPotencyBonus(
+  combat: CombatState,
+  reinforced: Imprint["ingredient"],
+): number {
+  const applicable = collectApplicableModifiers(
+    combat.modifierBindings,
+    IMPRINT_REINFORCE_POTENCY_BONUS_CHANNEL,
+    { ingredient: { ...reinforced, prime: 1 } as Ingredient },
+  );
+  let bonus = 0;
+  for (const modifier of applicable) {
+    if (modifier.operation === "add") {
+      bonus += modifier.value;
+    }
+  }
+  return bonus;
 }
 
 export function boostImprintPotency(

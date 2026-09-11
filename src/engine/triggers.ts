@@ -1,4 +1,4 @@
-import type { CombatState } from "./combat";
+import { gainEnergy, type CombatState } from "./combat";
 import { drawCards } from "./deck";
 import {
   applyDirectDamage,
@@ -8,7 +8,8 @@ import {
   gainBlock,
 } from "./damage";
 import type { CardPositionClassification } from "./duo";
-import type { Ingredient } from "./imprint";
+import type { FormIngredientId, Ingredient, MaterialIngredientId } from "./imprint";
+import { scheduleReactionPacket, type ScheduledReactionEffect } from "./scheduled";
 import type { AuthoritativeState } from "./state";
 import type { CombatStatusId } from "./status";
 
@@ -19,7 +20,11 @@ export const MODIFIER_BINDING_VERSION = 1 as const;
 export const MAX_GENERATED_EVENTS_PER_DISPATCH = 256 as const;
 export const MAX_MODIFIERS_PER_CHANNEL = 256 as const;
 
-export type TriggerEventKind = "card_played" | "after_swap" | "primary_reaction";
+export type TriggerEventKind =
+  | "card_played"
+  | "after_swap"
+  | "primary_reaction"
+  | "card_play_cost";
 export type TriggerLimitScope = "command" | "turn" | "combat";
 export type TriggerSwapMode = "manual" | "card_free";
 
@@ -34,7 +39,9 @@ export type TriggerCondition =
       readonly kind: "ingredient";
       readonly ingredient: Ingredient;
     }
-  | { readonly kind: "swap_mode"; readonly mode: TriggerSwapMode };
+  | { readonly kind: "swap_mode"; readonly mode: TriggerSwapMode }
+  | { readonly kind: "has_card_tag"; readonly value: string }
+  | { readonly kind: "reaction_potency"; readonly value: number };
 
 export type TriggerEffectTarget =
   | "source_actor"
@@ -59,6 +66,18 @@ export type TriggerEffect =
     }
   | {
       readonly op: "repeat_largest_reaction_damage";
+      readonly multiplierBps: number;
+    }
+  | {
+      readonly op: "gain_energy";
+      readonly amount: number;
+    }
+  | {
+      readonly op: "reduce_card_cost";
+      readonly amount: number;
+    }
+  | {
+      readonly op: "repeat_scheduled_packet";
       readonly multiplierBps: number;
     };
 
@@ -91,6 +110,7 @@ export interface CardPlayedTriggerEvent {
   readonly cardOwnerActorId: string | null;
   readonly classification: CardPositionClassification;
   readonly ingredient: Ingredient | null;
+  readonly cardTags?: readonly string[];
 }
 
 export interface AfterSwapTriggerEvent {
@@ -104,17 +124,34 @@ export interface PrimaryReactionTriggerEvent {
   readonly eventVersion: typeof TRIGGER_EVENT_VERSION;
   readonly kind: "primary_reaction";
   readonly frontActorId: string;
+  readonly potency: number;
+  readonly material: MaterialIngredientId;
+  readonly form: FormIngredientId;
   readonly bleedTargetActorIds: readonly string[];
   readonly largestDirectDamage: {
     readonly targetActorId: string;
     readonly amountBeforeTargetModifiers: number;
   } | null;
+  readonly scheduledRepeat: {
+    readonly sourceRecipeId: string;
+    readonly targetActorId: string;
+    readonly effects: readonly ScheduledReactionEffect[];
+  } | null;
+}
+
+export interface CardPlayCostTriggerEvent {
+  readonly eventVersion: typeof TRIGGER_EVENT_VERSION;
+  readonly kind: "card_play_cost";
+  readonly ownerActorId: string | null;
+  readonly cardTags: readonly string[];
+  readonly baseCost: number;
 }
 
 export type TriggerEvent =
   | CardPlayedTriggerEvent
   | AfterSwapTriggerEvent
-  | PrimaryReactionTriggerEvent;
+  | PrimaryReactionTriggerEvent
+  | CardPlayCostTriggerEvent;
 
 export interface TriggerActivationProjection {
   readonly sourceId: string;
@@ -133,6 +170,7 @@ export interface TriggerDispatchResult {
   readonly state: AuthoritativeState;
   readonly activations: readonly TriggerActivationResult[];
   readonly generatedEvents: number;
+  readonly costReduction: number;
 }
 
 export type ModifierOperation = "multiply" | "add" | "set" | "cap";
@@ -224,24 +262,38 @@ function validateCondition(condition: TriggerCondition): void {
   if (condition.kind === "ingredient") {
     assertPositiveInteger("Trigger ingredient Prime", condition.ingredient.prime);
   }
+  if (condition.kind === "has_card_tag") {
+    assertNonEmpty("Trigger card tag", condition.value);
+  }
+  if (condition.kind === "reaction_potency") {
+    if (!Number.isSafeInteger(condition.value) || condition.value < 1 || condition.value > 3) {
+      throw new RangeError("Trigger reaction potency must be an integer from 1 to 3.");
+    }
+  }
 }
 
 function validateEffect(effect: TriggerEffect): void {
-  if (effect.op === "gain_block" || effect.op === "draw") {
-    assertNonnegativeInteger(`Trigger ${effect.op} amount`, effect.amount);
-    return;
+  switch (effect.op) {
+    case "gain_block":
+    case "draw":
+    case "gain_energy":
+    case "reduce_card_cost":
+      assertNonnegativeInteger(`Trigger ${effect.op} amount`, effect.amount);
+      return;
+    case "gain_block_per_bleed_target":
+      assertNonnegativeInteger(
+        "Trigger gain_block_per_bleed_target amountPerTarget",
+        effect.amountPerTarget,
+      );
+      return;
+    case "repeat_largest_reaction_damage":
+    case "repeat_scheduled_packet":
+      assertNonnegativeInteger(
+        `Trigger ${effect.op} multiplierBps`,
+        effect.multiplierBps,
+      );
+      return;
   }
-  if (effect.op === "gain_block_per_bleed_target") {
-    assertNonnegativeInteger(
-      "Trigger gain_block_per_bleed_target amountPerTarget",
-      effect.amountPerTarget,
-    );
-    return;
-  }
-  assertNonnegativeInteger(
-    "Trigger repeat_largest_reaction_damage multiplierBps",
-    effect.multiplierBps,
-  );
 }
 
 function effectSourceActorTarget(effect: TriggerEffect): TriggerEffectTarget | null {
@@ -463,6 +515,16 @@ function ingredientMatches(actual: Ingredient, expected: Ingredient): boolean {
   return actual.kind === expected.kind && actual.id === expected.id;
 }
 
+function scaleByBasisPoints(amount: number, basisPoints: number): number {
+  assertNonnegativeInteger("Scaled amount", amount);
+  assertNonnegativeInteger("Scale basis points", basisPoints);
+  const scaled = (BigInt(amount) * BigInt(basisPoints)) / BigInt(DAMAGE_MULTIPLIER_BASIS);
+  if (scaled > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError("Scaled amount exceeds the safe integer range.");
+  }
+  return Number(scaled);
+}
+
 function conditionMatches(condition: TriggerCondition, event: TriggerEvent): boolean {
   switch (condition.kind) {
     case "card_owner":
@@ -471,14 +533,30 @@ function conditionMatches(condition: TriggerCondition, event: TriggerEvent): boo
       return event.kind === "card_played" && event.classification === condition.value;
     case "has_ingredient":
       return event.kind === "card_played" && event.ingredient !== null;
+    case "swap_mode":
+      return event.kind === "after_swap" && event.mode === condition.mode;
+    case "has_card_tag":
+      return (
+        (event.kind === "card_play_cost" || event.kind === "card_played") &&
+        (event.cardTags ?? []).includes(condition.value)
+      );
+    case "reaction_potency":
+      return (
+        event.kind === "primary_reaction" && event.potency === condition.value
+      );
     case "ingredient":
+      if (event.kind === "primary_reaction") {
+        const reactionIngredient: Ingredient =
+          condition.ingredient.kind === "material"
+            ? ({ kind: "material", id: event.material, prime: 1 } as Ingredient)
+            : ({ kind: "form", id: event.form, prime: 1 } as Ingredient);
+        return ingredientMatches(reactionIngredient, condition.ingredient);
+      }
       return (
         event.kind === "card_played" &&
         event.ingredient !== null &&
         ingredientMatches(event.ingredient, condition.ingredient)
       );
-    case "swap_mode":
-      return event.kind === "after_swap" && event.mode === condition.mode;
   }
 }
 
@@ -654,6 +732,51 @@ function applyTriggerEffect(
     ).state;
   }
 
+  if (effect.op === "gain_energy") {
+    return gainEnergy(state, effect.amount);
+  }
+
+  if (effect.op === "repeat_scheduled_packet") {
+    if (event.kind !== "primary_reaction" || event.scheduledRepeat === null) {
+      return state;
+    }
+    const { targetActorId, effects } = event.scheduledRepeat;
+    const repeated = effects
+      .map((entry): ScheduledReactionEffect => {
+        if (entry.op === "reaction_damage") {
+          return {
+            ...entry,
+            amountBeforeTargetModifiers: scaleByBasisPoints(
+              entry.amountBeforeTargetModifiers,
+              effect.multiplierBps,
+            ),
+          };
+        }
+        return { ...entry, amount: scaleByBasisPoints(entry.amount, effect.multiplierBps) };
+      })
+      // A reduced output of 0 produces no effect rather than an empty packet.
+      .filter((entry) =>
+        entry.op === "reaction_damage"
+          ? entry.amountBeforeTargetModifiers > 0
+          : entry.amount > 0,
+      );
+    if (repeated.length === 0) {
+      return state;
+    }
+    return scheduleReactionPacket(
+      state,
+      event.scheduledRepeat.sourceRecipeId,
+      targetActorId,
+      repeated,
+    ).state;
+  }
+
+  if (effect.op === "reduce_card_cost") {
+    // Resolved by dispatchTriggerEvent, which reports the total to the
+    // card-play path instead of mutating state.
+    return state;
+  }
+
   const combat = requireCombat(state);
   const draw = drawCards(
     combat.deck,
@@ -678,6 +801,7 @@ export function dispatchTriggerEvent(
   const startingCombat = requireCombat(state);
   const projections = applicableBindings(startingCombat, event);
   let generatedEvents = 0;
+  let costReduction = 0;
   let current = state;
   const activations: TriggerActivationResult[] = [];
 
@@ -703,13 +827,20 @@ export function dispatchTriggerEvent(
       if (current.combat?.outcome !== "active") {
         break;
       }
+      if (effect.op === "reduce_card_cost") {
+        // Cost reductions are read back by the card-play path instead of
+        // mutating state; the dispatch still consumes the binding's limit.
+        costReduction += effect.amount;
+        effectsResolved += 1;
+        continue;
+      }
       current = applyTriggerEffect(current, binding, event, effect);
       effectsResolved += 1;
     }
     activations.push({ ...projection, effectsResolved });
   }
 
-  return { state: current, activations, generatedEvents };
+  return { state: current, activations, generatedEvents, costReduction };
 }
 
 function modifierConditionMatches(

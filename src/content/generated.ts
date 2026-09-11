@@ -289,6 +289,8 @@ export namespace EffectSchema {
     | SchedulePacketEffect
     | RepeatPacketEffect
     | RepeatReactionPacketEffect
+    | ReduceCardCostEffect
+    | RepeatScheduledPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -470,6 +472,14 @@ export namespace EffectSchema {
     op: "repeat_reaction_packet";
     multiplierBps: number;
   }
+  export interface ReduceCardCostEffect {
+    op: "reduce_card_cost";
+    amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
+  }
+  export interface RepeatScheduledPacketEffect {
+    op: "repeat_scheduled_packet";
+    multiplierBps: number;
+  }
   export interface GainScrapEffect {
     op: "gain_scrap";
     amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
@@ -518,6 +528,8 @@ export namespace CardSchema {
     | SchedulePacketEffect
     | RepeatPacketEffect
     | RepeatReactionPacketEffect
+    | ReduceCardCostEffect
+    | RepeatScheduledPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -585,6 +597,31 @@ export namespace CardSchema {
           "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
           "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
           "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability"
+        ];
+    /**
+     * @maxItems 5
+     */
+    tags?:
+      | []
+      | ["attack" | "skill" | "protocol" | "status" | "grafted"]
+      | ["attack" | "skill" | "protocol" | "status" | "grafted", "attack" | "skill" | "protocol" | "status" | "grafted"]
+      | [
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted"
+        ]
+      | [
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted"
+        ]
+      | [
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted"
         ];
     /**
      * @minItems 1
@@ -779,6 +816,14 @@ export namespace CardSchema {
     op: "repeat_reaction_packet";
     multiplierBps: number;
   }
+  export interface ReduceCardCostEffect {
+    op: "reduce_card_cost";
+    amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
+  }
+  export interface RepeatScheduledPacketEffect {
+    op: "repeat_scheduled_packet";
+    multiplierBps: number;
+  }
   export interface GainScrapEffect {
     op: "gain_scrap";
     amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
@@ -827,6 +872,8 @@ export namespace RelicSchema {
     | SchedulePacketEffect
     | RepeatPacketEffect
     | RepeatReactionPacketEffect
+    | ReduceCardCostEffect
+    | RepeatScheduledPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -1054,6 +1101,7 @@ export namespace RelicSchema {
       | "after_primary_reaction"
       | "after_swap"
       | "card_played"
+      | "card_play_cost"
       | "player_turn_start"
       | "enemy_phase_start";
     filter: Condition;
@@ -1228,6 +1276,14 @@ export namespace RelicSchema {
     op: "repeat_reaction_packet";
     multiplierBps: number;
   }
+  export interface ReduceCardCostEffect {
+    op: "reduce_card_cost";
+    amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
+  }
+  export interface RepeatScheduledPacketEffect {
+    op: "repeat_scheduled_packet";
+    multiplierBps: number;
+  }
   export interface GainScrapEffect {
     op: "gain_scrap";
     amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
@@ -1286,6 +1342,8 @@ export namespace EnemySchema {
     | SchedulePacketEffect
     | RepeatPacketEffect
     | RepeatReactionPacketEffect
+    | ReduceCardCostEffect
+    | RepeatScheduledPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -1562,6 +1620,14 @@ export namespace EnemySchema {
     op: "repeat_reaction_packet";
     multiplierBps: number;
   }
+  export interface ReduceCardCostEffect {
+    op: "reduce_card_cost";
+    amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
+  }
+  export interface RepeatScheduledPacketEffect {
+    op: "repeat_scheduled_packet";
+    multiplierBps: number;
+  }
   export interface GainScrapEffect {
     op: "gain_scrap";
     amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
@@ -1650,6 +1716,8 @@ export namespace EventSchema {
     | SchedulePacketEffect
     | RepeatPacketEffect
     | RepeatReactionPacketEffect
+    | ReduceCardCostEffect
+    | RepeatScheduledPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -1942,6 +2010,14 @@ export namespace EventSchema {
   }
   export interface RepeatReactionPacketEffect {
     op: "repeat_reaction_packet";
+    multiplierBps: number;
+  }
+  export interface ReduceCardCostEffect {
+    op: "reduce_card_cost";
+    amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
+  }
+  export interface RepeatScheduledPacketEffect {
+    op: "repeat_scheduled_packet";
     multiplierBps: number;
   }
   export interface GainScrapEffect {

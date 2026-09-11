@@ -40,8 +40,12 @@ export function resolvePostCardIngredientWithTriggers(
       eventVersion: TRIGGER_EVENT_VERSION,
       kind: "primary_reaction",
       frontActorId: combat.frontCharacterId,
+      potency: resolved.reaction.potency,
+      material: resolved.reaction.material,
+      form: resolved.reaction.form,
       bleedTargetActorIds,
       largestDirectDamage: resolved.reaction.largestDirectDamage,
+      scheduledRepeat: resolved.reaction.scheduledRepeat,
     }).state;
   }
   if (current.combat === null || current.combat.outcome !== "active") {

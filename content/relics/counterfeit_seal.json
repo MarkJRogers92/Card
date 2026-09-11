@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.counterfeit_seal",
+  "name": "Counterfeit Seal",
+  "rarity": "uncommon",
+  "family": "forgery",
+  "modifiers": [],
+  "triggers": [{
+    "event": "card_play_cost",
+    "filter": { "has_card_tag": "grafted" },
+    "effects": [{ "op": "reduce_card_cost", "amount": { "const": 1 } }],
+    "limit": { "scope": "turn", "count": 1, "keying": "relic_instance" },
+    "priority": 100
+  }],
+  "unlockId": null,
+  "artId": "relic.counterfeit_seal"
+}

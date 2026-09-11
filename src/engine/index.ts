@@ -190,6 +190,7 @@ export {
 export type { InitialPassiveSetup } from "./initial-passives";
 export {
   FORM_INGREDIENT_IDS,
+  IMPRINT_REINFORCE_POTENCY_BONUS_CHANNEL,
   IMPRINT_STATE_VERSION,
   MATERIAL_INGREDIENT_IDS,
   MAX_IMPRINT_POTENCY,
@@ -198,6 +199,11 @@ export {
   ingredientsAreCompatible,
   storeOrReinforceImprint,
 } from "./imprint";
+export {
+  BASE_CARD_REWARD_OPTIONS,
+  REWARD_CARD_OPTION_COUNT_CHANNEL,
+  cardRewardOptionCount,
+} from "./reward-options";
 export type {
   FormIngredientId,
   Imprint,

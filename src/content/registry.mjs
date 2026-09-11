@@ -33,6 +33,8 @@ export const SUPPORTED_OPERATIONS = [
   "schedule_packet",
   "repeat_packet",
   "repeat_reaction_packet",
+  "reduce_card_cost",
+  "repeat_scheduled_packet",
   "gain_scrap",
   "gain_evidence",
   "change_standing",

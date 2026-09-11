@@ -2,6 +2,35 @@
 
 ## Current milestone
 
+**M15 — remaining relics — implemented locally, awaiting CI acceptance**
+
+M15 lives on `codex/m15-remaining-relics`, branched from the M14 head plus
+the M14 duplicate-relic hardening commits. It adds Refund Capacitor, Arc
+Welder, Counterfeit Seal, Carbon Copy, and Blank Badge as validated
+production content, plus the generic limited cost/resource triggers those
+definitions need. See `docs/milestones/M15_REMAINING_RELICS.md` and
+`docs/M15_NORMAL_CHAT_HANDOFF.md`.
+
+The full local stack passes, including the unchanged M10 browser/replay
+regression. Neither this branch nor the two M14 hardening commits are
+pushed: the implementing environment's GitHub credential is read-only
+(`403`), so the M15 Acceptance workflow has not run yet.
+
+## M15 acceptance checklist
+
+- [x] Refund Capacitor grants 1 Energy only after the first Potency-3 primary Reaction each player turn
+- [x] Arc Welder adds 1 Potency when reinforcing an existing Volt Imprint, still capped at 3
+- [x] Counterfeit Seal discounts the first Grafted card played each player turn by 1, minimum 0
+- [x] Carbon Copy schedules one extra 50% repeat of the first primary Loop Reaction each player turn
+- [x] Blank Badge raises card reward options from 3 to 4
+- [x] No relic-ID branches were added; every effect compiles from schema fields
+- [x] Limited cost triggers consume the existing turn/combat limit counters
+- [x] Prior M00–M14 suites continue to pass unchanged
+- [x] Production build passes
+- [x] M10 Playwright browser/replay regression remains green
+
+## Last accepted milestone before M15
+
 **M14 — first relics — accepted**
 
 M14 is accepted on `claude/m14-first-relics`. GitHub Actions run

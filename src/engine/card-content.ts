@@ -26,7 +26,12 @@ import { boostImprintPotency, type Ingredient } from "./imprint";
 import type { AuthoritativeState } from "./state";
 import { applyCombatStatus } from "./status-runtime";
 import { resolveTargetRule } from "./targeting";
-import { TRIGGER_BINDING_VERSION, type TriggerBinding } from "./triggers";
+import {
+  TRIGGER_BINDING_VERSION,
+  TRIGGER_EVENT_VERSION,
+  dispatchTriggerEvent,
+  type TriggerBinding,
+} from "./triggers";
 import type { CardDefinition } from "../content/generated";
 
 // This module is the generic bridge between validated content-schema card
@@ -470,10 +475,26 @@ export function playContentCard(
   const parameters = resolveCardParameters(definition, input.upgraded);
   const additionalHpCosts = resolveAdditionalHpCosts(definition, parameters);
   const lifecycle = cardLifecycleSpecFor(definition, additionalHpCosts);
-  const energyCost = resolveValueExpr(definition.energyCost, parameters);
+  const baseEnergyCost = resolveValueExpr(definition.energyCost, parameters);
 
   assertCardPlayable(state, input.instanceId, lifecycle);
-  let current = payCardCosts(state, owner, energyCost, additionalHpCosts);
+  // Limited card-cost triggers (Counterfeit Seal) are dispatched before payment
+  // so a relic can discount this play, and its per-turn limit is consumed here
+  // rather than by a separate bookkeeping system.
+  const costDispatch = dispatchTriggerEvent(state, {
+    eventVersion: TRIGGER_EVENT_VERSION,
+    kind: "card_play_cost",
+    ownerActorId: owner.kind === "character" ? owner.actorId : null,
+    cardTags: definition.tags ?? [],
+    baseCost: baseEnergyCost,
+  });
+  const energyCost = Math.max(0, baseEnergyCost - costDispatch.costReduction);
+  let current = payCardCosts(
+    costDispatch.state,
+    owner,
+    energyCost,
+    additionalHpCosts,
+  );
   current = stateWithDeck(
     current,
     movePlayedCardForLifecycle(requireActiveCombat(current).deck, input.instanceId, lifecycle),

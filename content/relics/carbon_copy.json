@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.carbon_copy",
+  "name": "Carbon Copy",
+  "rarity": "rare",
+  "family": "forgery",
+  "modifiers": [],
+  "triggers": [{
+    "event": "after_primary_reaction",
+    "filter": { "ingredient": { "kind": "form", "id": "loop" } },
+    "effects": [{ "op": "repeat_scheduled_packet", "multiplierBps": 5000 }],
+    "limit": { "scope": "turn", "count": 1, "keying": "relic_instance" },
+    "priority": 100
+  }],
+  "unlockId": null,
+  "artId": "relic.carbon_copy"
+}

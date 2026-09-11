@@ -343,6 +343,13 @@ export interface PrimaryReactionResolution {
   readonly blockApplied: readonly { actorId: string; amount: number }[];
   readonly scheduledPacketIds: readonly string[];
   readonly largestDirectDamage: LargestReactionDirectDamage | null;
+  readonly material: MaterialIngredientId;
+  readonly form: FormIngredientId;
+  readonly scheduledRepeat: {
+    readonly sourceRecipeId: string;
+    readonly targetActorId: string;
+    readonly effects: readonly ScheduledReactionEffect[];
+  } | null;
 }
 
 export interface PostCardIngredientInput {
@@ -521,6 +528,7 @@ function resolvePrimaryReaction(
   const blockApplied: Array<{ actorId: string; amount: number }> = [];
   const scheduledPacketIds: string[] = [];
   let largestDirectDamage: LargestReactionDirectDamage | null = null;
+  let scheduledRepeat: PrimaryReactionResolution["scheduledRepeat"] = null;
 
   for (const effect of recipeValue.effects) {
     if (current.combat?.outcome !== "active") {
@@ -568,12 +576,24 @@ function resolvePrimaryReaction(
       if (primaryTarget.actorId === null) {
         continue;
       }
+      const repeatEffects = repeatPacketEffects(
+        effect.effects,
+        stored.potency,
+        primaryTarget.actorId,
+      );
       const scheduled = scheduleReactionPacket(
         current,
         recipeValue.id,
         primaryTarget.actorId,
-        repeatPacketEffects(effect.effects, stored.potency, primaryTarget.actorId),
+        repeatEffects,
       );
+      if (scheduledRepeat === null) {
+        scheduledRepeat = {
+          sourceRecipeId: recipeValue.id,
+          targetActorId: primaryTarget.actorId,
+          effects: repeatEffects,
+        };
+      }
       current = scheduled.state;
       scheduledPacketIds.push(scheduled.packet.packetId);
       targetActorIds.add(primaryTarget.actorId);
@@ -669,6 +689,9 @@ function resolvePrimaryReaction(
       blockApplied,
       scheduledPacketIds,
       largestDirectDamage,
+      material: recipeValue.material,
+      form: recipeValue.form,
+      scheduledRepeat,
     },
   };
 }

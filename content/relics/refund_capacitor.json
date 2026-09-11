@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.refund_capacitor",
+  "name": "Refund Capacitor",
+  "rarity": "uncommon",
+  "family": "circuit",
+  "modifiers": [],
+  "triggers": [{
+    "event": "after_primary_reaction",
+    "filter": { "event": "primary_reaction_potency_3" },
+    "effects": [{ "op": "gain_energy", "amount": { "const": 1 } }],
+    "limit": { "scope": "turn", "count": 1, "keying": "relic_instance" },
+    "priority": 100
+  }],
+  "unlockId": null,
+  "artId": "relic.refund_capacitor"
+}

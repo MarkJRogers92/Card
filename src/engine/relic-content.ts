@@ -10,6 +10,7 @@ import {
   type ModifierBinding,
   type ModifierCondition,
   type TriggerBinding,
+  type TriggerCondition,
   type TriggerEffect,
   type TriggerEventKind,
   type TriggerLimitScope,
@@ -40,7 +41,9 @@ function compileCondition(condition: RelicModifier["condition"]): ModifierCondit
 
 function compileEvent(event: RelicTrigger["event"]): TriggerEventKind {
   if (event === "after_primary_reaction") return "primary_reaction";
-  if (event === "after_swap" || event === "card_played") return event;
+  if (event === "after_swap" || event === "card_played" || event === "card_play_cost") {
+    return event;
+  }
   throw new Error(`Unsupported relic trigger event: ${event}.`);
 }
 
@@ -53,13 +56,28 @@ function constAmount(effect: Extract<RelicEffect, { op: "block" }>): number {
   return resolveValueExpr(effect.amount, new Map());
 }
 
+function constAmountFor(
+  effect: { readonly amount: Parameters<typeof resolveValueExpr>[0] },
+): number {
+  return resolveValueExpr(effect.amount, new Map());
+}
+
 function compileEffect(
   effect: RelicEffect,
   event: RelicTrigger["event"],
-  filterEvent: string,
+  filterEvent: string | undefined,
 ): TriggerEffect {
   if (effect.op === "repeat_reaction_packet") {
     return { op: "repeat_largest_reaction_damage", multiplierBps: effect.multiplierBps };
+  }
+  if (effect.op === "repeat_scheduled_packet") {
+    return { op: "repeat_scheduled_packet", multiplierBps: effect.multiplierBps };
+  }
+  if (effect.op === "gain_energy") {
+    return { op: "gain_energy", amount: constAmountFor(effect) };
+  }
+  if (effect.op === "reduce_card_cost") {
+    return { op: "reduce_card_cost", amount: constAmountFor(effect) };
   }
   if (effect.op === "block" && effect.target === "front") {
     const amount = constAmount(effect);
@@ -74,6 +92,42 @@ function compileEffect(
     }
   }
   throw new Error(`Unsupported relic trigger effect: ${effect.op}.`);
+}
+
+function compileFilterConditions(
+  trigger: RelicTrigger,
+): readonly TriggerCondition[] {
+  const filter = trigger.filter;
+  if (filter.event !== undefined) {
+    if (trigger.event === "after_primary_reaction") {
+      if (filter.event === "primary_reaction_potency_3") {
+        return [{ kind: "reaction_potency", value: 3 }];
+      }
+      if (
+        filter.event === "after_primary_reaction" ||
+        filter.event === "primary_reaction_applied_bleed"
+      ) {
+        return [];
+      }
+      throw new Error(`Unsupported primary reaction relic filter: ${filter.event}.`);
+    }
+    if (filter.event === trigger.event) {
+      return [];
+    }
+    throw new Error(`Unsupported ${trigger.event} relic trigger filter: ${filter.event}.`);
+  }
+  if (filter.ingredient !== undefined) {
+    return [
+      {
+        kind: "ingredient",
+        ingredient: { ...filter.ingredient, prime: 1 } as Ingredient,
+      },
+    ];
+  }
+  if (filter.has_card_tag !== undefined) {
+    return [{ kind: "has_card_tag", value: filter.has_card_tag }];
+  }
+  throw new Error("M14 relic triggers require a supported event filter.");
 }
 
 function compileModifier(
@@ -98,28 +152,20 @@ function compileTrigger(
   trigger: RelicTrigger,
   index: number,
 ): TriggerBinding {
-  const filterEvent = trigger.filter.event;
-  if (filterEvent === undefined) throw new Error("M14 relic triggers require an event filter.");
-  const allowedFilters =
-    trigger.event === "after_swap"
-      ? ["after_swap"]
-      : trigger.event === "after_primary_reaction"
-        ? ["after_primary_reaction", "primary_reaction_applied_bleed"]
-        : [trigger.event];
-  if (!allowedFilters.includes(filterEvent)) {
-    throw new Error(`Unsupported ${trigger.event} relic trigger filter: ${filterEvent}.`);
-  }
   if (trigger.limit.keying !== "relic_instance") {
     throw new Error(`Unsupported combat relic trigger keying: ${trigger.limit.keying}.`);
   }
+  const conditions = compileFilterConditions(trigger);
   return {
     bindingVersion: TRIGGER_BINDING_VERSION,
     sourceId: definition.id,
     triggerId: `trigger.${index + 1}`,
     sourceActorId: null,
     event: compileEvent(trigger.event),
-    conditions: [],
-    effects: trigger.effects.map((effect) => compileEffect(effect, trigger.event, filterEvent)),
+    conditions,
+    effects: trigger.effects.map((effect) =>
+      compileEffect(effect, trigger.event, trigger.filter.event),
+    ),
     limit: { scope: compileLimit(trigger.limit.scope), count: trigger.limit.count },
     priority: trigger.priority,
   };

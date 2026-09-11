@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   M10_MORROW_ID,
   M10_SWITCH_ID,
+  M19_PARTY_MAX_HP,
   M19_NODE_IDS,
   createAct1Combat,
   createM19Run,
@@ -80,6 +81,27 @@ describe("M19 fixed test act", () => {
     expect(state.combat?.deck.zones.exhaust).toHaveLength(0);
   });
 
+  it("starts the fixed act with maximum party HP", () => {
+    const state = createM19Run(23);
+
+    expect(state.run?.partyHp).toEqual(M19_PARTY_MAX_HP);
+  });
+
+  it("begins combat using carried party HP from run state", () => {
+    const state = createM19Run(23);
+
+    const begun = beginRunNode({
+      ...state,
+      run: {
+        ...state.run!,
+        partyHp: { ...state.run!.partyHp, [M10_MORROW_ID]: 40, [M10_SWITCH_ID]: 25 },
+      },
+    });
+
+    expect(begun.combat?.actors[M10_MORROW_ID]?.hp).toBe(40);
+    expect(begun.combat?.actors[M10_SWITCH_ID]?.hp).toBe(25);
+  });
+
   it("begins the first ordinary node as a fresh combat", () => {
     const state = beginRunNode(createM19Run(23));
 
@@ -87,6 +109,74 @@ describe("M19 fixed test act", () => {
     expect(state.combat?.outcome).toBe("active");
     expect(state.combat?.actors[M10_MORROW_ID]?.hp).toBe(44);
     expect(state.combat?.actors[M10_SWITCH_ID]?.hp).toBe(36);
+  });
+
+  it("begins ordinary_2 as compliance_slug combat", () => {
+    const state = createM19Run(23);
+    const begun = beginRunNode({
+      ...state,
+      run: {
+        ...state.run!,
+        currentNodeId: "ordinary_2" as const,
+        partyHp: { ...state.run!.partyHp, [M10_MORROW_ID]: 40, [M10_SWITCH_ID]: 25 },
+      },
+    });
+
+    expect(begun.combat?.outcome).toBe("active");
+    expect(begun.combat?.actors.compliance_slug_enemy_1).toBeDefined();
+    expect(begun.combat?.actors[M10_MORROW_ID]?.hp).toBe(40);
+    expect(begun.combat?.actors[M10_SWITCH_ID]?.hp).toBe(25);
+  });
+
+  it("begins ordinary_3 as adjuster_and_intern combat", () => {
+    const state = createM19Run(23);
+    const begun = beginRunNode({
+      ...state,
+      run: {
+        ...state.run!,
+        currentNodeId: "ordinary_3" as const,
+        partyHp: { ...state.run!.partyHp, [M10_MORROW_ID]: 41, [M10_SWITCH_ID]: 26 },
+      },
+    });
+
+    expect(begun.combat?.outcome).toBe("active");
+    expect(begun.combat?.actors.adjuster_and_intern_enemy_1).toBeDefined();
+    expect(begun.combat?.actors[M10_MORROW_ID]?.hp).toBe(41);
+    expect(begun.combat?.actors[M10_SWITCH_ID]?.hp).toBe(26);
+  });
+
+  it("begins elite as repo_foreman combat", () => {
+    const state = createM19Run(23);
+    const begun = beginRunNode({
+      ...state,
+      run: {
+        ...state.run!,
+        currentNodeId: "elite" as const,
+        partyHp: { ...state.run!.partyHp, [M10_MORROW_ID]: 42, [M10_SWITCH_ID]: 27 },
+      },
+    });
+
+    expect(begun.combat?.outcome).toBe("active");
+    expect(begun.combat?.actors.repo_foreman_enemy_1).toBeDefined();
+    expect(begun.combat?.actors[M10_MORROW_ID]?.hp).toBe(42);
+    expect(begun.combat?.actors[M10_SWITCH_ID]?.hp).toBe(27);
+  });
+
+  it("begins boss as head_of_recovery combat", () => {
+    const state = createM19Run(23);
+    const begun = beginRunNode({
+      ...state,
+      run: {
+        ...state.run!,
+        currentNodeId: "boss" as const,
+        partyHp: { ...state.run!.partyHp, [M10_MORROW_ID]: 43, [M10_SWITCH_ID]: 28 },
+      },
+    });
+
+    expect(begun.combat?.outcome).toBe("active");
+    expect(begun.combat?.actors.head_of_recovery_enemy_1).toBeDefined();
+    expect(begun.combat?.actors[M10_MORROW_ID]?.hp).toBe(43);
+    expect(begun.combat?.actors[M10_SWITCH_ID]?.hp).toBe(28);
   });
 
   it("refuses to begin a second combat while one is already active", () => {
@@ -109,7 +199,23 @@ describe("M19 fixed test act", () => {
     const state = createM19Run(23);
     const advanced = { ...state, run: { ...state.run!, currentNodeId: "rest_1" as const } };
 
-    expect(() => beginRunNode(advanced)).toThrow(/rest_1 is not implemented yet/);
+    expect(() => beginRunNode(advanced)).toThrow(/rest_1 cannot begin combat/);
+  });
+
+  it("uses different deterministic combat seeds per node and repeats the same node deterministically", () => {
+    const baseRun = createM19Run(23);
+    const firstNode = beginRunNode(baseRun);
+    const ordinary2 = beginRunNode({
+      ...baseRun,
+      run: { ...baseRun.run!, currentNodeId: "ordinary_2" as const },
+    });
+    const ordinary2Again = beginRunNode({
+      ...baseRun,
+      run: { ...baseRun.run!, currentNodeId: "ordinary_2" as const },
+    });
+
+    expect(firstNode.combat).not.toEqual(ordinary2.combat);
+    expect(ordinary2.combat).toEqual(ordinary2Again.combat);
   });
 
   it("clears a won node, records it, and advances to the next route node", () => {

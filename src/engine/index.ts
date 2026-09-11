@@ -30,7 +30,16 @@ export {
   createRewardState,
   skipCardReward,
 } from "./rewards";
-export { M19_NODE_IDS, RUN_STATE_VERSION, beginRunNode, createM19Run, currentRunNode } from "./run";
+export {
+  M19_NODE_IDS,
+  RUN_STATE_VERSION,
+  M19_PARTY_MAX_HP,
+  M19_REST_HEAL,
+  beginRunNode,
+  createM19Run,
+  currentRunNode,
+  currentRunEncounter,
+} from "./run";
 export type { M19NodeId, RunState } from "./run";
 export type {
   CardRewardOption,

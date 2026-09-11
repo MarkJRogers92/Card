@@ -23,6 +23,9 @@ Because the local GitHub credential is read-only (`403`), neither branch
 could be pushed. Push them in order and confirm M14 Acceptance and M15
 Acceptance are green before continuing.
 
+The exact commands, expected workflow results, and bundle-based transfer
+instructions are in `docs/PUBLISH_HANDOFF_M14_M15.md`.
+
 ## Accepted M15 scope
 
 The remaining five Section 3.10 relics — Refund Capacitor, Arc Welder,

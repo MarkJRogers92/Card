@@ -4,10 +4,12 @@ import {
   M10_MORROW_ID,
   M10_SWITCH_ID,
   applyM10Command,
-  createM10Fight,
+  claimRewardOption,
+  createM10RewardFixture,
   getM10Hand,
   hashM10Fight,
   projectSelectedEnemyIntents,
+  skipCardReward,
   type AuthoritativeState,
   type M10Command,
 } from "../engine";
@@ -28,7 +30,7 @@ function positionLabel(
 }
 
 export function App() {
-  const [state, setState] = useState<AuthoritativeState>(() => createM10Fight());
+  const [state, setState] = useState<AuthoritativeState>(() => createM10RewardFixture());
   const [commands, setCommands] = useState<readonly M10Command[]>([]);
   const [selectedTarget, setSelectedTarget] = useState(M10_CLAIMS_ADJUSTER_ID);
   const [error, setError] = useState<string | null>(null);
@@ -59,10 +61,28 @@ export function App() {
   }
 
   function restart(): void {
-    setState(createM10Fight());
+    setState(createM10RewardFixture());
     setCommands([]);
     setSelectedTarget(M10_CLAIMS_ADJUSTER_ID);
     setError(null);
+  }
+
+  function claimReward(transactionId: string, optionId: string): void {
+    try {
+      setState(claimRewardOption(state, transactionId, optionId));
+      setError(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
+  function skipReward(transactionId: string): void {
+    try {
+      setState(skipCardReward(state, transactionId));
+      setError(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
   }
 
   const imprint = combat.imprint;
@@ -155,6 +175,10 @@ export function App() {
             <span>Outcome</span>
             <strong data-testid="outcome">{combat.outcome}</strong>
           </div>
+          <div>
+            <span>Scrap</span>
+            <strong data-testid="scrap">{state.rewards.scrap}</strong>
+          </div>
         </div>
 
         <div className="primary-controls">
@@ -181,6 +205,47 @@ export function App() {
           </button>
         </div>
       </section>
+
+      {state.rewards.pending !== null && (
+        <section className="reward-panel" data-testid="reward-panel" aria-label="Combat reward">
+          <div className="section-heading">
+            <div>
+              <p className="eyebrow">SALVAGE CLAIM</p>
+              <h2>Choose a reward</h2>
+            </div>
+            <span>{state.rewards.scrap} Scrap secured</span>
+          </div>
+          {state.rewards.pending.choices.map((choice) => (
+            <div className="reward-choice" key={choice.choiceId}>
+              <p>{choice.kind === "card" ? "Card reward" : "Relic reward"}</p>
+              <div className="reward-options">
+                {choice.options.map((option) => (
+                  <button
+                    className="reward-option"
+                    data-testid={`reward-option-${option.id}`}
+                    key={option.id}
+                    onClick={() => claimReward(state.rewards.pending?.transactionId ?? "", option.id)}
+                    type="button"
+                  >
+                    <strong>{option.id}</strong>
+                    <span>{option.kind === "card" ? `${option.role} · ${option.rarity}` : "Relic"}</span>
+                  </button>
+                ))}
+              </div>
+              {choice.kind === "card" && (
+                <button
+                  className="secondary-button"
+                  data-testid="reward-skip"
+                  onClick={() => skipReward(state.rewards.pending?.transactionId ?? "")}
+                  type="button"
+                >
+                  Skip card reward
+                </button>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
 
       <section className="hand-section" aria-labelledby="hand-heading">
         <div className="section-heading">

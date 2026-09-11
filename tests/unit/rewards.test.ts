@@ -101,4 +101,32 @@ describe("M18 rewards", () => {
       "does not match",
     );
   });
+
+  it("makes an elite card skip idempotent while preserving its relic choice", () => {
+    const offered = createEncounterReward(
+      createAuthoritativeState({ seed: 21, contentHash: "m18" }),
+      {
+        ...catalog,
+        relics: [
+          { id: "relic.a", unlocked: true },
+          { id: "relic.b", unlocked: true },
+          { id: "relic.owned", unlocked: true },
+        ],
+      },
+      {
+        transactionId: "elite-skip",
+        encounter: "elite",
+        selectedRoles: ["source", "shaper", "crew"],
+        ownedRelicIds: ["relic.owned"],
+      },
+    );
+
+    const skipped = skipCardReward(offered, "elite-skip");
+    expect(skipped.rewards.scrap).toBe(35);
+    expect(skipped.rewards.pending?.choices).toHaveLength(1);
+    expect(skipped.rewards.pending?.choices[0]?.options.map((option) => option.id)).toEqual(
+      expect.arrayContaining(["relic.a", "relic.b"]),
+    );
+    expect(skipCardReward(skipped, "elite-skip")).toBe(skipped);
+  });
 });

@@ -34,6 +34,7 @@ import {
 import type { Ingredient } from "./imprint";
 import { installInitialPassives } from "./initial-passives";
 import { resolvePostCardIngredientWithTriggers } from "./passive-card";
+import { createEncounterReward, type RewardCatalog } from "./rewards";
 import {
   createAuthoritativeState,
   hashAuthoritativeState,
@@ -44,6 +45,15 @@ export const M10_DEFAULT_SEED = 1010 as const;
 export const M10_MORROW_ID = "morrow" as const;
 export const M10_SWITCH_ID = "switch" as const;
 export const M10_CLAIMS_ADJUSTER_ID = "claims-adjuster" as const;
+
+const M18_REWARD_FIXTURE_CATALOG: RewardCatalog = {
+  cards: [
+    { id: "source.open_wound", role: "source", rarity: "common", unlocked: true },
+    { id: "shaper.cut_corners", role: "shaper", rarity: "common", unlocked: true },
+    { id: "crew.toolbox_talk", role: "crew", rarity: "common", unlocked: true },
+  ],
+  relics: [],
+};
 
 export type M10CardOwner = "morrow" | "switch" | "crew";
 export type M10CardDestination = "discard" | "exhaust";
@@ -387,6 +397,15 @@ export function createM10Fight(seed: number = M10_DEFAULT_SEED): AuthoritativeSt
     includeSharedWarranty: true,
   });
   return beginPlayerTurn(state);
+}
+
+export function createM10RewardFixture(): AuthoritativeState {
+  return createEncounterReward(createM10Fight(), M18_REWARD_FIXTURE_CATALOG, {
+    transactionId: "m10-reward-fixture",
+    encounter: "ordinary",
+    selectedRoles: ["source", "shaper", "crew"],
+    ownedRelicIds: [],
+  });
 }
 
 export function getM10CardView(

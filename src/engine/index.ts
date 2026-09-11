@@ -246,6 +246,7 @@ export {
   M10_SWITCH_ID,
   applyM10Command,
   createM10Fight,
+  createM10RewardFixture,
   endM10Turn,
   getM10CardView,
   getM10Hand,

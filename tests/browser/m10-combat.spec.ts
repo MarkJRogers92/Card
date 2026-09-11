@@ -63,3 +63,12 @@ test("restart restores the deterministic opening state and clears the UI command
   expect(await readCommands(page)).toStrictEqual([]);
   await expect(page.getByTestId("state-hash")).toHaveText(initialHash ?? "");
 });
+
+test("claims the deterministic M18 reward and shows its Scrap", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.getByTestId("reward-panel")).toBeVisible();
+  await page.getByTestId("reward-option-source.open_wound").click();
+  await expect(page.getByTestId("scrap")).toHaveText("15");
+  await expect(page.getByTestId("reward-panel")).toHaveCount(0);
+});

@@ -296,10 +296,10 @@ export function claimRewardOption(
 
 export function skipCardReward(state: AuthoritativeState, transactionId: string): AuthoritativeState {
   if (state.rewards.completedTransactionIds.includes(transactionId)) return state;
+  if (state.rewards.resolvedChoiceIds.includes(`${transactionId}:card`)) return state;
   const pending = requirePendingTransaction(state, transactionId);
   const choice = pending.choices.find((candidate) => candidate.kind === "card");
   if (choice === undefined) throw new Error("The pending reward has no card choice to skip.");
-  if (state.rewards.resolvedChoiceIds.includes(`${transactionId}:${choice.choiceId}`)) return state;
   return resolveChoice(state, pending, choice);
 }
 

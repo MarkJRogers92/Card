@@ -173,6 +173,35 @@ describe("M14 first relics", () => {
     expect(actor(state, "shaper").block).toBe(3);
   });
 
+  it("refuses to stack a relic whose source is already bound in the combat", () => {
+    let state = startCombat(
+      createAuthoritativeState({ seed: 1415, contentVersion: "m14", contentHash: "m14" }),
+      cards(),
+    );
+    state = initializeCombatActors(state, {
+      playerCharacters: [
+        { actorId: "source", maxHp: 44 },
+        { actorId: "shaper", maxHp: 36 },
+      ],
+      enemies: [{ actorId: "enemy-1", maxHp: 100 }],
+      frontCharacterId: "source",
+    });
+    // The default initial passives already carry Shared Warranty as
+    // relic.shared_warranty, so installing the relic definition on top of them
+    // would otherwise apply 3 Block twice from a single swap.
+    state = installInitialPassives(state, {
+      morrowActorId: "source",
+      switchActorId: "shaper",
+    });
+    expect(() => installRelicContent(state, [relic("shared_warranty")])).toThrow(
+      "Relic relic.shared_warranty is already installed for this combat.",
+    );
+
+    const withDie = installRelicContent(state, [relic("wetware_die")]);
+    expect(withDie.combat?.modifierBindings).toHaveLength(1);
+    expect(withDie.combat?.triggerBindings).toHaveLength(3);
+  });
+
   it("Wetware Die multiplies Reaction damage only for Bleeding targets", () => {
     let state = setup([relic("wetware_die")]);
     state = applyCombatStatus(state, "enemy-1", "bleed", 1);

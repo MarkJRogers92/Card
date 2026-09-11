@@ -144,10 +144,38 @@ export function compileRelicContent(
   return { modifierBindings, triggerBindings };
 }
 
+function installedBindingSourceIds(state: AuthoritativeState): ReadonlySet<string> {
+  const combat = state.combat;
+  const sourceIds = new Set<string>();
+  if (combat === null) {
+    return sourceIds;
+  }
+  for (const binding of combat.modifierBindings) {
+    sourceIds.add(binding.sourceId);
+  }
+  for (const binding of combat.triggerBindings) {
+    sourceIds.add(binding.sourceId);
+  }
+  return sourceIds;
+}
+
 export function installRelicContent(
   state: AuthoritativeState,
   definitions: readonly RelicDefinition[],
 ): AuthoritativeState {
+  // Relics are unique within a run, so a relic that already owns bindings in this
+  // combat must not gain a second, differently keyed binding set. Without this
+  // check a relic that also exists as a setup-time passive (Shared Warranty)
+  // would silently resolve twice and double its printed effect.
+  const installedSourceIds = installedBindingSourceIds(state);
+  for (const definition of definitions) {
+    if (installedSourceIds.has(definition.id)) {
+      throw new Error(
+        `Relic ${definition.id} is already installed for this combat. ` +
+          "Relics are unique within a run; remove the duplicate initial passive or relic binding first.",
+      );
+    }
+  }
   const compiled = compileRelicContent(definitions);
   let current = appendSetupModifierBindings(state, compiled.modifierBindings);
   current = appendSetupTriggerBindings(current, compiled.triggerBindings);

@@ -216,6 +216,7 @@ describe("M15 remaining relics", () => {
       "relic.refund_capacitor",
       "relic.counterfeit_seal",
       "relic.carbon_copy",
+      "transformation.forgery",
     ]);
   });
 

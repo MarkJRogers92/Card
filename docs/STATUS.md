@@ -2,6 +2,14 @@
 
 ## Current milestone
 
+**M16 — family transformations — local implementation checkpoint**
+
+M16 is implemented locally on `codex/m16-family-transformations` from accepted
+M15 base `d09e963`. It has not been published or accepted yet. Focused M14,
+M15, and M16 suites and the content/type check pass locally.
+
+## Previous accepted milestone
+
 **M15 — remaining relics — accepted**
 
 M15 is accepted on `codex/m15-remaining-relics`. GitHub Actions run
@@ -85,5 +93,4 @@ was not touched.
 
 ## Next eligible milestone
 
-**M16 — relic-family transformations** is now eligible because M15 is accepted.
-It has not been started in this acceptance-record commit.
+**M17 — initial enemies and encounters** is eligible after M16 acceptance.

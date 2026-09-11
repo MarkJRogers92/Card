@@ -60,6 +60,13 @@ export interface CardEffectContext {
   readonly ownerActorId: string | null;
   readonly selectedEnemyActorId: string | null;
   readonly parameters: ReadonlyMap<string, number>;
+  readonly multiplierBps?: number;
+}
+
+function resolveEffectAmount(expr: CardValueExpr, context: CardEffectContext): number {
+  const amount = resolveValueExpr(expr, context.parameters);
+  const multiplierBps = context.multiplierBps ?? 10000;
+  return Number((BigInt(amount) * BigInt(multiplierBps)) / 10000n);
 }
 
 export interface CardBaseEffectsResult {
@@ -354,7 +361,7 @@ export function applyCardBaseEffects(
             `Unsupported damage category for the content card executor: ${effect.category}.`,
           );
         }
-        const amount = resolveValueExpr(effect.amount, context.parameters);
+        const amount = resolveEffectAmount(effect.amount, context);
         const targetActorIds = resolveEffectTargetActorIds(
           requireActiveCombat(current),
           effect.target,
@@ -385,7 +392,7 @@ export function applyCardBaseEffects(
         break;
       }
       case "apply_status": {
-        const amount = resolveValueExpr(effect.amount, context.parameters);
+        const amount = resolveEffectAmount(effect.amount, context);
         const targetActorIds = resolveEffectTargetActorIds(
           requireActiveCombat(current),
           effect.target,
@@ -397,7 +404,7 @@ export function applyCardBaseEffects(
         break;
       }
       case "block": {
-        const amount = resolveValueExpr(effect.amount, context.parameters);
+        const amount = resolveEffectAmount(effect.amount, context);
         const targetActorIds = resolveEffectTargetActorIds(
           requireActiveCombat(current),
           effect.target,
@@ -409,7 +416,7 @@ export function applyCardBaseEffects(
         break;
       }
       case "heal": {
-        const amount = resolveValueExpr(effect.amount, context.parameters);
+        const amount = resolveEffectAmount(effect.amount, context);
         const targetActorIds = resolveEffectTargetActorIds(
           requireActiveCombat(current),
           effect.target,
@@ -421,12 +428,12 @@ export function applyCardBaseEffects(
         break;
       }
       case "gain_energy": {
-        const amount = resolveValueExpr(effect.amount, context.parameters);
+        const amount = resolveEffectAmount(effect.amount, context);
         current = gainEnergy(current, amount);
         break;
       }
       case "draw": {
-        const amount = resolveValueExpr(effect.amount, context.parameters);
+        const amount = resolveEffectAmount(effect.amount, context);
         const combat = requireActiveCombat(current);
         const draw = drawCards(combat.deck, current.rng, amount, combat.rules.maxHandSize);
         current = { ...current, rng: draw.rng, combat: { ...combat, deck: draw.deck } };
@@ -440,7 +447,7 @@ export function applyCardBaseEffects(
         break;
       }
       case "boost_imprint": {
-        const amount = resolveValueExpr(effect.amount, context.parameters);
+        const amount = resolveEffectAmount(effect.amount, context);
         current = boostImprintPotency(current, amount);
         break;
       }
@@ -508,6 +515,18 @@ export function playContentCard(
   };
   const base = applyCardBaseEffects(current, definition.effects, effectContext);
   current = base.state;
+  const repeatDispatch = dispatchTriggerEvent(current, {
+    eventVersion: TRIGGER_EVENT_VERSION,
+    kind: "card_base_effects",
+    cardTags: definition.tags ?? [],
+  });
+  current = repeatDispatch.state;
+  if (repeatDispatch.baseEffectRepeatMultiplierBps > 0 && current.combat?.outcome === "active") {
+    current = applyCardBaseEffects(current, definition.effects, {
+      ...effectContext,
+      multiplierBps: repeatDispatch.baseEffectRepeatMultiplierBps,
+    }).state;
+  }
 
   const ingredient = resolveIngredient(definition, parameters);
 

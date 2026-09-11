@@ -12,6 +12,7 @@ import type { FormIngredientId, Ingredient, MaterialIngredientId } from "./impri
 import { scheduleReactionPacket, type ScheduledReactionEffect } from "./scheduled";
 import type { AuthoritativeState } from "./state";
 import type { CombatStatusId } from "./status";
+import { applyCombatStatus } from "./status-runtime";
 
 export const TRIGGER_BINDING_VERSION = 1 as const;
 export const TRIGGER_COUNTERS_VERSION = 1 as const;
@@ -24,7 +25,8 @@ export type TriggerEventKind =
   | "card_played"
   | "after_swap"
   | "primary_reaction"
-  | "card_play_cost";
+  | "card_play_cost"
+  | "card_base_effects";
 export type TriggerLimitScope = "command" | "turn" | "combat";
 export type TriggerSwapMode = "manual" | "card_free";
 
@@ -40,6 +42,7 @@ export type TriggerCondition =
       readonly ingredient: Ingredient;
     }
   | { readonly kind: "swap_mode"; readonly mode: TriggerSwapMode }
+  | { readonly kind: "energy_paid" }
   | { readonly kind: "has_card_tag"; readonly value: string }
   | { readonly kind: "reaction_potency"; readonly value: number };
 
@@ -79,7 +82,13 @@ export type TriggerEffect =
   | {
       readonly op: "repeat_scheduled_packet";
       readonly multiplierBps: number;
-    };
+    }
+  | {
+      readonly op: "apply_bleed_to_living_enemies";
+      readonly amount: number;
+    }
+  | { readonly op: "refund_energy_paid" }
+  | { readonly op: "repeat_card_base_effects"; readonly multiplierBps: number };
 
 export interface TriggerLimit {
   readonly scope: TriggerLimitScope;
@@ -118,6 +127,7 @@ export interface AfterSwapTriggerEvent {
   readonly kind: "after_swap";
   readonly incomingFrontActorId: string;
   readonly mode: TriggerSwapMode;
+  readonly energyPaid: number;
 }
 
 export interface PrimaryReactionTriggerEvent {
@@ -147,11 +157,18 @@ export interface CardPlayCostTriggerEvent {
   readonly baseCost: number;
 }
 
+export interface CardBaseEffectsTriggerEvent {
+  readonly eventVersion: typeof TRIGGER_EVENT_VERSION;
+  readonly kind: "card_base_effects";
+  readonly cardTags: readonly string[];
+}
+
 export type TriggerEvent =
   | CardPlayedTriggerEvent
   | AfterSwapTriggerEvent
   | PrimaryReactionTriggerEvent
-  | CardPlayCostTriggerEvent;
+  | CardPlayCostTriggerEvent
+  | CardBaseEffectsTriggerEvent;
 
 export interface TriggerActivationProjection {
   readonly sourceId: string;
@@ -171,6 +188,7 @@ export interface TriggerDispatchResult {
   readonly activations: readonly TriggerActivationResult[];
   readonly generatedEvents: number;
   readonly costReduction: number;
+  readonly baseEffectRepeatMultiplierBps: number;
 }
 
 export type ModifierOperation = "multiply" | "add" | "set" | "cap";
@@ -278,6 +296,7 @@ function validateEffect(effect: TriggerEffect): void {
     case "draw":
     case "gain_energy":
     case "reduce_card_cost":
+    case "apply_bleed_to_living_enemies":
       assertNonnegativeInteger(`Trigger ${effect.op} amount`, effect.amount);
       return;
     case "gain_block_per_bleed_target":
@@ -288,6 +307,7 @@ function validateEffect(effect: TriggerEffect): void {
       return;
     case "repeat_largest_reaction_damage":
     case "repeat_scheduled_packet":
+    case "repeat_card_base_effects":
       assertNonnegativeInteger(
         `Trigger ${effect.op} multiplierBps`,
         effect.multiplierBps,
@@ -535,9 +555,11 @@ function conditionMatches(condition: TriggerCondition, event: TriggerEvent): boo
       return event.kind === "card_played" && event.ingredient !== null;
     case "swap_mode":
       return event.kind === "after_swap" && event.mode === condition.mode;
+    case "energy_paid":
+      return event.kind === "after_swap" && event.energyPaid > 0;
     case "has_card_tag":
       return (
-        (event.kind === "card_play_cost" || event.kind === "card_played") &&
+        (event.kind === "card_play_cost" || event.kind === "card_played" || event.kind === "card_base_effects") &&
         (event.cardTags ?? []).includes(condition.value)
       );
     case "reaction_potency":
@@ -736,6 +758,22 @@ function applyTriggerEffect(
     return gainEnergy(state, effect.amount);
   }
 
+  if (effect.op === "apply_bleed_to_living_enemies") {
+    let current = state;
+    for (const actorId of requireCombat(current).enemySpawnOrder) {
+      const actor = requireCombat(current).actors[actorId];
+      if (actor !== undefined && actor.side === "enemy" && actor.hp > 0) {
+        current = applyCombatStatus(current, actorId, "bleed", effect.amount);
+      }
+    }
+    return current;
+  }
+
+  if (effect.op === "refund_energy_paid") {
+    if (event.kind !== "after_swap") return state;
+    return gainEnergy(state, event.energyPaid);
+  }
+
   if (effect.op === "repeat_scheduled_packet") {
     if (event.kind !== "primary_reaction" || event.scheduledRepeat === null) {
       return state;
@@ -777,6 +815,10 @@ function applyTriggerEffect(
     return state;
   }
 
+  if (effect.op === "repeat_card_base_effects") {
+    return state;
+  }
+
   const combat = requireCombat(state);
   const draw = drawCards(
     combat.deck,
@@ -802,6 +844,7 @@ export function dispatchTriggerEvent(
   const projections = applicableBindings(startingCombat, event);
   let generatedEvents = 0;
   let costReduction = 0;
+  let baseEffectRepeatMultiplierBps = 0;
   let current = state;
   const activations: TriggerActivationResult[] = [];
 
@@ -834,13 +877,18 @@ export function dispatchTriggerEvent(
         effectsResolved += 1;
         continue;
       }
+      if (effect.op === "repeat_card_base_effects") {
+        baseEffectRepeatMultiplierBps = Math.max(baseEffectRepeatMultiplierBps, effect.multiplierBps);
+        effectsResolved += 1;
+        continue;
+      }
       current = applyTriggerEffect(current, binding, event, effect);
       effectsResolved += 1;
     }
     activations.push({ ...projection, effectsResolved });
   }
 
-  return { state: current, activations, generatedEvents, costReduction };
+  return { state: current, activations, generatedEvents, costReduction, baseEffectRepeatMultiplierBps };
 }
 
 function modifierConditionMatches(

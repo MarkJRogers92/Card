@@ -216,6 +216,7 @@ describe("M09 trigger dispatcher", () => {
       kind: "after_swap",
       incomingFrontActorId: "switch",
       mode: "manual",
+      energyPaid: 1,
     });
     expect(preview.map((entry) => `${entry.priority}:${entry.sourceId}:${entry.triggerId}`)).toStrictEqual([
       "10:a.source:a",
@@ -233,6 +234,7 @@ describe("M09 trigger dispatcher", () => {
       kind: "after_swap" as const,
       incomingFrontActorId: "switch",
       mode: "manual" as const,
+      energyPaid: 1,
     };
 
     expect(previewTriggerEvent(state, event)).toHaveLength(1);
@@ -267,6 +269,7 @@ describe("M09 trigger dispatcher", () => {
         kind: "after_swap",
         incomingFrontActorId: "switch",
         mode: "manual",
+        energyPaid: 1,
       }),
     ).toThrow(/development ceiling of 256/);
     expect(hashAuthoritativeState(state)).toBe(before);

@@ -2,6 +2,7 @@ import type { RelicDefinition } from "../content/generated";
 import { resolveValueExpr } from "./card-content";
 import type { Ingredient } from "./imprint";
 import type { AuthoritativeState } from "./state";
+import type { InstalledRelic, InstalledRelicFamily } from "./combat";
 import {
   MODIFIER_BINDING_VERSION,
   TRIGGER_BINDING_VERSION,
@@ -205,6 +206,65 @@ function installedBindingSourceIds(state: AuthoritativeState): ReadonlySet<strin
   return sourceIds;
 }
 
+function familyTransformationBindings(
+  installedRelics: readonly InstalledRelic[],
+  installedTriggerSourceIds: ReadonlySet<string>,
+): readonly TriggerBinding[] {
+  const familyIds = (family: InstalledRelicFamily) => new Set(
+    installedRelics.filter((relic) => relic.family === family).map((relic) => relic.id),
+  );
+  const bindings: TriggerBinding[] = [];
+  if (familyIds("anatomy").size >= 3 && !installedTriggerSourceIds.has("transformation.anatomy")) {
+    bindings.push({
+    bindingVersion: TRIGGER_BINDING_VERSION,
+    sourceId: "transformation.anatomy",
+    triggerId: "spare_parts",
+    sourceActorId: null,
+    event: "primary_reaction",
+    conditions: [{ kind: "ingredient", ingredient: { kind: "material", id: "gore", prime: 1 } }],
+    effects: [{ op: "apply_bleed_to_living_enemies", amount: 1 }],
+    limit: { scope: "turn", count: 1 },
+    priority: 100,
+    });
+  }
+  if (familyIds("circuit").size >= 3 && !installedTriggerSourceIds.has("transformation.circuit")) {
+    bindings.push({
+      bindingVersion: TRIGGER_BINDING_VERSION,
+      sourceId: "transformation.circuit",
+      triggerId: "live_wire",
+      sourceActorId: null,
+      event: "after_swap",
+      conditions: [{ kind: "swap_mode", mode: "manual" }, { kind: "energy_paid" }],
+      effects: [{ op: "refund_energy_paid" }],
+      limit: { scope: "turn", count: 1 },
+      priority: 100,
+    });
+  }
+  if (familyIds("forgery").size >= 3 && !installedTriggerSourceIds.has("transformation.forgery")) {
+    bindings.push({
+      bindingVersion: TRIGGER_BINDING_VERSION,
+      sourceId: "transformation.forgery",
+      triggerId: "double_booked",
+      sourceActorId: null,
+      event: "card_base_effects",
+      conditions: [{ kind: "has_card_tag", value: "grafted" }],
+      effects: [{ op: "repeat_card_base_effects", multiplierBps: 5000 }],
+      limit: { scope: "combat", count: 1 },
+      priority: 100,
+    });
+  }
+  return bindings;
+}
+
+function installedRelicsFrom(
+  definitions: readonly RelicDefinition[],
+): readonly InstalledRelic[] {
+  return definitions.map((definition) => ({
+    id: definition.id,
+    family: definition.family as InstalledRelicFamily,
+  }));
+}
+
 export function installRelicContent(
   state: AuthoritativeState,
   definitions: readonly RelicDefinition[],
@@ -214,6 +274,7 @@ export function installRelicContent(
   // check a relic that also exists as a setup-time passive (Shared Warranty)
   // would silently resolve twice and double its printed effect.
   const installedSourceIds = installedBindingSourceIds(state);
+  const installedRelicIds = new Set(state.combat?.installedRelics.map((relic) => relic.id));
   for (const definition of definitions) {
     if (installedSourceIds.has(definition.id)) {
       throw new Error(
@@ -221,9 +282,26 @@ export function installRelicContent(
           "Relics are unique within a run; remove the duplicate initial passive or relic binding first.",
       );
     }
+    if (installedRelicIds.has(definition.id)) {
+      throw new Error(`Relic ${definition.id} is already installed for this combat.`);
+    }
+    installedRelicIds.add(definition.id);
   }
   const compiled = compileRelicContent(definitions);
-  let current = appendSetupModifierBindings(state, compiled.modifierBindings);
-  current = appendSetupTriggerBindings(current, compiled.triggerBindings);
+  const combat = state.combat;
+  if (combat === null) throw new Error("No combat is active.");
+  let current: AuthoritativeState = {
+    ...state,
+    combat: {
+      ...combat,
+      installedRelics: [...combat.installedRelics, ...installedRelicsFrom(definitions)],
+    },
+  };
+  current = appendSetupModifierBindings(current, compiled.modifierBindings);
+  const transformationBindings = familyTransformationBindings(
+    current.combat?.installedRelics ?? [],
+    new Set(current.combat?.triggerBindings.map((binding) => binding.sourceId)),
+  );
+  current = appendSetupTriggerBindings(current, [...compiled.triggerBindings, ...transformationBindings]);
   return current;
 }

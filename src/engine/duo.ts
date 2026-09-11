@@ -121,6 +121,7 @@ export function swapCharacters(
       kind: "after_swap",
       incomingFrontActorId: frontCharacterId,
       mode,
+      energyPaid,
     }).state;
   }
   return {

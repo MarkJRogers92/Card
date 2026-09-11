@@ -31,7 +31,7 @@ import {
   type TriggerCounters,
 } from "./triggers";
 
-export const COMBAT_STATE_VERSION = 8 as const;
+export const COMBAT_STATE_VERSION = 9 as const;
 export const DEFAULT_ENERGY_PER_TURN = 3 as const;
 export const DEFAULT_CARDS_PER_TURN = 5 as const;
 export const DEFAULT_MAX_HAND_SIZE = 10 as const;
@@ -43,6 +43,13 @@ export interface CombatRules {
   readonly energyPerTurn: number;
   readonly cardsPerTurn: number;
   readonly maxHandSize: number;
+}
+
+export type InstalledRelicFamily = "none" | "anatomy" | "circuit" | "forgery";
+
+export interface InstalledRelic {
+  readonly id: string;
+  readonly family: InstalledRelicFamily;
 }
 
 export interface CombatState {
@@ -70,6 +77,7 @@ export interface CombatState {
   readonly triggerCounters: TriggerCounters;
   readonly modifierBindings: readonly ModifierBinding[];
   readonly reactionRecoveryUsed: number;
+  readonly installedRelics: readonly InstalledRelic[];
 }
 
 export interface CombatRuleOverrides {
@@ -174,6 +182,7 @@ export function startCombat(
     triggerCounters: createTriggerCounters(),
     modifierBindings: [],
     reactionRecoveryUsed: 0,
+    installedRelics: [],
   };
   assertCardConservation(combat.deck);
 

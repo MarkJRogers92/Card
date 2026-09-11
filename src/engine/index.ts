@@ -80,6 +80,8 @@ export type {
   CombatRuleOverrides,
   CombatRules,
   CombatState,
+  InstalledRelic,
+  InstalledRelicFamily,
 } from "./combat";
 export {
   ADDITIONAL_MANUAL_SWAP_COST,

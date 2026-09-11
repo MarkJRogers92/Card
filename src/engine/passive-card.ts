@@ -29,10 +29,19 @@ export function resolvePostCardIngredientWithTriggers(
   // same card, since that installation happens later in finishCardPlayLifecycle.
   let current = resolved.state;
   if (resolved.reaction !== null && combat.frontCharacterId !== null) {
+    const bleedTargetActorIds = [
+      ...new Set(
+        resolved.reaction.statusesApplied
+          .filter((applied) => applied.status === "bleed")
+          .map((applied) => applied.actorId),
+      ),
+    ];
     current = dispatchTriggerEvent(current, {
       eventVersion: TRIGGER_EVENT_VERSION,
       kind: "primary_reaction",
       frontActorId: combat.frontCharacterId,
+      bleedTargetActorIds,
+      largestDirectDamage: resolved.reaction.largestDirectDamage,
     }).state;
   }
   if (current.combat === null || current.combat.outcome !== "active") {

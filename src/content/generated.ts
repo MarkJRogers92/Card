@@ -288,6 +288,7 @@ export namespace EffectSchema {
     | InstallProtocolEffect
     | SchedulePacketEffect
     | RepeatPacketEffect
+    | RepeatReactionPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -465,6 +466,10 @@ export namespace EffectSchema {
     multiplier: number;
     timing: "next_player_turn_start" | "next_enemy_phase_start";
   }
+  export interface RepeatReactionPacketEffect {
+    op: "repeat_reaction_packet";
+    multiplierBps: number;
+  }
   export interface GainScrapEffect {
     op: "gain_scrap";
     amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
@@ -512,6 +517,7 @@ export namespace CardSchema {
     | InstallProtocolEffect
     | SchedulePacketEffect
     | RepeatPacketEffect
+    | RepeatReactionPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -769,6 +775,10 @@ export namespace CardSchema {
     multiplier: number;
     timing: "next_player_turn_start" | "next_enemy_phase_start";
   }
+  export interface RepeatReactionPacketEffect {
+    op: "repeat_reaction_packet";
+    multiplierBps: number;
+  }
   export interface GainScrapEffect {
     op: "gain_scrap";
     amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
@@ -816,6 +826,7 @@ export namespace RelicSchema {
     | InstallProtocolEffect
     | SchedulePacketEffect
     | RepeatPacketEffect
+    | RepeatReactionPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -1213,6 +1224,10 @@ export namespace RelicSchema {
     multiplier: number;
     timing: "next_player_turn_start" | "next_enemy_phase_start";
   }
+  export interface RepeatReactionPacketEffect {
+    op: "repeat_reaction_packet";
+    multiplierBps: number;
+  }
   export interface GainScrapEffect {
     op: "gain_scrap";
     amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
@@ -1270,6 +1285,7 @@ export namespace EnemySchema {
     | InstallProtocolEffect
     | SchedulePacketEffect
     | RepeatPacketEffect
+    | RepeatReactionPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -1542,6 +1558,10 @@ export namespace EnemySchema {
     multiplier: number;
     timing: "next_player_turn_start" | "next_enemy_phase_start";
   }
+  export interface RepeatReactionPacketEffect {
+    op: "repeat_reaction_packet";
+    multiplierBps: number;
+  }
   export interface GainScrapEffect {
     op: "gain_scrap";
     amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
@@ -1629,6 +1649,7 @@ export namespace EventSchema {
     | InstallProtocolEffect
     | SchedulePacketEffect
     | RepeatPacketEffect
+    | RepeatReactionPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -1918,6 +1939,10 @@ export namespace EventSchema {
     packetRef: string;
     multiplier: number;
     timing: "next_player_turn_start" | "next_enemy_phase_start";
+  }
+  export interface RepeatReactionPacketEffect {
+    op: "repeat_reaction_packet";
+    multiplierBps: number;
   }
   export interface GainScrapEffect {
     op: "gain_scrap";

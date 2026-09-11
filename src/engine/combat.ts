@@ -26,11 +26,12 @@ import { decayDurationStatusesForSide } from "./status-runtime";
 import {
   createTriggerCounters,
   resetTurnTriggerCounters,
+  type ModifierBinding,
   type TriggerBinding,
   type TriggerCounters,
 } from "./triggers";
 
-export const COMBAT_STATE_VERSION = 7 as const;
+export const COMBAT_STATE_VERSION = 8 as const;
 export const DEFAULT_ENERGY_PER_TURN = 3 as const;
 export const DEFAULT_CARDS_PER_TURN = 5 as const;
 export const DEFAULT_MAX_HAND_SIZE = 10 as const;
@@ -67,6 +68,8 @@ export interface CombatState {
   readonly nextScheduledPacketOrdinal: number;
   readonly triggerBindings: readonly TriggerBinding[];
   readonly triggerCounters: TriggerCounters;
+  readonly modifierBindings: readonly ModifierBinding[];
+  readonly reactionRecoveryUsed: number;
 }
 
 export interface CombatRuleOverrides {
@@ -169,6 +172,8 @@ export function startCombat(
     nextScheduledPacketOrdinal: 1,
     triggerBindings: [],
     triggerCounters: createTriggerCounters(),
+    modifierBindings: [],
+    reactionRecoveryUsed: 0,
   };
   assertCardConservation(combat.deck);
 

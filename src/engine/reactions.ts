@@ -29,9 +29,17 @@ import {
   type ScheduledReactionEffect,
 } from "./scheduled";
 import type { AuthoritativeState } from "./state";
+import { activeCombatStatusIds } from "./status";
 import { applyCombatStatus } from "./status-runtime";
+import { collectApplicableModifiers, combineMultiplierModifiers } from "./triggers";
 
 export const REACTION_RECIPE_VERSION = 2 as const;
+
+// Shared channel contract between this resolver and relic-content.ts's compiler.
+export const REACTION_DIRECT_DAMAGE_MULTIPLIER_CHANNEL =
+  "reaction.direct.multiplier";
+export const REACTION_RECOVERY_ALLOWANCE_CHANNEL = "reaction.recovery_allowance";
+export const REACTION_RECOVERY_BASE_ALLOWANCE = 6 as const;
 
 export type EnemyReactionTarget = "selected_enemy" | "all_enemies";
 
@@ -312,6 +320,11 @@ export const NEEDLE_REACTION_RECIPES: Readonly<
   echo: REACTION_RECIPES.echo.needle,
 };
 
+export interface LargestReactionDirectDamage {
+  readonly targetActorId: string;
+  readonly amountBeforeTargetModifiers: number;
+}
+
 export interface PrimaryReactionResolution {
   readonly recipeId: string;
   readonly recipeName: string;
@@ -329,6 +342,7 @@ export interface PrimaryReactionResolution {
   readonly healingResults: readonly HealingResult[];
   readonly blockApplied: readonly { actorId: string; amount: number }[];
   readonly scheduledPacketIds: readonly string[];
+  readonly largestDirectDamage: LargestReactionDirectDamage | null;
 }
 
 export interface PostCardIngredientInput {
@@ -436,6 +450,20 @@ function recipeNeedsSelectedEnemy(recipeValue: ReactionRecipe): boolean {
   return recipeValue.effects.some(effectNeedsSelectedEnemy);
 }
 
+function reactionRecoveryAllowance(combat: CombatState): number {
+  const applicable = collectApplicableModifiers(
+    combat.modifierBindings,
+    REACTION_RECOVERY_ALLOWANCE_CHANNEL,
+  );
+  let allowance: number = REACTION_RECOVERY_BASE_ALLOWANCE;
+  for (const modifier of applicable) {
+    if (modifier.operation === "set") {
+      allowance = Math.max(allowance, modifier.value);
+    }
+  }
+  return allowance;
+}
+
 function reactionAmount(coefficient: number, potency: number): number {
   if (!Number.isSafeInteger(coefficient) || coefficient < 0) {
     throw new RangeError("Reaction coefficient must be a nonnegative safe integer.");
@@ -492,6 +520,7 @@ function resolvePrimaryReaction(
   const healingResults: HealingResult[] = [];
   const blockApplied: Array<{ actorId: string; amount: number }> = [];
   const scheduledPacketIds: string[] = [];
+  let largestDirectDamage: LargestReactionDirectDamage | null = null;
 
   for (const effect of recipeValue.effects) {
     if (current.combat?.outcome !== "active") {
@@ -499,13 +528,30 @@ function resolvePrimaryReaction(
     }
 
     if (effect.op === "heal") {
-      const frontCharacterId = requireFrontCharacterId(requireCombat(current));
+      const combatBeforeHeal = requireCombat(current);
+      const frontCharacterId = requireFrontCharacterId(combatBeforeHeal);
+      const allowance = reactionRecoveryAllowance(combatBeforeHeal);
+      const remainingAllowance = Math.max(
+        0,
+        allowance - combatBeforeHeal.reactionRecoveryUsed,
+      );
+      const requested = reactionAmount(effect.coefficient, stored.potency);
       const resolution = healActor(
         current,
         frontCharacterId,
-        reactionAmount(effect.coefficient, stored.potency),
+        Math.min(requested, remainingAllowance),
       );
       current = resolution.state;
+      if (resolution.result.hpGained > 0 && current.combat !== null) {
+        current = {
+          ...current,
+          combat: {
+            ...current.combat,
+            reactionRecoveryUsed:
+              combatBeforeHeal.reactionRecoveryUsed + resolution.result.hpGained,
+          },
+        };
+      }
       healingResults.push(resolution.result);
       continue;
     }
@@ -547,27 +593,46 @@ function resolvePrimaryReaction(
     if (effect.op === "damage") {
       for (let hit = 0; hit < effect.hits; hit += 1) {
         for (const actorId of targets) {
-          const target = current.combat?.actors[actorId];
+          const combatNow = current.combat;
+          const target = combatNow?.actors[actorId];
           if (
-            current.combat?.outcome !== "active" ||
+            combatNow?.outcome !== "active" ||
             target === undefined ||
             target.hp === 0
           ) {
             continue;
           }
-          const amount = calculateReactionDamage(
-            current.combat,
+          const outgoingMultiplierBps = combineMultiplierModifiers(
+            collectApplicableModifiers(
+              combatNow.modifierBindings,
+              REACTION_DIRECT_DAMAGE_MULTIPLIER_CHANNEL,
+              { targetStatuses: activeCombatStatusIds(target.statuses) },
+            ),
+          );
+          const calculation = calculateReactionDamage(
+            combatNow,
             actorId,
             effect.coefficient,
             stored.potency,
-          ).amount;
+            outgoingMultiplierBps,
+          );
           const resolution = applyDirectDamage(
             current,
             actorId,
-            createDirectDamagePacket(amount),
+            createDirectDamagePacket(calculation.amount),
           );
           current = resolution.state;
           damageResults.push(...resolution.results);
+          if (
+            largestDirectDamage === null ||
+            calculation.amountBeforeTargetModifiers >
+              largestDirectDamage.amountBeforeTargetModifiers
+          ) {
+            largestDirectDamage = {
+              targetActorId: actorId,
+              amountBeforeTargetModifiers: calculation.amountBeforeTargetModifiers,
+            };
+          }
         }
       }
       continue;
@@ -603,6 +668,7 @@ function resolvePrimaryReaction(
       healingResults,
       blockApplied,
       scheduledPacketIds,
+      largestDirectDamage,
     },
   };
 }

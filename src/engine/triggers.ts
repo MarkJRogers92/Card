@@ -1,6 +1,12 @@
 import type { CombatState } from "./combat";
 import { drawCards } from "./deck";
-import { gainBlock } from "./damage";
+import {
+  applyDirectDamage,
+  calculateReactionDamageFromBase,
+  createDirectDamagePacket,
+  DAMAGE_MULTIPLIER_BASIS,
+  gainBlock,
+} from "./damage";
 import type { CardPositionClassification } from "./duo";
 import type { Ingredient } from "./imprint";
 import type { AuthoritativeState } from "./state";
@@ -45,6 +51,15 @@ export type TriggerEffect =
   | {
       readonly op: "draw";
       readonly amount: number;
+    }
+  | {
+      readonly op: "gain_block_per_bleed_target";
+      readonly target: TriggerEffectTarget;
+      readonly amountPerTarget: number;
+    }
+  | {
+      readonly op: "repeat_largest_reaction_damage";
+      readonly multiplierBps: number;
     };
 
 export interface TriggerLimit {
@@ -89,6 +104,11 @@ export interface PrimaryReactionTriggerEvent {
   readonly eventVersion: typeof TRIGGER_EVENT_VERSION;
   readonly kind: "primary_reaction";
   readonly frontActorId: string;
+  readonly bleedTargetActorIds: readonly string[];
+  readonly largestDirectDamage: {
+    readonly targetActorId: string;
+    readonly amountBeforeTargetModifiers: number;
+  } | null;
 }
 
 export type TriggerEvent =
@@ -207,7 +227,28 @@ function validateCondition(condition: TriggerCondition): void {
 }
 
 function validateEffect(effect: TriggerEffect): void {
-  assertNonnegativeInteger(`Trigger ${effect.op} amount`, effect.amount);
+  if (effect.op === "gain_block" || effect.op === "draw") {
+    assertNonnegativeInteger(`Trigger ${effect.op} amount`, effect.amount);
+    return;
+  }
+  if (effect.op === "gain_block_per_bleed_target") {
+    assertNonnegativeInteger(
+      "Trigger gain_block_per_bleed_target amountPerTarget",
+      effect.amountPerTarget,
+    );
+    return;
+  }
+  assertNonnegativeInteger(
+    "Trigger repeat_largest_reaction_damage multiplierBps",
+    effect.multiplierBps,
+  );
+}
+
+function effectSourceActorTarget(effect: TriggerEffect): TriggerEffectTarget | null {
+  if (effect.op === "gain_block" || effect.op === "gain_block_per_bleed_target") {
+    return effect.target;
+  }
+  return null;
 }
 
 function validateBinding(binding: TriggerBinding): void {
@@ -231,7 +272,10 @@ function validateBinding(binding: TriggerBinding): void {
   }
   for (const effect of binding.effects) {
     validateEffect(effect);
-    if (effect.op === "gain_block" && effect.target === "source_actor" && binding.sourceActorId === null) {
+    if (
+      effectSourceActorTarget(effect) === "source_actor" &&
+      binding.sourceActorId === null
+    ) {
       throw new Error(`Trigger ${bindingKey(binding)} requires sourceActorId for source_actor effects.`);
     }
   }
@@ -308,6 +352,57 @@ export function installTriggerBindings(
       ...combat,
       triggerBindings: cloned,
       triggerCounters: createTriggerCounters(),
+    },
+  };
+}
+
+function cloneModifierCondition(
+  condition: ModifierCondition | null,
+): ModifierCondition | null {
+  if (condition === null) {
+    return null;
+  }
+  return {
+    ...condition,
+    ingredient:
+      condition.ingredient === undefined
+        ? undefined
+        : cloneIngredient(condition.ingredient),
+  };
+}
+
+function cloneModifierBinding(binding: ModifierBinding): ModifierBinding {
+  return { ...binding, condition: cloneModifierCondition(binding.condition) };
+}
+
+export function installModifierBindings(
+  state: AuthoritativeState,
+  bindings: readonly ModifierBinding[],
+): AuthoritativeState {
+  const combat = requireCombat(state);
+  if (combat.phase !== "setup") {
+    throw new Error("Modifier bindings must be installed during combat setup.");
+  }
+  if (combat.modifierBindings.length !== 0) {
+    throw new Error("Modifier bindings are already installed for this combat.");
+  }
+
+  const seen = new Set<string>();
+  const cloned = bindings.map((binding) => {
+    validateModifier(binding);
+    const key = `${binding.sourceId}::${binding.modifierId}`;
+    if (seen.has(key)) {
+      throw new Error(`Duplicate modifier binding: ${key}.`);
+    }
+    seen.add(key);
+    return cloneModifierBinding(binding);
+  });
+
+  return {
+    ...state,
+    combat: {
+      ...combat,
+      modifierBindings: cloned,
     },
   };
 }
@@ -468,6 +563,36 @@ function applyTriggerEffect(
     );
   }
 
+  if (effect.op === "gain_block_per_bleed_target") {
+    const count = event.kind === "primary_reaction" ? event.bleedTargetActorIds.length : 0;
+    return gainBlock(
+      state,
+      resolveEffectTarget(binding, event, effect.target),
+      effect.amountPerTarget * count,
+    );
+  }
+
+  if (effect.op === "repeat_largest_reaction_damage") {
+    if (event.kind !== "primary_reaction" || event.largestDirectDamage === null) {
+      return state;
+    }
+    const combat = requireCombat(state);
+    const { targetActorId, amountBeforeTargetModifiers } = event.largestDirectDamage;
+    const scaledBase =
+      (BigInt(amountBeforeTargetModifiers) * BigInt(effect.multiplierBps)) /
+      BigInt(DAMAGE_MULTIPLIER_BASIS);
+    const calculation = calculateReactionDamageFromBase(
+      combat,
+      targetActorId,
+      Number(scaledBase),
+    );
+    return applyDirectDamage(
+      state,
+      targetActorId,
+      createDirectDamagePacket(calculation.amount),
+    ).state;
+  }
+
   const combat = requireCombat(state);
   const draw = drawCards(
     combat.deck,
@@ -609,4 +734,27 @@ export function collectApplicableModifiers(
                 : cloneIngredient(binding.condition.ingredient),
           },
   }));
+}
+
+// Only "multiply" bindings compose into a damage multiplier; other operations
+// are not used by any channel this combines today.
+export function combineMultiplierModifiers(
+  modifiers: readonly ModifierBinding[],
+): number {
+  let combined = BigInt(DAMAGE_MULTIPLIER_BASIS);
+  for (const modifier of modifiers) {
+    if (modifier.operation !== "multiply") {
+      continue;
+    }
+    if (!Number.isSafeInteger(modifier.value) || modifier.value < 0) {
+      throw new RangeError(
+        `Modifier ${modifier.sourceId}::${modifier.modifierId} multiply value must be a nonnegative safe integer.`,
+      );
+    }
+    combined = (combined * BigInt(modifier.value)) / BigInt(DAMAGE_MULTIPLIER_BASIS);
+  }
+  if (combined > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError("Combined modifier multiplier exceeds the safe integer range.");
+  }
+  return Number(combined);
 }

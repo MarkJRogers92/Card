@@ -264,19 +264,27 @@ export function calculateReactionDamage(
   targetActorId: string,
   coefficient: number,
   potency: number,
+  outgoingMultiplierBps: number = DAMAGE_MULTIPLIER_BASIS,
 ): ReactionDamageCalculation {
   assertNonnegativeInteger("Reaction damage coefficient", coefficient);
   if (!Number.isSafeInteger(potency) || potency < 1 || potency > 3) {
     throw new RangeError("Reaction Potency must be an integer from 1 to 3.");
   }
+  assertNonnegativeInteger("Reaction outgoing damage multiplier", outgoingMultiplierBps);
   const base = BigInt(coefficient) * BigInt(potency);
   if (base > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError("Reaction base damage exceeds the safe integer range.");
+  }
+  // Folded here (not inside calculateReactionDamageFromBase) so the result becomes
+  // exactly the pre-target-mitigation snapshot Parallel Port repeats from.
+  const foldedBase = (base * BigInt(outgoingMultiplierBps)) / BigInt(DAMAGE_MULTIPLIER_BASIS);
+  if (foldedBase > BigInt(Number.MAX_SAFE_INTEGER)) {
     throw new RangeError("Reaction base damage exceeds the safe integer range.");
   }
   const calculation = calculateReactionDamageFromBase(
     combat,
     targetActorId,
-    Number(base),
+    Number(foldedBase),
   );
   return {
     ...calculation,

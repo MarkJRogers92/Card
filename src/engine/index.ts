@@ -311,6 +311,7 @@ export type {
 export {
   COMBAT_STATUS_IDS,
   STATUS_STATE_VERSION,
+  activeCombatStatusIds,
   addStatusAmount,
   createCombatStatuses,
   decayTurnDurationStatuses,
@@ -346,8 +347,10 @@ export {
   TRIGGER_COUNTERS_VERSION,
   TRIGGER_EVENT_VERSION,
   collectApplicableModifiers,
+  combineMultiplierModifiers,
   createTriggerCounters,
   dispatchTriggerEvent,
+  installModifierBindings,
   installTriggerBindings,
   previewTriggerEvent,
   resetTurnTriggerCounters,

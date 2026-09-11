@@ -32,6 +32,7 @@ export const SUPPORTED_OPERATIONS = [
   "install_protocol",
   "schedule_packet",
   "repeat_packet",
+  "repeat_reaction_packet",
   "gain_scrap",
   "gain_evidence",
   "change_standing",

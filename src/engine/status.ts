@@ -59,6 +59,12 @@ export function getStatusAmount(
   return statuses[status];
 }
 
+export function activeCombatStatusIds(
+  statuses: CombatStatuses,
+): readonly CombatStatusId[] {
+  return COMBAT_STATUS_IDS.filter((status) => statuses[status] > 0);
+}
+
 export function addStatusAmount(
   statuses: CombatStatuses,
   status: CombatStatusId,

@@ -61,6 +61,16 @@ in this acceptance-record commit.
 Do not merge `main` as part of this handoff. Continue from the accepted
 M14 branch/head only when explicitly asked to begin M15.
 
+## Post-acceptance hardening (unpushed)
+
+A later commit on this branch (`23927b9`, "fix(engine): reject duplicate
+relic installation") adds the duplicate-source guard described in
+`docs/milestones/M14_FIRST_RELICS.md` plus its focused test. It passed the
+complete local stack including the M10 browser regression, but it could not
+be pushed from the environment that authored it (read-only GitHub
+credential, `403`). Push it and confirm M14 Acceptance is green at the new
+head before starting M15.
+
 GitHub Pages remains only a fallback for phone-accessible deployment if a
 normal preview path fails; it is not part of, and does not replace, the
 CI acceptance record above.

@@ -26,9 +26,16 @@ compiler. See `docs/milestones/M14_FIRST_RELICS.md` and
 - [x] Parallel Port repeats the largest direct-damage packet from the first primary Reaction each player turn at 50% output against the same target, with the accepted snapshot/floor/current-target-modifier ordering
 - [x] Relic execution is compiled generically from validated schema fields rather than relic-ID branches
 - [x] Relic bindings coexist with M09 character passives
+- [x] A relic whose source is already bound in the combat is rejected rather than stacked (duplicate Shared Warranty)
 - [x] Prior accepted suites continue to pass
 - [x] Production build passes
 - [x] M10 Playwright browser/replay regression remains green
+
+Post-acceptance hardening commit `23927b9` adds the duplicate-source guard
+and its focused test. It passes the full local stack above, including the
+M10 browser regression, but it is **not yet pushed**: the local GitHub
+credential is read-only (`403`), so the M14 Acceptance workflow has not run
+at that head. See `docs/milestones/M14_FIRST_RELICS.md`.
 
 ## Last accepted milestone before M14
 

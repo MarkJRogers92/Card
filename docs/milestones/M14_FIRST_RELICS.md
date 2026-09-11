@@ -45,6 +45,36 @@ beyond one dispatch. Reaction recovery use and Parallel Port's packet
 snapshot remain authoritative combat state from the initial M14
 checkpoint.
 
+## Post-acceptance hardening
+
+`installRelicContent` now refuses to install a relic whose source ID
+already owns bindings in the combat. Shared Warranty is declared twice in
+this repository — once as the M09 initial passive
+(`relic.shared_warranty` / `first_swap_block`) and once as M14 relic
+content (`relic.shared_warranty` / `trigger.1`) — and trigger bindings are
+keyed by `sourceId::triggerId`, so installing both resolved the relic twice
+and silently doubled its printed effect instead of failing. Relics are
+unique within a run, so the second binding set is rejected with an explicit
+error and a focused M14 test covers the collision.
+
+Verified locally on 2026-09-11 against this commit:
+
+- `npm run check`
+- `npm run test:engine` — 254 tests
+- `npm run test:content` — 29 tests
+- `npm run content:validate` — 30 cards and 5 relics valid
+- `npm run test:replay`
+- `npm run test:properties`
+- every focused `test:m03` through `test:m14` command
+- `npm run build`
+- `npm run test:browser` — 2 passed (Chromium installed locally; the
+  sandboxed run needs `--no-sandbox`-capable launch outside the sandbox)
+
+The GitHub Actions acceptance record above still refers to
+`2221c093c6cca649b62a8d811188e0fba3a2ce2b`. Pushing this hardening commit
+re-runs the M14 Acceptance workflow on the branch; the publisher should
+confirm the new head is green before treating this commit as accepted.
+
 ## Verification
 
 Locally passed on 2026-09-11:

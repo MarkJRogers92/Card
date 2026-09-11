@@ -4,6 +4,10 @@ import {
   type PostCardIngredientResolution,
 } from "./reactions";
 import {
+  applyImprintReinforcementRelics,
+  applyPrimaryReactionRelics,
+} from "./relic-runtime";
+import {
   TRIGGER_EVENT_VERSION,
   dispatchTriggerEvent,
 } from "./triggers";
@@ -14,54 +18,103 @@ export function resolvePostCardIngredientWithTriggers(
   input: PostCardIngredientInput,
 ): PostCardIngredientResolution {
   const resolved = resolvePostCardIngredient(state, input);
-  const combat = resolved.state.combat;
-  if (
-    combat === null ||
-    combat.outcome !== "active" ||
-    combat.triggerBindings.length === 0
-  ) {
+  let current = resolved.state;
+  const combat = current.combat;
+  if (combat === null || combat.outcome !== "active") {
     return resolved;
   }
 
+  if (
+    resolved.classification === "lead" &&
+    resolved.reaction === null &&
+    input.ingredient !== null &&
+    input.cardContext.owner.kind === "character"
+  ) {
+    current = applyImprintReinforcementRelics(current, {
+      previousImprint: resolved.previousImprint,
+      ownerCharacterId: input.cardContext.owner.actorId,
+      ingredient: input.ingredient,
+    });
+  }
+
+  if (current.combat?.triggerBindings.length === 0 && resolved.reaction === null) {
+    return {
+      ...resolved,
+      state: current,
+      resultingImprint: current.combat?.imprint ?? null,
+    };
+  }
+
   // A primary Reaction is itself part of the completed card play, so its
-  // trigger dispatches first; card_played then represents the overall play
-  // having finished. Neither event can observe a Protocol installed by this
-  // same card, since that installation happens later in finishCardPlayLifecycle.
-  let current = resolved.state;
-  if (resolved.reaction !== null && combat.frontCharacterId !== null) {
+  // existing trigger dispatches first. M15's data-defined Reaction relic
+  // hooks then resolve against the completed primary Reaction before the
+  // overall card_played event. Protocol installation still happens later in
+  // finishCardPlayLifecycle, so a newly deployed Protocol cannot observe the
+  // card that installed it.
+  let reaction = resolved.reaction;
+  if (
+    reaction !== null &&
+    current.combat !== null &&
+    current.combat.outcome === "active" &&
+    current.combat.frontCharacterId !== null
+  ) {
     const bleedTargetActorIds = [
       ...new Set(
-        resolved.reaction.statusesApplied
+        reaction.statusesApplied
           .filter((applied) => applied.status === "bleed")
           .map((applied) => applied.actorId),
       ),
     ];
-    current = dispatchTriggerEvent(current, {
-      eventVersion: TRIGGER_EVENT_VERSION,
-      kind: "primary_reaction",
-      frontActorId: combat.frontCharacterId,
-      bleedTargetActorIds,
-      largestDirectDamage: resolved.reaction.largestDirectDamage,
-    }).state;
-  }
-  if (current.combat === null || current.combat.outcome !== "active") {
-    return { ...resolved, state: current, resultingImprint: current.combat?.imprint ?? null };
+    if (current.combat.triggerBindings.length > 0) {
+      current = dispatchTriggerEvent(current, {
+        eventVersion: TRIGGER_EVENT_VERSION,
+        kind: "primary_reaction",
+        frontActorId: current.combat.frontCharacterId,
+        bleedTargetActorIds,
+        largestDirectDamage: reaction.largestDirectDamage,
+      }).state;
+    }
+    if (current.combat?.outcome === "active") {
+      const relics = applyPrimaryReactionRelics(current, reaction);
+      current = relics.state;
+      if (relics.additionalScheduledPacketIds.length > 0) {
+        reaction = {
+          ...reaction,
+          scheduledPacketIds: [
+            ...reaction.scheduledPacketIds,
+            ...relics.additionalScheduledPacketIds,
+          ],
+        };
+      }
+    }
   }
 
-  const dispatched = dispatchTriggerEvent(current, {
-    eventVersion: TRIGGER_EVENT_VERSION,
-    kind: "card_played",
-    cardOwnerActorId:
-      input.cardContext.owner.kind === "character"
-        ? input.cardContext.owner.actorId
-        : null,
-    classification: input.cardContext.classification,
-    ingredient: input.ingredient,
-  });
+  if (current.combat === null || current.combat.outcome !== "active") {
+    return {
+      ...resolved,
+      reaction,
+      state: current,
+      resultingImprint: current.combat?.imprint ?? null,
+    };
+  }
+
+  if (current.combat.triggerBindings.length > 0) {
+    current = dispatchTriggerEvent(current, {
+      eventVersion: TRIGGER_EVENT_VERSION,
+      kind: "card_played",
+      cardOwnerActorId:
+        input.cardContext.owner.kind === "character"
+          ? input.cardContext.owner.actorId
+          : null,
+      classification: input.cardContext.classification,
+      ingredient: input.ingredient,
+    }).state;
+  }
 
   return {
     ...resolved,
-    state: dispatched.state,
-    resultingImprint: dispatched.state.combat?.imprint ?? null,
+    reaction,
+    state: current,
+    resultingImprint: current.combat?.imprint ?? null,
   };
 }

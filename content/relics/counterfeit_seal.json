@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.counterfeit_seal",
+  "name": "Counterfeit Seal",
+  "rarity": "uncommon",
+  "family": "forgery",
+  "modifiers": [{
+    "channel": "card.energy_cost.first_grafted",
+    "condition": { "has_card_tag": "grafted" },
+    "operation": "add",
+    "value": -1,
+    "priority": 100
+  }],
+  "triggers": [],
+  "unlockId": null,
+  "artId": "relic.counterfeit_seal"
+}

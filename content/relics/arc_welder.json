@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.arc_welder",
+  "name": "Arc Welder",
+  "rarity": "common",
+  "family": "circuit",
+  "modifiers": [{
+    "channel": "imprint.reinforce_bonus",
+    "condition": { "ingredient": { "kind": "material", "id": "volt" } },
+    "operation": "add",
+    "value": 1,
+    "priority": 100
+  }],
+  "triggers": [],
+  "unlockId": null,
+  "artId": "relic.arc_welder"
+}

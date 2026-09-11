@@ -33,6 +33,7 @@
     "test:m12": "vitest run tests/unit/source-card-pool.test.ts",
     "test:m13": "vitest run tests/unit/shaper-crew-junk-pool.test.ts",
     "test:m14": "vitest run tests/unit/first-relics.test.ts",
+    "test:m15": "vitest run tests/unit/remaining-relics.test.ts",
     "simulate": "node tools/not-implemented.mjs M33 \"simulation\"",
     "assets:audit": "node tools/not-implemented.mjs M35 \"asset audit\"",
     "build": "vite build"

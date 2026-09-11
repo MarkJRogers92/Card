@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.carbon_copy",
+  "name": "Carbon Copy",
+  "rarity": "rare",
+  "family": "forgery",
+  "modifiers": [{
+    "channel": "reaction.loop.delayed_copy_bps",
+    "condition": { "ingredient": { "kind": "form", "id": "loop" } },
+    "operation": "set",
+    "value": 5000,
+    "priority": 100
+  }],
+  "triggers": [],
+  "unlockId": null,
+  "artId": "relic.carbon_copy"
+}

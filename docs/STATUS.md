@@ -9,12 +9,10 @@ M17 is implemented locally on top of the unaccepted M16 checkpoint on
 enemy-issued Invoices, the Intern's living-ally death effect, and Head of
 Recovery's immutable future-intent threshold behavior. Focused M05, M11, and
 M17 suites plus the content/type check pass. See
-`docs/milestones/M17_INITIAL_ENEMIES.md`.
-
-The broader unit suite currently has one non-M17 failure in the existing
-Unlicensed Procedure terminal-victory HP-cost case: its post-effect trigger
-dispatch rejects the already-ended combat state. This must be diagnosed before
-acceptance; it was not changed or masked by M17.
+`docs/milestones/M17_INITIAL_ENEMIES.md`. The subsequent lifecycle correction
+also restores the terminal-victory HP-cost regression: `npm run test:engine`
+now passes all 277 unit tests, alongside content, property, replay, and M17
+focused validation.
 
 ## Predecessor checkpoint
 

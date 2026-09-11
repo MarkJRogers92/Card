@@ -15,7 +15,9 @@ death effects.
 - The five Act 1 ordinary formations are authored, and the first-encounter pool
   is mechanically restricted to the single-enemy formations.
 
-Focused verification: `npm run check`, `npm run test:m17`, `npm run test:m05`,
-and `npm run test:m11` pass. `npm run test:engine` currently has one unrelated
-failure in `tests/unit/source-card-pool.test.ts`: its terminal-victory HP-cost
-case reaches a trigger dispatch after combat has already ended.
+Verification passes: `npm run check`, `npm run test:m17`, `npm run test:engine`
+(277 tests), `npm run test:content`, `npm run test:properties`, and
+`npm run test:replay`. The terminal-victory HP-cost regression discovered
+during M17 validation was repaired by skipping trigger dispatch after a base
+effect has ended combat; card lifecycle finishing still runs against that final
+snapshot as designed.

@@ -515,6 +515,21 @@ export function playContentCard(
   };
   const base = applyCardBaseEffects(current, definition.effects, effectContext);
   current = base.state;
+  // A lethal base effect ends combat immediately. The lifecycle finish step is
+  // intentionally allowed to complete in that state, but no further trigger
+  // event may be dispatched against an ended combat snapshot.
+  if (current.combat?.outcome !== "active") {
+    return finishCardPlayLifecycle(current, {
+      instanceId: input.instanceId,
+      lifecycle,
+      postCard: {
+        cardContext,
+        ingredient: resolveIngredient(definition, parameters),
+        selectedEnemyActorId: input.selectedEnemyActorId,
+      },
+      protocolBindings: base.protocolBindings,
+    });
+  }
   const repeatDispatch = dispatchTriggerEvent(current, {
     eventVersion: TRIGGER_EVENT_VERSION,
     kind: "card_base_effects",

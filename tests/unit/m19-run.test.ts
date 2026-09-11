@@ -5,6 +5,7 @@ import {
   M19_NODE_IDS,
   createAct1Combat,
   createM19Run,
+  beginRunNode,
   currentRunNode,
   createM10Fight,
 } from "../../src/engine";
@@ -38,5 +39,14 @@ describe("M19 fixed test act", () => {
     expect(state.combat?.deck.zones.hand).toHaveLength(5);
     expect(state.combat?.deck.zones.hand).toEqual(previousCombat?.deck.zones.hand);
     expect(state.combat).not.toBe(previousCombat);
+  });
+
+  it("begins the first ordinary node as a fresh combat", () => {
+    const state = beginRunNode(createM19Run(23));
+
+    expect(state.run?.currentNodeId).toBe("ordinary_1");
+    expect(state.combat?.outcome).toBe("active");
+    expect(state.combat?.actors[M10_MORROW_ID]?.hp).toBe(44);
+    expect(state.combat?.actors[M10_SWITCH_ID]?.hp).toBe(36);
   });
 });

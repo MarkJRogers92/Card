@@ -1,9 +1,15 @@
 # M15 — Remaining Relics
 
-Status: **implemented locally, awaiting CI acceptance**
+Status: **accepted**
 
 Branch: `codex/m15-remaining-relics`
-Base: accepted M14 head plus the M14 duplicate-relic hardening commits
+
+Accepted head: `295af4a5ddd719afacccb58343bced9a4bac0b16`
+
+GitHub Actions acceptance run: [`34557264949`](https://github.com/MarkJRogers92/Card/actions/runs/34557264949)
+
+Base: accepted M14 line plus the duplicate-relic hardening included in the M15
+history.
 
 ## Scope
 
@@ -18,7 +24,7 @@ content and the generic primitives those definitions need:
 
 It does not begin M16 family transformations, M18 rewards, or M24 Grafting.
 
-## Implemented contracts
+## Accepted contracts
 
 - **Refund Capacitor** gains 1 Energy after the first **Potency-3** primary
   Reaction each player turn. Potency 1–2 Reactions and repeat Reactions in
@@ -42,28 +48,28 @@ It does not begin M16 family transformations, M18 rewards, or M24 Grafting.
 No relic-ID branch exists in the engine; every effect above executes from
 validated schema fields.
 
-- `TriggerEventKind` gains `card_play_cost`: the card-play path dispatches it
+- `TriggerEventKind` includes `card_play_cost`: the card-play path dispatches it
   before payment, and `dispatchTriggerEvent` reports the summed
   `costReduction` back to `playContentCard`. The binding's normal turn/combat
-  limit and counter machinery is what makes Counterfeit Seal once per turn,
-  so no second bookkeeping system was introduced.
-- New trigger effects `gain_energy`, `reduce_card_cost`, and
-  `repeat_scheduled_packet`, plus the schema operations `gain_energy`
-  (already present from M01), `reduce_card_cost`, and `repeat_scheduled_packet`.
-- The `primary_reaction` event now carries the Reaction's `potency`, the
+  limit and counter machinery makes Counterfeit Seal once per turn without a
+  second bookkeeping system.
+- Trigger effects include `gain_energy`, `reduce_card_cost`, and
+  `repeat_scheduled_packet`, with matching validated schema operations.
+- The `primary_reaction` event carries the Reaction's `potency`, the
   `material`/`form` that produced it, and the first scheduled repeat packet's
   target and effects. Generic conditions `reaction_potency`, `has_card_tag`,
-  and the existing `ingredient` condition (extended to Reaction events) match
-  them; Parallel Port's M14 event fields are unchanged.
+  and the existing `ingredient` condition match those fields; Parallel Port's
+  accepted M14 event fields remain intact.
 - Modifier channels `imprint.reinforce.potency_bonus` (consumed by
   `storeOrReinforceImprint`) and `reward.card_options` (exposed through
   `cardRewardOptionCount`).
-- `CardDefinition.tags` (optional, validated against the existing `CardTag`
-  vocabulary) so a Grafted card can be identified once M24/M25 exist.
+- `CardDefinition.tags` is optional and validated against the existing
+  `CardTag` vocabulary so M24/M25 can identify generated Grafted cards without
+  introducing an M15 special case.
 
 ### Consumers that arrive in later milestones
 
-- `cardRewardOptionCount` is the real, tested accessor for Blank Badge; M18's
+- `cardRewardOptionCount` is the accepted accessor for Blank Badge; M18's
   reward engine is the consumer.
 - The `grafted` tag is authored by M24/M25 Grafting. Until then no production
   card carries it, so Counterfeit Seal is inert for hand-authored content but
@@ -71,33 +77,33 @@ validated schema fields.
 
 ## Verification
 
-Locally passed on 2026-09-11 with Node 24.20.0 / npm 11.19.0:
+The implementing environment's local stack passed on 2026-09-11 with Node
+24.20.0 / npm 11.19.0, including `npm run check`, engine/content/validation,
+replay/property suites, every focused M03-M15 command, production build, and
+the unchanged M10 browser regression.
 
-- `npm run check`
-- `npm run test:engine` — 265 tests
-- `npm run test:content` — 29 tests
-- `npm run content:validate` — 30 cards and 10 relics valid
-- `npm run test:replay`
-- `npm run test:properties` — 6 tests
-- every focused `test:m03` through `test:m15` command
-- `npm run build`
-- `npm run test:browser` — 2 passed, unchanged M10 browser/replay regression
+Final acceptance evidence is GitHub Actions run `34557264949` at exact head
+`295af4a5ddd719afacccb58343bced9a4bac0b16`. The single acceptance job passed:
+
+- locked dependency installation
+- generated-content/type checks
+- general engine tests
+- content tests and production content validation
+- replay determinism tests
+- engine property tests
+- every focused M03-M15 command
+- production build
+- Chromium installation
+- unchanged M10 browser/replay regression
 
 The focused M15 suite (`tests/unit/remaining-relics.test.ts`, 11 tests) covers
 binding compilation, the Potency-3 gate and once-per-turn refresh, the Volt
 reinforcement bonus and its cap, the Grafted discount ordering and floor,
 Carbon Copy's packet contents, limits, refresh, status scaling and next-turn
-resolution, the reward-option channel, and the explicit rejection of an
+resolution, the reward-option channel, and explicit rejection of an
 unsupported reward-option modifier operation.
-
-### Acceptance
-
-`codex/m15-remaining-relics` could not be pushed from the environment that
-implemented it: the local GitHub credential is read-only (`403`), so the M15
-Acceptance workflow has not run. Push the branch and confirm the workflow is
-green at its head before treating M15 as accepted.
 
 ## Next milestone
 
-M16 — the three family transformations — is eligible after this acceptance,
-but it is not started here.
+M16 — the three family transformations — is now eligible, but it is not
+started in this acceptance record.

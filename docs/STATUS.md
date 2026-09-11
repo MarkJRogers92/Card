@@ -2,112 +2,50 @@
 
 ## Current milestone
 
-**M15 — remaining relics — implemented locally, awaiting CI acceptance**
+**M15 — remaining relics — accepted**
 
-M15 lives on `codex/m15-remaining-relics`, branched from the M14 head plus
-the M14 duplicate-relic hardening commits. It adds Refund Capacitor, Arc
-Welder, Counterfeit Seal, Carbon Copy, and Blank Badge as validated
-production content, plus the generic limited cost/resource triggers those
-definitions need. See `docs/milestones/M15_REMAINING_RELICS.md` and
-`docs/M15_NORMAL_CHAT_HANDOFF.md`.
+M15 is accepted on `codex/m15-remaining-relics`. GitHub Actions run
+[`34557264949`](https://github.com/MarkJRogers92/Card/actions/runs/34557264949)
+passed the exact head `295af4a5ddd719afacccb58343bced9a4bac0b16`.
+The acceptance job passed locked dependency installation, generated-content/
+type checks, general engine/content/validation/replay/property suites, every
+focused M03–M15 command, production build, Chromium installation, and the
+unchanged M10 browser/replay regression.
 
-The full local stack passes, including the unchanged M10 browser/replay
-regression. Neither this branch nor the two M14 hardening commits are
-pushed: the implementing environment's GitHub credential is read-only
-(`403`), so the M15 Acceptance workflow has not run yet.
+M15 completes Refund Capacitor, Arc Welder, Counterfeit Seal, Carbon Copy, and
+Blank Badge as validated production content plus the generic limited resource,
+cost, delayed-repeat, Imprint reinforcement, and reward-option surfaces those
+definitions require. See `docs/milestones/M15_REMAINING_RELICS.md` and
+`docs/M15_NORMAL_CHAT_HANDOFF.md` for the exact contracts.
 
 ## M15 acceptance checklist
 
 - [x] Refund Capacitor grants 1 Energy only after the first Potency-3 primary Reaction each player turn
 - [x] Arc Welder adds 1 Potency when reinforcing an existing Volt Imprint, still capped at 3
-- [x] Counterfeit Seal discounts the first Grafted card played each player turn by 1, minimum 0
-- [x] Carbon Copy schedules one extra 50% repeat of the first primary Loop Reaction each player turn
-- [x] Blank Badge raises card reward options from 3 to 4
-- [x] No relic-ID branches were added; every effect compiles from schema fields
-- [x] Limited cost triggers consume the existing turn/combat limit counters
-- [x] Prior M00–M14 suites continue to pass unchanged
+- [x] Counterfeit Seal discounts the first Grafted card played each player turn by 1 Energy, minimum 0
+- [x] Carbon Copy schedules one extra 50% next-turn repeat of the first primary Loop Reaction each player turn, with per-output flooring and zero suppression
+- [x] Blank Badge raises the generic card-reward option count from 3 to 4
+- [x] No relic-ID branches were added; effects compile from schema fields
+- [x] Counterfeit Seal uses the normal trigger limit/counter machinery rather than a second turn-counter system
+- [x] Carbon Copy uses serializable scheduled packets and cannot recursively copy its own extra repeat
+- [x] M15 remains correctly bounded: M18 consumes Blank Badge and M24/M25 author the `grafted` tag
+- [x] Prior M00–M14 suites continue to pass
 - [x] Production build passes
 - [x] M10 Playwright browser/replay regression remains green
 
-## Last accepted milestone before M15
+## Previous accepted milestone
 
 **M14 — first relics — accepted**
 
-M14 is accepted on `claude/m14-first-relics`. GitHub Actions run
+M14's original acceptance evidence remains GitHub Actions run
 [`34548620092`](https://github.com/MarkJRogers92/Card/actions/runs/34548620092)
-passed the exact implementation head
-`2221c093c6cca649b62a8d811188e0fba3a2ce2b`, including installation,
-type/generated-content checks, general engine/content/validation/replay/
-property suites, focused M03–M14 tests, production build, Chromium
-installation, and the unchanged M10 browser/replay regression.
+at implementation commit `2221c093c6cca649b62a8d811188e0fba3a2ce2b`.
+It completed Shared Warranty, Wetware Die, Clot Filter, Organ Bag, and Parallel
+Port plus the generic relic-content compiler.
 
-M14 completes Shared Warranty, Wetware Die, Clot Filter, Organ Bag, and
-Parallel Port as validated production content plus a generic relic-content
-compiler. See `docs/milestones/M14_FIRST_RELICS.md` and
-`docs/M14_NORMAL_CHAT_HANDOFF.md` for the exact contracts and evidence.
-
-## M14 acceptance checklist
-
-- [x] Shared Warranty grants 3 Block to the incoming Front after the first swap each player turn
-- [x] Wetware Die multiplies Reaction direct damage by 1.5 only against targets currently carrying Bleed, including mixed-target evaluation
-- [x] Clot Filter grants the current Front 2 Block per distinct enemy to which the primary Reaction applied Bleed, with command-scoped limiting
-- [x] Organ Bag raises Reaction Recovery's per-combat actual-healing allowance from 6 to 10
-- [x] Parallel Port repeats the largest direct-damage packet from the first primary Reaction each player turn at 50% output against the same target, with the accepted snapshot/floor/current-target-modifier ordering
-- [x] Relic execution is compiled generically from validated schema fields rather than relic-ID branches
-- [x] Relic bindings coexist with M09 character passives
-- [x] A relic whose source is already bound in the combat is rejected rather than stacked (duplicate Shared Warranty)
-- [x] Prior accepted suites continue to pass
-- [x] Production build passes
-- [x] M10 Playwright browser/replay regression remains green
-
-Post-acceptance hardening commit `23927b9` adds the duplicate-source guard
-and its focused test. It passes the full local stack above, including the
-M10 browser regression, but it is **not yet pushed**: the local GitHub
-credential is read-only (`403`), so the M14 Acceptance workflow has not run
-at that head. See `docs/milestones/M14_FIRST_RELICS.md`.
-
-## Last accepted milestone before M14
-
-**M13 — Shaper, Crew, and junk card pool — accepted**
-
-M13 is accepted on `claude/m13-shaper-crew-junk-pool`. GitHub Actions run
-[`34542002526`](https://github.com/MarkJRogers92/Card/actions/runs/34542002526)
-passed the substantive implementation at
-`c0fc846c1695886497ef6af6ea7d966ae2dd0907`, including the complete
-engine/regression stack, production build, and the M10 Chromium
-browser/replay regression.
-
-## M13 acceptance checklist
-
-- [x] All 12 Shaper cards, 4 Crew cards, Invoice, and Fine Print
-      implemented as schema-valid production content, matching
-      `docs/DESIGN.md` Sections 3.7–3.9 base and upgraded values exactly
-- [x] No card-ID branches added to the engine
-- [x] Fan Service/Broad Hint correctly hit every living enemy
-- [x] Draw effects (Switchblade, Cross Examination, Overclock, Cross
-      Training) and free-swap effects (Switchblade, Sudden Exit) work
-      through existing deck/duo primitives
-- [x] Double Booking's varying Ingredient Prime (2 base / 3 upgraded)
-      Primes the Imprint correctly
-- [x] Operating Manual deploys, installs its Protocol through the
-      trigger system, targets whoever is currently Front (not its own
-      owner), respects a once-per-turn limit, and stacks independently
-      across copies
-- [x] Reservoir boosts existing Imprint Potency (capped at 3) and is a
-      documented no-op with no existing Imprint; Retain preserved
-- [x] Fine Print's turn-end hand-liability HP loss (bypassing Block)
-      resolves before the M11 Fleeting/Retain/discard settlement, for
-      one or many copies, including the case where it ends the run
-- [x] Invoice remains fully inert and unplayable
-- [x] Card conservation holds across all zones with the new content
-- [x] The five genuinely missing generic primitives (multi-target
-      resolution, `draw`/`swap`/`boost_imprint` dispatch, `direct`-category
-      damage, the `primary_reaction` Protocol event, and the `liability`
-      keyword) are documented and covered by tests; no other primitives
-      were added
-- [x] Prior M00–M12 suites continue to pass unmodified
-- [x] Production build passes
-- [x] M10 Playwright browser/headless hash parity remains green
+The later duplicate-relic hardening is included in the accepted M15 history and
+therefore is also covered by M15 run `34557264949`; duplicate relic sources are
+rejected rather than silently stacked.
 
 ## Prior accepted milestones
 
@@ -124,58 +62,28 @@ browser/replay regression.
 - **M10 — minimal playable browser combat**: accepted on `codex/m10-playable-combat`; final head `105369de44b1cafa11ec5cdaf093becc01e24198` passed GitHub Actions run `34529482114`.
 - **M11 — card keyword lifecycle, Protocols, and additional HP costs**: accepted on `codex/m11-keyword-lifecycle`; final head `b40c0cc00e1cfabb1846241a9589c2eabb824c64` passed GitHub Actions run `34537126146`.
 - **M12 — Source card pool**: accepted on `claude/m12-source-card-pool`; final head `4cd56b45e5e91a7514207f9e487a999c40a483a8` passed GitHub Actions run `34540152598`.
+- **M13 — Shaper, Crew, and junk card pool**: accepted on `claude/m13-shaper-crew-junk-pool`; substantive head `c0fc846c1695886497ef6af6ea7d966ae2dd0907` passed GitHub Actions run `34542002526`.
 
-## M13 verification record
+## M15 verification record
 
-`src/engine/card-content.ts` gained multi-target resolution
-(`all_enemies`/`both`/`front`/`reserve`, reusing `targeting.ts`), and
-dispatch for `draw`, `swap` (free mode), `boost_imprint`, and
-`direct`-category `damage` (routed through the existing
-`applyHpLossBypassingBlock`). `src/engine/imprint.ts` gained
-`boostImprintPotency`. `src/engine/triggers.ts` gained a second Protocol
-trigger event kind, `"primary_reaction"` (dispatched from
-`passive-card.ts` alongside the existing `card_played` dispatch,
-whenever a primary Reaction actually resolved), and a `"current_front"`
-trigger effect target. `schemas/common.schema.json` gained a
-`"liability"` keyword, resolved by a new `card-content.ts` export,
-`endPlayerTurnWithContentCards`, that runs before the unmodified M11
-`endPlayerTurnWithCardLifecycle`. None of these branch on card ID, and
-none altered any previously accepted behavior — the complete M00–M12
-suites were re-run and still pass unmodified.
+The accepted M15 implementation extends the schema/content-driven relic model
+rather than introducing relic-specific branches. `card_play_cost` provides a
+generic pre-payment trigger surface; primary-Reaction events carry the Potency,
+Material/Form, and delayed packet data needed by remaining relics; Volt
+reinforcement and reward-option count use dedicated generic modifier channels;
+and optional validated card tags provide the future Grafted-card hook.
 
-GitHub Actions run `34542002526` passed installation,
-type/generated-content checks, all general unit/content/replay/property
-suites, every focused M03–M13 command, production build, Chromium
-installation, and the M10 Playwright browser/replay regression.
+GitHub Actions run `34557264949` passed at exact head
+`295af4a5ddd719afacccb58343bced9a4bac0b16`, including all general suites,
+focused M03–M15 tests, production build, Chromium installation, and the M10
+browser/replay regression.
 
-The focused M13 fixtures independently verify all 16 real cards plus
-Invoice and Fine Print at base and upgraded values, plus the
-boundary/integration coverage listed in the milestone doc
-(`docs/milestones/M13_SHAPER_CREW_JUNK_POOL.md`).
+The M10 checkpoint remains intentionally stable as a regression fixture and
+was not touched.
 
-The M10 checkpoint remains intentionally stable as a regression fixture
-and was not touched.
-
-## M14 verification record
-
-`src/engine/relic-content.ts` compiles validated relic modifiers and
-triggers generically by schema fields (`channel`, `condition`, `event`,
-`effect.op`, and limit), with setup-time append functions that allow relic
-bindings to coexist with the accepted M09 character passives. The trigger
-runtime supports schema-aligned `command` scope without persisting a counter
-beyond one dispatch. Reaction Recovery use and Parallel Port's packet
-snapshot remain authoritative combat state from the initial M14 checkpoint.
-No relic-ID branches were added.
-
-GitHub Actions run `34548620092` passed at exact implementation commit
-`2221c093c6cca649b62a8d811188e0fba3a2ce2b`. The single acceptance job
-completed successfully across all steps, including the focused M03–M14
-suite, production build, Chromium installation, and M10 browser/replay
-regression.
-
-`main` remains unchanged by M02–M14 work.
+`main` remains unchanged by M02–M15 milestone work.
 
 ## Next eligible milestone
 
-**M15 — remaining relics** is now eligible because M14 is accepted, but it
-has not been started in this acceptance-record commit.
+**M16 — relic-family transformations** is now eligible because M15 is accepted.
+It has not been started in this acceptance-record commit.

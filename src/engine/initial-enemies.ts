@@ -5,6 +5,11 @@ export interface InitialEncounterFormation {
   readonly enemyDefinitionIds: readonly string[];
 }
 
+export interface InitialEnemyCombatStats {
+  readonly maxHp: number;
+  readonly block?: number;
+}
+
 /** M17 authored combat definitions. Encounter selection belongs to M19 run assembly. */
 export const INITIAL_ENEMY_REGISTRY: EnemyBehaviorRegistry = {
   "enemy.claims_adjuster": { id: "enemy.claims_adjuster", moves: [
@@ -37,6 +42,16 @@ export const INITIAL_ENEMY_REGISTRY: EnemyBehaviorRegistry = {
   ], ai: { kind: "cycle", moveIds: ["performance_review", "cross_departmental_issue", "named_in_claim", "budget_cuts"], startIndex: 0 }, phaseThreshold: { hpAtOrBelow: 75, attackDamageBonus: 3 } },
 };
 
+/** Authored starting vitality for M17 enemy definitions. */
+export const INITIAL_ENEMY_COMBAT_STATS: Readonly<Record<string, InitialEnemyCombatStats>> = {
+  "enemy.claims_adjuster": { maxHp: 30 },
+  "enemy.taxidermy_drone": { maxHp: 24 },
+  "enemy.compliance_slug": { maxHp: 42 },
+  "enemy.unpaid_intern": { maxHp: 20 },
+  "enemy.repo_foreman": { maxHp: 78, block: 8 },
+  "enemy.head_of_recovery": { maxHp: 150 },
+};
+
 export const ACT_1_ORDINARY_ENCOUNTERS: readonly InitialEncounterFormation[] = [
   { id: "claims_adjuster", enemyDefinitionIds: ["enemy.claims_adjuster"] },
   { id: "compliance_slug", enemyDefinitionIds: ["enemy.compliance_slug"] },
@@ -48,3 +63,12 @@ export const ACT_1_ORDINARY_ENCOUNTERS: readonly InitialEncounterFormation[] = [
 export const ACT_1_FIRST_ENCOUNTERS = ACT_1_ORDINARY_ENCOUNTERS.filter(
   (formation) => formation.enemyDefinitionIds.length === 1,
 );
+
+export const ACT_1_ELITE_ENCOUNTERS: readonly InitialEncounterFormation[] = [
+  { id: "repo_foreman", enemyDefinitionIds: ["enemy.repo_foreman"] },
+];
+
+export const ACT_1_BOSS_ENCOUNTER: InitialEncounterFormation = {
+  id: "head_of_recovery",
+  enemyDefinitionIds: ["enemy.head_of_recovery"],
+};

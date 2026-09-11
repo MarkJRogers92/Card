@@ -175,7 +175,13 @@ export {
   projectEnemyIntent,
   projectSelectedEnemyIntents,
 } from "./enemies";
-export { ACT_1_FIRST_ENCOUNTERS, ACT_1_ORDINARY_ENCOUNTERS, INITIAL_ENEMY_REGISTRY } from "./initial-enemies";
+export {
+  ACT_1_BOSS_ENCOUNTER,
+  ACT_1_ELITE_ENCOUNTERS,
+  ACT_1_FIRST_ENCOUNTERS,
+  ACT_1_ORDINARY_ENCOUNTERS,
+  INITIAL_ENEMY_REGISTRY,
+} from "./initial-enemies";
 export type { InitialEncounterFormation } from "./initial-enemies";
 export type {
   EnemyAiDefinition,
@@ -245,6 +251,7 @@ export {
   M10_STARTER_CARDS,
   M10_SWITCH_ID,
   applyM10Command,
+  createAct1Combat,
   createM10Fight,
   createM10RewardFixture,
   endM10Turn,
@@ -263,6 +270,7 @@ export type {
   M10Command,
   M10CommandResult,
   M10StarterCardDefinition,
+  Act1CombatSetup,
 } from "./m10-fight";
 export { resolvePostCardIngredientWithTriggers } from "./passive-card";
 export {
@@ -341,6 +349,35 @@ export type {
   AuthoritativeState,
   AuthoritativeStateOptions,
 } from "./state";
+export {
+  M19_DEFAULT_SEED,
+  M19_MORROW_ID,
+  M19_NODE_IDS,
+  M19_REST_HEAL_AMOUNT,
+  M19_RUN_VERSION,
+  M19_SELECTED_REWARD_ROLES,
+  M19_SWITCH_ID,
+  M19_TEST_ACT_REWARD_CATALOG,
+  advanceRunNode,
+  applyM19Command,
+  beginRunNode,
+  completeRunCombat,
+  createM19Run,
+  currentRunNode,
+  getM19Hand,
+  m19NodeKind,
+  restRunCharacter,
+} from "./run";
+export type {
+  M19CardView,
+  M19Command,
+  M19NodeId,
+  M19NodeKind,
+  M19RunNodeView,
+  M19RunOutcome,
+  RunCharacterState,
+  RunState,
+} from "./run";
 export {
   COMBAT_STATUS_IDS,
   STATUS_STATE_VERSION,

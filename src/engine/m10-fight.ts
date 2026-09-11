@@ -33,6 +33,11 @@ import {
 } from "./enemies";
 import type { Ingredient } from "./imprint";
 import { installInitialPassives } from "./initial-passives";
+import {
+  INITIAL_ENEMY_COMBAT_STATS,
+  INITIAL_ENEMY_REGISTRY,
+  type InitialEncounterFormation,
+} from "./initial-enemies";
 import { resolvePostCardIngredientWithTriggers } from "./passive-card";
 import { createEncounterReward, type RewardCatalog } from "./rewards";
 import {
@@ -216,6 +221,24 @@ export interface M10CardView {
   readonly isDamageCard: boolean;
 }
 
+export interface Act1CombatSetup {
+  readonly formation: InitialEncounterFormation;
+  readonly characters: readonly {
+    readonly actorId: string;
+    readonly hp: number;
+    readonly maxHp: number;
+  }[];
+  readonly frontCharacterId?: string;
+  readonly deck?: readonly CardInstance[];
+}
+
+interface CombatEnemySetup {
+  readonly actorId: string;
+  readonly definitionId: string;
+  readonly maxHp: number;
+  readonly block?: number;
+}
+
 function assertNonnegativeInteger(label: string, value: number): void {
   if (!Number.isSafeInteger(value) || value < 0) {
     throw new RangeError(`${label} must be a nonnegative safe integer.`);
@@ -274,6 +297,67 @@ function createStarterDeck(): readonly CardInstance[] {
       ownerCharacterId: expectedInstanceOwner(definition),
     });
   });
+}
+
+function requireTwoCharacters(
+  characters: Act1CombatSetup["characters"],
+): readonly [Act1CombatSetup["characters"][number], Act1CombatSetup["characters"][number]] {
+  if (characters.length !== 2) {
+    throw new Error("Act 1 combat requires exactly two player characters.");
+  }
+  return [characters[0], characters[1]];
+}
+
+function actorIdForEnemy(definitionId: string, occurrence: number): string {
+  const base = definitionId.replace(/^enemy\./, "").replaceAll("_", "-");
+  return occurrence === 1 ? base : `${base}-${occurrence}`;
+}
+
+function createSharedCombat(
+  state: AuthoritativeState,
+  setup: Pick<Act1CombatSetup, "characters" | "frontCharacterId" | "deck">,
+  enemies: readonly CombatEnemySetup[],
+  registry: EnemyBehaviorRegistry,
+): AuthoritativeState {
+  const characters = requireTwoCharacters(setup.characters);
+  let next = startCombat(state, setup.deck ?? createStarterDeck());
+  next = initializeCombatActors(next, {
+    playerCharacters: characters,
+    enemies: enemies.map(({ actorId, maxHp, block }) => ({ actorId, maxHp, block })),
+    frontCharacterId: setup.frontCharacterId ?? characters[0].actorId,
+  });
+  next = initializeEnemyControllers(next, registry, enemies.map(({ actorId, definitionId }) => ({
+    actorId,
+    definitionId,
+  })));
+  next = installInitialPassives(next, {
+    morrowActorId: characters[0].actorId,
+    switchActorId: characters[1].actorId,
+    includeSharedWarranty: true,
+  });
+  return beginPlayerTurn(next);
+}
+
+export function createAct1Combat(
+  state: AuthoritativeState,
+  setup: Act1CombatSetup,
+): AuthoritativeState {
+  const occurrences = new Map<string, number>();
+  const enemies = setup.formation.enemyDefinitionIds.map((definitionId) => {
+    const stats = INITIAL_ENEMY_COMBAT_STATS[definitionId];
+    if (stats === undefined) {
+      throw new Error(`Missing Act 1 combat stats for enemy definition: ${definitionId}.`);
+    }
+    const occurrence = (occurrences.get(definitionId) ?? 0) + 1;
+    occurrences.set(definitionId, occurrence);
+    return {
+      actorId: actorIdForEnemy(definitionId, occurrence),
+      definitionId,
+      maxHp: stats.maxHp,
+      ...(stats.block === undefined ? {} : { block: stats.block }),
+    };
+  });
+  return createSharedCombat(state, setup, enemies, INITIAL_ENEMY_REGISTRY);
 }
 
 function movePlayedCard(
@@ -369,34 +453,23 @@ function applyBaseEffect(
 
 export function createM10Fight(seed: number = M10_DEFAULT_SEED): AuthoritativeState {
   assertNonnegativeInteger("M10 seed", seed);
-  let state = startCombat(
+  return createSharedCombat(
     createAuthoritativeState({
       seed,
       contentVersion: "m10.checkpoint",
       contentHash: "joint-liability-m10-checkpoint-v1",
     }),
-    createStarterDeck(),
-  );
-  state = initializeCombatActors(state, {
-    playerCharacters: [
-      { actorId: M10_MORROW_ID, maxHp: 44 },
-      { actorId: M10_SWITCH_ID, maxHp: 36 },
-    ],
-    enemies: [{ actorId: M10_CLAIMS_ADJUSTER_ID, maxHp: 30 }],
-    frontCharacterId: M10_MORROW_ID,
-  });
-  state = initializeEnemyControllers(state, M10_CLAIMS_ADJUSTER_REGISTRY, [
     {
-      actorId: M10_CLAIMS_ADJUSTER_ID,
-      definitionId: "enemy.claims_adjuster",
+      characters: [
+        { actorId: M10_MORROW_ID, hp: 44, maxHp: 44 },
+        { actorId: M10_SWITCH_ID, hp: 36, maxHp: 36 },
+      ],
+      frontCharacterId: M10_MORROW_ID,
+      deck: createStarterDeck(),
     },
-  ]);
-  state = installInitialPassives(state, {
-    morrowActorId: M10_MORROW_ID,
-    switchActorId: M10_SWITCH_ID,
-    includeSharedWarranty: true,
-  });
-  return beginPlayerTurn(state);
+    [{ actorId: M10_CLAIMS_ADJUSTER_ID, definitionId: "enemy.claims_adjuster", maxHp: 30 }],
+    M10_CLAIMS_ADJUSTER_REGISTRY,
+  );
 }
 
 export function createM10RewardFixture(): AuthoritativeState {
@@ -490,10 +563,21 @@ export function swapM10Characters(state: AuthoritativeState): M10CommandResult {
 }
 
 export function endM10Turn(state: AuthoritativeState): M10CommandResult {
+  return endCombatTurn(state, M10_CLAIMS_ADJUSTER_REGISTRY);
+}
+
+/**
+ * Shared player-turn cycle for any authored enemy registry. M10 keeps its
+ * Claims Adjuster registry; Act 1 run combats pass the full M17 registry.
+ */
+export function endCombatTurn(
+  state: AuthoritativeState,
+  registry: EnemyBehaviorRegistry,
+): M10CommandResult {
   requirePlayerPhase(state);
   let current = endPlayerTurn(state);
   if (current.combat?.outcome === "active") {
-    current = executeEnemyPhase(current, M10_CLAIMS_ADJUSTER_REGISTRY).state;
+    current = executeEnemyPhase(current, registry).state;
   }
   if (current.combat?.outcome === "active") {
     current = beginPlayerTurn(current);

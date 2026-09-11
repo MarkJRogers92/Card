@@ -1,7 +1,7 @@
 import type { CombatActor } from "./actors";
 import type { CombatOutcome, CombatState } from "./combat";
 import type { AuthoritativeState } from "./state";
-import { getStatusAmount } from "./status";
+import { addStatusAmount, getStatusAmount } from "./status";
 import { resolveTargetRule, type TargetRule } from "./targeting";
 
 export const DAMAGE_PACKET_VERSION = 1 as const;
@@ -120,6 +120,28 @@ function finalizeCombat(
     imprint: outcome === "active" ? combat.imprint : null,
     scheduledPackets: outcome === "active" ? combat.scheduledPackets : [],
   };
+}
+
+function applyEnemyDefeatEffects(
+  combat: CombatState,
+  defeatedActor: CombatActor,
+  actors: Readonly<Record<string, CombatActor>>,
+): Readonly<Record<string, CombatActor>> {
+  if (defeatedActor.side !== "enemy" || defeatedActor.hp === 0) return actors;
+  const defeated = actors[defeatedActor.actorId];
+  if (defeated?.hp !== 0) return actors;
+  const effects = combat.enemyControllers[defeatedActor.actorId]?.deathEffects ?? [];
+  let next = actors;
+  for (const effect of effects) {
+    if (effect.op !== "grant_living_enemy_strength") continue;
+    for (const actorId of combat.enemyOrder) {
+      const actor = next[actorId];
+      if (actor !== undefined && actorId !== defeatedActor.actorId && actor.side === "enemy" && actor.hp > 0) {
+        next = { ...next, [actorId]: { ...actor, statuses: addStatusAmount(actor.statuses, "strength", effect.amount) } };
+      }
+    }
+  }
+  return next;
 }
 
 function damageActor(
@@ -306,7 +328,7 @@ export function applyDirectDamage(
     ...combat.actors,
     [targetActorId]: applied.actor,
   };
-  const nextCombat = finalizeCombat(combat, actors);
+  const nextCombat = finalizeCombat(combat, applyEnemyDefeatEffects(combat, actor, actors));
   return {
     state: { ...state, combat: nextCombat },
     targets: [targetActorId],
@@ -327,7 +349,7 @@ export function applyHpLossBypassingBlock(
     ...combat.actors,
     [targetActorId]: applied.actor,
   };
-  const nextCombat = finalizeCombat(combat, actors);
+  const nextCombat = finalizeCombat(combat, applyEnemyDefeatEffects(combat, actor, actors));
   return {
     state: { ...state, combat: nextCombat },
     targets: [targetActorId],
@@ -353,7 +375,15 @@ export function applyDirectDamageToRule(
     results.push(applied.result);
   }
 
-  const nextCombat = finalizeCombat(combat, actors);
+  let actorsWithDefeatEffects = actors;
+  for (const actorId of targets) {
+    actorsWithDefeatEffects = applyEnemyDefeatEffects(
+      combat,
+      requireActor(combat, actorId),
+      actorsWithDefeatEffects,
+    );
+  }
+  const nextCombat = finalizeCombat(combat, actorsWithDefeatEffects);
   return {
     state: { ...state, combat: nextCombat },
     targets,

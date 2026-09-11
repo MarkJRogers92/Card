@@ -154,10 +154,13 @@ export {
   projectEnemyIntent,
   projectSelectedEnemyIntents,
 } from "./enemies";
+export { ACT_1_FIRST_ENCOUNTERS, ACT_1_ORDINARY_ENCOUNTERS, INITIAL_ENEMY_REGISTRY } from "./initial-enemies";
+export type { InitialEncounterFormation } from "./initial-enemies";
 export type {
   EnemyAiDefinition,
   EnemyBehaviorDefinition,
   EnemyBehaviorRegistry,
+  EnemyDeathEffect,
   EnemyControllerSetup,
   EnemyControllerState,
   EnemyIntentEffectProjection,

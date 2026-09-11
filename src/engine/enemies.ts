@@ -1,4 +1,5 @@
 import type { CombatActor } from "./actors";
+import { createCardInstance, createCardInstanceId } from "./cards";
 import type { CombatState } from "./combat";
 import {
   applyDirectDamage,
@@ -16,9 +17,10 @@ import {
   tickPoisonAtEnemyPhaseStart,
   type StatusTick,
 } from "./status-runtime";
+import { assertCardConservation } from "./deck";
 import { resolveTargetRule, type TargetRule } from "./targeting";
 
-export const ENEMY_CONTROLLER_VERSION = 1 as const;
+export const ENEMY_CONTROLLER_VERSION = 2 as const;
 export const ENEMY_INTENT_VERSION = 1 as const;
 
 export type EnemyMoveTarget = TargetRule | { readonly kind: "self" };
@@ -32,7 +34,22 @@ export type EnemyMoveEffect =
   | {
       readonly op: "block";
       readonly amount: number;
+    }
+  | {
+      readonly op: "add_card_to_discard";
+      readonly cardId: string;
+      readonly count: number;
     };
+
+export interface EnemyPhaseThreshold {
+  readonly hpAtOrBelow: number;
+  readonly attackDamageBonus: number;
+}
+
+export type EnemyDeathEffect = {
+  readonly op: "grant_living_enemy_strength";
+  readonly amount: number;
+};
 
 export interface EnemyMoveDefinition {
   readonly id: string;
@@ -58,6 +75,9 @@ export interface EnemyBehaviorDefinition {
   readonly id: string;
   readonly moves: readonly EnemyMoveDefinition[];
   readonly ai: EnemyAiDefinition;
+  /** Applied when selecting a new intent, never retroactively to a revealed one. */
+  readonly phaseThreshold?: EnemyPhaseThreshold;
+  readonly deathEffects?: readonly EnemyDeathEffect[];
 }
 
 export type EnemyBehaviorRegistry = Readonly<
@@ -76,6 +96,8 @@ export interface EnemyControllerState {
   readonly nextCycleIndex: number;
   readonly openingPending: boolean;
   readonly selections: number;
+  readonly nextGeneratedCardOrdinal: number;
+  readonly deathEffects: readonly EnemyDeathEffect[];
 }
 
 export interface SelectedEnemyIntent {
@@ -87,6 +109,7 @@ export interface SelectedEnemyIntent {
   readonly label: string;
   readonly target: EnemyMoveTarget;
   readonly effects: readonly EnemyMoveEffect[];
+  readonly attackDamageBonus: number;
 }
 
 export interface ProjectedTargetDamage {
@@ -105,6 +128,12 @@ export type EnemyIntentEffectProjection =
   | {
       readonly op: "block";
       readonly amount: number;
+      readonly targetActorIds: readonly string[];
+    }
+  | {
+      readonly op: "add_card_to_discard";
+      readonly cardId: string;
+      readonly count: number;
       readonly targetActorIds: readonly string[];
     };
 
@@ -199,7 +228,8 @@ function cloneEffect(effect: EnemyMoveEffect): EnemyMoveEffect {
   if (effect.op === "damage") {
     return { op: "damage", amount: effect.amount, hits: effect.hits };
   }
-  return { op: "block", amount: effect.amount };
+  if (effect.op === "block") return { op: "block", amount: effect.amount };
+  return { op: "add_card_to_discard", cardId: effect.cardId, count: effect.count };
 }
 
 function validateDefinition(definition: EnemyBehaviorDefinition): void {
@@ -222,12 +252,24 @@ function validateDefinition(definition: EnemyBehaviorDefinition): void {
       assertNonEmpty("Locked target actorId", move.target.actorId);
     }
     for (const effect of move.effects) {
+      if (effect.op === "add_card_to_discard") {
+        assertNonEmpty(`${move.id} cardId`, effect.cardId);
+        assertPositiveInteger(`${move.id} card count`, effect.count);
+        continue;
+      }
       assertNonnegativeInteger(`${move.id} ${effect.op} amount`, effect.amount);
       if (effect.op === "damage") {
         assertPositiveInteger(`${move.id} damage hits`, effect.hits);
       }
     }
     moves.set(move.id, move);
+  }
+  if (definition.phaseThreshold !== undefined) {
+    assertNonnegativeInteger("Enemy phase threshold HP", definition.phaseThreshold.hpAtOrBelow);
+    assertNonnegativeInteger("Enemy phase threshold attack bonus", definition.phaseThreshold.attackDamageBonus);
+  }
+  for (const effect of definition.deathEffects ?? []) {
+    assertNonnegativeInteger(`${definition.id} death effect amount`, effect.amount);
   }
 
   if (definition.ai.moveIds.length === 0) {
@@ -298,6 +340,8 @@ function createController(
     nextCycleIndex: definition.ai.startIndex,
     openingPending: definition.ai.kind === "opening_cycle",
     selections: 0,
+    nextGeneratedCardOrdinal: 1_000_000,
+    deathEffects: (definition.deathEffects ?? []).map((effect) => ({ ...effect })),
   };
 }
 
@@ -322,6 +366,7 @@ function selectIntent(
   readonly intent: SelectedEnemyIntent;
 } {
   const definition = requireDefinition(registry, controller.definitionId);
+  const enemy = requireEnemyActor(combat, controller.actorId);
   let moveId: string;
   let nextCycleIndex = controller.nextCycleIndex;
   let openingPending = controller.openingPending;
@@ -345,6 +390,7 @@ function selectIntent(
       nextCycleIndex,
       openingPending,
       selections: selectionNumber,
+      nextGeneratedCardOrdinal: controller.nextGeneratedCardOrdinal,
     },
     intent: {
       intentVersion: ENEMY_INTENT_VERSION,
@@ -355,6 +401,10 @@ function selectIntent(
       label: move.label,
       target: cloneTarget(move.target),
       effects: move.effects.map(cloneEffect),
+      attackDamageBonus:
+        definition.phaseThreshold !== undefined && enemy.hp <= definition.phaseThreshold.hpAtOrBelow
+          ? definition.phaseThreshold.attackDamageBonus
+          : 0,
     },
   };
 }
@@ -503,16 +553,22 @@ export function projectEnemyIntent(
             combat,
             intent.enemyActorId,
             targetActorId,
-            effect.amount,
-            escalationBonus,
+          effect.amount,
+            escalationBonus + intent.attackDamageBonus,
           ).amount,
         })),
       };
     }
-    return {
+    if (effect.op === "block") return {
       op: "block",
       amount: effect.amount,
       targetActorIds: [intent.enemyActorId],
+    };
+    return {
+      op: "add_card_to_discard",
+      cardId: effect.cardId,
+      count: effect.count,
+      targetActorIds: [],
     };
   });
 
@@ -573,6 +629,28 @@ function executeIntent(
       continue;
     }
 
+    if (effect.op === "add_card_to_discard") {
+      const combat = requireActiveCombat(current);
+      const controller = combat.enemyControllers[intent.enemyActorId];
+      if (controller === undefined) throw new Error(`Missing enemy controller for ${intent.enemyActorId}.`);
+      const instances = { ...combat.deck.instances };
+      const discard = [...combat.deck.zones.discard];
+      for (let index = 0; index < effect.count; index += 1) {
+        const instanceId = createCardInstanceId(controller.nextGeneratedCardOrdinal + index);
+        instances[instanceId] = createCardInstance({ instanceId, definitionId: effect.cardId, ownerCharacterId: "crew", origin: "temporary" });
+        discard.push(instanceId);
+      }
+      const nextCombat: CombatState = {
+        ...combat,
+        deck: { ...combat.deck, instances, zones: { ...combat.deck.zones, discard } },
+        enemyControllers: { ...combat.enemyControllers, [intent.enemyActorId]: { ...controller, nextGeneratedCardOrdinal: controller.nextGeneratedCardOrdinal + effect.count } },
+      };
+      assertCardConservation(nextCombat.deck);
+      current = { ...current, combat: nextCombat };
+      effectsResolved += 1;
+      continue;
+    }
+
     for (let hit = 0; hit < effect.hits; hit += 1) {
       if (current.combat?.outcome !== "active") {
         break;
@@ -589,6 +667,7 @@ function executeIntent(
           intent.enemyActorId,
           targetActorId,
           effect.amount,
+          intent.attackDamageBonus,
         ).amount;
         current = applyDirectDamage(
           current,

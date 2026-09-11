@@ -2,6 +2,22 @@
 
 ## Current milestone
 
+**M17 — initial enemies and encounters — local implementation checkpoint**
+
+M17 is implemented locally on top of the unaccepted M16 checkpoint on
+`codex/m16-family-transformations`. It adds the initial enemy/encounter data,
+enemy-issued Invoices, the Intern's living-ally death effect, and Head of
+Recovery's immutable future-intent threshold behavior. Focused M05, M11, and
+M17 suites plus the content/type check pass. See
+`docs/milestones/M17_INITIAL_ENEMIES.md`.
+
+The broader unit suite currently has one non-M17 failure in the existing
+Unlicensed Procedure terminal-victory HP-cost case: its post-effect trigger
+dispatch rejects the already-ended combat state. This must be diagnosed before
+acceptance; it was not changed or masked by M17.
+
+## Predecessor checkpoint
+
 **M16 — family transformations — local implementation checkpoint**
 
 M16 is implemented locally on `codex/m16-family-transformations` from accepted

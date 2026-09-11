@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   createAuthoritativeState,
   createEncounterReward,
+  claimRewardOption,
+  skipCardReward,
   type RewardCatalog,
 } from "../../src/engine";
 
@@ -28,6 +30,7 @@ describe("M18 rewards", () => {
       scrap: 0,
       pending: null,
       completedTransactionIds: [],
+      resolvedChoiceIds: [],
       claimedCardIds: [],
       claimedRelicIds: [],
     });
@@ -54,6 +57,48 @@ describe("M18 rewards", () => {
       .filter((option) => option.kind === "card")
       .map((option) => option.role)).toEqual(
       expect.arrayContaining(["source", "shaper"]),
+    );
+  });
+
+  it("claims a card once and makes a repeated completed command a no-op", () => {
+    const offered = createEncounterReward(
+      createAuthoritativeState({ seed: 19, contentHash: "m18" }),
+      catalog,
+      {
+        transactionId: "ordinary-claim",
+        encounter: "ordinary",
+        selectedRoles: ["source", "shaper", "crew"],
+        ownedRelicIds: [],
+      },
+    );
+    const optionId = offered.rewards.pending?.choices[0]?.options[0]?.id;
+    expect(optionId).toBeDefined();
+
+    const claimed = claimRewardOption(offered, "ordinary-claim", optionId as string);
+
+    expect(claimed.rewards.pending).toBeNull();
+    expect(claimed.rewards.claimedCardIds).toEqual([optionId]);
+    expect(claimed.rewards.completedTransactionIds).toEqual(["ordinary-claim"]);
+    expect(claimRewardOption(claimed, "ordinary-claim", optionId as string)).toBe(claimed);
+  });
+
+  it("skips only a card reward and rejects mismatched transactions", () => {
+    const offered = createEncounterReward(
+      createAuthoritativeState({ seed: 20, contentHash: "m18" }),
+      catalog,
+      {
+        transactionId: "ordinary-skip",
+        encounter: "ordinary",
+        selectedRoles: ["source", "shaper"],
+        ownedRelicIds: [],
+      },
+    );
+
+    const skipped = skipCardReward(offered, "ordinary-skip");
+    expect(skipped.rewards.pending).toBeNull();
+    expect(skipped.rewards.claimedCardIds).toEqual([]);
+    expect(() => claimRewardOption(offered, "wrong-id", "source.common")).toThrow(
+      "does not match",
     );
   });
 });

@@ -23,7 +23,13 @@ export {
   hashCanonical,
 } from "./canonical";
 export type { JsonPrimitive, JsonValue } from "./canonical";
-export { REWARD_STATE_VERSION, createEncounterReward, createRewardState } from "./rewards";
+export {
+  REWARD_STATE_VERSION,
+  claimRewardOption,
+  createEncounterReward,
+  createRewardState,
+  skipCardReward,
+} from "./rewards";
 export type {
   CardRewardOption,
   CreateEncounterRewardInput,

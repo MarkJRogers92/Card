@@ -67,6 +67,7 @@ export interface RewardState {
   readonly scrap: number;
   readonly pending: PendingReward | null;
   readonly completedTransactionIds: readonly string[];
+  readonly resolvedChoiceIds: readonly string[];
   readonly claimedCardIds: readonly string[];
   readonly claimedRelicIds: readonly string[];
 }
@@ -236,12 +237,79 @@ export function createEncounterReward(
   };
 }
 
+function requirePendingTransaction(state: AuthoritativeState, transactionId: string): PendingReward {
+  const pending = state.rewards.pending;
+  if (pending === null) throw new Error("No reward is pending.");
+  if (pending.transactionId !== transactionId) {
+    throw new Error("Reward transaction ID does not match the pending reward.");
+  }
+  return pending;
+}
+
+function resolveChoice(
+  state: AuthoritativeState,
+  pending: PendingReward,
+  choice: PendingRewardChoice,
+): AuthoritativeState {
+  const choices = pending.choices.filter((candidate) => candidate.choiceId !== choice.choiceId);
+  const completed = choices.length === 0;
+  return {
+    ...state,
+    rewards: {
+      ...state.rewards,
+      pending: completed ? null : { ...pending, choices },
+      completedTransactionIds: completed
+        ? [...state.rewards.completedTransactionIds, pending.transactionId]
+        : state.rewards.completedTransactionIds,
+      resolvedChoiceIds: [...state.rewards.resolvedChoiceIds, `${pending.transactionId}:${choice.choiceId}`],
+    },
+  };
+}
+
+export function claimRewardOption(
+  state: AuthoritativeState,
+  transactionId: string,
+  optionId: string,
+): AuthoritativeState {
+  if (state.rewards.completedTransactionIds.includes(transactionId)) return state;
+  if (state.rewards.claimedCardIds.includes(optionId) || state.rewards.claimedRelicIds.includes(optionId)) {
+    return state;
+  }
+  const pending = requirePendingTransaction(state, transactionId);
+  const choice = pending.choices.find((candidate) => candidate.options.some((option) => option.id === optionId));
+  if (choice === undefined) throw new Error("Reward option is not offered by the pending reward.");
+  const option = choice.options.find((candidate) => candidate.id === optionId) as RewardOption;
+  const resolved = resolveChoice(state, pending, choice);
+  return {
+    ...resolved,
+    rewards: {
+      ...resolved.rewards,
+      claimedCardIds: option.kind === "card"
+        ? [...resolved.rewards.claimedCardIds, option.id]
+        : resolved.rewards.claimedCardIds,
+      claimedRelicIds: option.kind === "relic"
+        ? [...resolved.rewards.claimedRelicIds, option.id]
+        : resolved.rewards.claimedRelicIds,
+    },
+  };
+}
+
+export function skipCardReward(state: AuthoritativeState, transactionId: string): AuthoritativeState {
+  if (state.rewards.completedTransactionIds.includes(transactionId)) return state;
+  const pending = requirePendingTransaction(state, transactionId);
+  const choice = pending.choices.find((candidate) => candidate.kind === "card");
+  if (choice === undefined) throw new Error("The pending reward has no card choice to skip.");
+  if (state.rewards.resolvedChoiceIds.includes(`${transactionId}:${choice.choiceId}`)) return state;
+  return resolveChoice(state, pending, choice);
+}
+
 export function createRewardState(): RewardState {
   return {
     rewardVersion: REWARD_STATE_VERSION,
     scrap: 0,
     pending: null,
     completedTransactionIds: [],
+    resolvedChoiceIds: [],
     claimedCardIds: [],
     claimedRelicIds: [],
   };

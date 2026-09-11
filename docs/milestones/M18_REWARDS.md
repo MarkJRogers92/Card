@@ -34,7 +34,7 @@ roll or transaction semantics established here.
 
 ## Local verification
 
-`npm run check`, `test:engine` (282 tests), `test:content` (29 tests),
-`content:validate`, `test:replay`, `test:properties`, `test:m18` (5 tests),
+`npm run check`, `test:engine` (283 tests), `test:content` (29 tests),
+`content:validate`, `test:replay`, `test:properties`, `test:m18` (6 tests),
 `build`, and `test:browser` (3 tests) pass. The local Playwright server uses
 port 4183 to avoid an existing developer service on 4173.

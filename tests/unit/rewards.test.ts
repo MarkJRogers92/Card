@@ -31,6 +31,7 @@ describe("M18 rewards", () => {
       pending: null,
       completedTransactionIds: [],
       resolvedChoiceIds: [],
+      resolvedOptionIds: [],
       claimedCardIds: [],
       claimedRelicIds: [],
     });
@@ -128,5 +129,36 @@ describe("M18 rewards", () => {
       expect.arrayContaining(["relic.a", "relic.b"]),
     );
     expect(skipCardReward(skipped, "elite-skip")).toBe(skipped);
+  });
+
+  it("allows the same card definition to be claimed in separate transactions", () => {
+    const singleSourceCatalog: RewardCatalog = {
+      cards: [
+        { id: "source.repeatable", role: "source", rarity: "common", unlocked: true },
+        { id: "shaper.once", role: "shaper", rarity: "common", unlocked: true },
+        { id: "crew.once", role: "crew", rarity: "common", unlocked: true },
+      ],
+      relics: [],
+    };
+    const initial = createAuthoritativeState({ seed: 22, contentHash: "m18" });
+    const firstOffer = createEncounterReward(initial, singleSourceCatalog, {
+      transactionId: "repeat-1",
+      encounter: "ordinary",
+      selectedRoles: ["source", "shaper", "crew"],
+      ownedRelicIds: [],
+    });
+    const firstClaim = claimRewardOption(firstOffer, "repeat-1", "source.repeatable");
+    const secondOffer = createEncounterReward(firstClaim, singleSourceCatalog, {
+      transactionId: "repeat-2",
+      encounter: "ordinary",
+      selectedRoles: ["source", "shaper", "crew"],
+      ownedRelicIds: [],
+    });
+
+    const secondClaim = claimRewardOption(secondOffer, "repeat-2", "source.repeatable");
+    expect(secondClaim.rewards.claimedCardIds).toEqual([
+      "source.repeatable",
+      "source.repeatable",
+    ]);
   });
 });

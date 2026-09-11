@@ -68,6 +68,7 @@ export interface RewardState {
   readonly pending: PendingReward | null;
   readonly completedTransactionIds: readonly string[];
   readonly resolvedChoiceIds: readonly string[];
+  readonly resolvedOptionIds: readonly string[];
   readonly claimedCardIds: readonly string[];
   readonly claimedRelicIds: readonly string[];
 }
@@ -272,7 +273,7 @@ export function claimRewardOption(
   optionId: string,
 ): AuthoritativeState {
   if (state.rewards.completedTransactionIds.includes(transactionId)) return state;
-  if (state.rewards.claimedCardIds.includes(optionId) || state.rewards.claimedRelicIds.includes(optionId)) {
+  if (state.rewards.resolvedOptionIds.includes(`${transactionId}:${optionId}`)) {
     return state;
   }
   const pending = requirePendingTransaction(state, transactionId);
@@ -284,6 +285,7 @@ export function claimRewardOption(
     ...resolved,
     rewards: {
       ...resolved.rewards,
+      resolvedOptionIds: [...resolved.rewards.resolvedOptionIds, `${transactionId}:${optionId}`],
       claimedCardIds: option.kind === "card"
         ? [...resolved.rewards.claimedCardIds, option.id]
         : resolved.rewards.claimedCardIds,
@@ -310,6 +312,7 @@ export function createRewardState(): RewardState {
     pending: null,
     completedTransactionIds: [],
     resolvedChoiceIds: [],
+    resolvedOptionIds: [],
     claimedCardIds: [],
     claimedRelicIds: [],
   };

@@ -2,6 +2,18 @@
 
 ## Current milestone
 
+**M19 — fixed test act — implementation checkpoint**
+
+M19 adds a deterministic seven-node Act 1 fixture route (`ordinary_1`, `rest_1`,
+`ordinary_2`, `elite`, `rest_2`, `ordinary_3`, `boss`) that carries party HP,
+Scrap, and claimed reward IDs between nodes through `src/engine/run.ts` while
+rebuilding combat-only state per node. The browser route is exposed only through
+`?fixture=m19` with run-focused controls and local verification evidence in
+`docs/milestones/M19_FIXED_TEST_ACT.md`. This checkpoint is complete locally on
+`codex/m19-fixed-test-act` and has not been pushed.
+
+## Previous accepted milestone
+
 **M18 — rewards — implementation checkpoint**
 
 M18 adds deterministic, gameplay-RNG reward transactions: 15/35/50 Scrap for
@@ -10,8 +22,6 @@ and idempotent claim or card-skip commands. The browser M10 fixture exposes an
 ordinary reward panel with authoritative Scrap and no client-side rolls. M19
 will connect the claimed definitions to a run deck and map progression; it
 does not change M18's reward-generation contracts.
-
-## Previous accepted milestone
 
 **M17 — initial enemies and encounters — accepted**
 
@@ -118,4 +128,6 @@ was not touched.
 
 ## Next eligible milestone
 
-**M17 — initial enemies and encounters** is eligible after M16 acceptance.
+**M20 — serialization and save/load** remains pending.
+**M21 — persistent browser storage** remains pending.
+**M22 — branching map, shops, events, treasure, and workshop nodes** remains pending.

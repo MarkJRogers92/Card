@@ -233,6 +233,58 @@ h2 {
   display: block;
 }
 
+.run-strip {
+  margin-top: 0.8rem;
+  padding: 0.75rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: flex-start;
+  border: 1px solid rgba(236, 232, 223, 0.12);
+  background: rgba(10, 12, 16, 0.82);
+}
+
+.run-strip > div {
+  min-width: 6.3rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.55rem;
+  border: 1px solid rgba(236, 232, 223, 0.14);
+  background: rgba(236, 232, 223, 0.045);
+}
+
+.run-strip span,
+.run-strip strong {
+  display: block;
+}
+
+.run-strip span {
+  margin-bottom: 0.15rem;
+  color: #8e8883;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.run-strip strong {
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.run-commands {
+  margin-top: 0.7rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.run-button,
+.run-commands .reward-option,
+.run-commands .secondary-button {
+  min-width: 7rem;
+  cursor: pointer;
+}
+
 .resource-strip span {
   margin-bottom: 0.15rem;
   color: #8e8883;

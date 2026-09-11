@@ -1,18 +1,27 @@
 import { useMemo, useState } from "react";
 import {
+  applyDirectDamage,
+  createDirectDamagePacket,
   M10_CLAIMS_ADJUSTER_ID,
   M10_MORROW_ID,
   M10_SWITCH_ID,
   applyM10Command,
   claimRewardOption,
   createM10Fight,
+  createM19Run,
   createM10RewardFixture,
   getM10Hand,
   hashM10Fight,
   projectSelectedEnemyIntents,
+  completeRunCombat,
+  M19_REWARD_CATALOG,
   skipCardReward,
+  beginRunNode,
+  advanceRunNode,
+  restRunCharacter,
   type AuthoritativeState,
   type M10Command,
+  type RunState,
 } from "../engine";
 import "./App.css";
 
@@ -37,6 +46,11 @@ function createInitialState(): AuthoritativeState {
 }
 
 export function App() {
+  const fixture = new URLSearchParams(window.location.search).get("fixture");
+  return fixture === "m19" ? <M19TestAct /> : <M10Combat />;
+}
+
+function M10Combat() {
   const [state, setState] = useState<AuthoritativeState>(createInitialState);
   const [commands, setCommands] = useState<readonly M10Command[]>([]);
   const [selectedTarget, setSelectedTarget] = useState(M10_CLAIMS_ADJUSTER_ID);
@@ -317,6 +331,245 @@ export function App() {
           <pre data-testid="command-log">{JSON.stringify(commands)}</pre>
         </details>
       </footer>
+    </main>
+  );
+}
+
+function M19TestAct() {
+  const [state, setState] = useState<AuthoritativeState>(() => createM19Run(1901));
+  const [commands, setCommands] = useState<readonly string[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const run = state.run as RunState;
+  const combat = state.combat;
+
+  const runNodeId = run.currentNodeId;
+  const runOutcome = run.outcome;
+  const runPendingId = state.rewards.pending === null ? "none" : state.rewards.pending.transactionId;
+  const combatEnemyId =
+    combat === null || combat.enemyOrder.length === 0 ? null : combat.enemyOrder[0] ?? null;
+  const combatEnemyHp =
+    combat === null || combatEnemyId === null || combat.actors[combatEnemyId] === undefined
+      ? null
+      : combat.actors[combatEnemyId].hp;
+
+  const canControlProgression =
+    combat === null && runOutcome === "active";
+  const canRest =
+    combat === null &&
+    runOutcome === "active" &&
+    (runNodeId === "rest_1" || runNodeId === "rest_2");
+
+  function commit(name: string, next: AuthoritativeState): void {
+    try {
+      setState(next);
+      setCommands((current) => [...current, name]);
+      setError(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
+  function applyBeginNode(): void {
+    try {
+      commit("beginRunNode", beginRunNode(state));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
+  function applyFixtureDamageMorrow(): void {
+    try {
+      const result = applyDirectDamage(state, M10_MORROW_ID, createDirectDamagePacket(20));
+      commit("fixtureDamageMorrow", result.state);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
+  function applyResolveNode(): void {
+    try {
+      if (state.combat === null) throw new Error("No M19 node combat is active.");
+      commit(
+        "resolveRunNode",
+        completeRunCombat({ ...state, combat: { ...state.combat, outcome: "victory" } }, M19_REWARD_CATALOG),
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
+  function applyRestMorrow(): void {
+    try {
+      commit("restMorrow", restRunCharacter(state, M10_MORROW_ID));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
+  function applyRestSwitch(): void {
+    try {
+      commit("restSwitch", restRunCharacter(state, M10_SWITCH_ID));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
+  function applyAdvance(): void {
+    try {
+      commit("advanceRunNode", advanceRunNode(state));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
+  function claimOption(optionId: string): void {
+    try {
+      if (state.rewards.pending === null) throw new Error("No reward is pending.");
+      commit(`claimReward:${optionId}`, claimRewardOption(state, state.rewards.pending.transactionId, optionId));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
+  function skipReward(): void {
+    try {
+      if (state.rewards.pending === null) throw new Error("No reward is pending.");
+      commit(`skipReward:${state.rewards.pending.transactionId}`, skipCardReward(state, state.rewards.pending.transactionId));
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
+
+  return (
+    <main className="combat-shell">
+      <header className="combat-header">
+        <div>
+          <p className="eyebrow">M19 FIXED TEST ACT</p>
+          <h1>Joint Liability</h1>
+        </div>
+      </header>
+
+      <section className="run-strip command-bar" aria-label="Run status">
+        <div>
+          <span>Node</span>
+          <strong data-testid="run-node">{runNodeId}</strong>
+        </div>
+        <div>
+          <span>Outcome</span>
+          <strong data-testid="run-outcome">{runOutcome}</strong>
+        </div>
+        <div>
+          <span>Scrap</span>
+          <strong data-testid="run-scrap">{String(state.rewards.scrap)}</strong>
+        </div>
+        <div>
+          <span>Morrow HP</span>
+          <strong data-testid="run-hp-morrow">{String(run.partyHp[M10_MORROW_ID])}</strong>
+        </div>
+        <div>
+          <span>Switch HP</span>
+          <strong data-testid="run-hp-switch">{String(run.partyHp[M10_SWITCH_ID])}</strong>
+        </div>
+        <div>
+          <span>Pending</span>
+          <strong data-testid="run-pending">{runPendingId}</strong>
+        </div>
+        <div>
+          <span>Current Node</span>
+          <strong data-testid="m19-command-log">{JSON.stringify(commands)}</strong>
+        </div>
+      </section>
+
+      <section className="resource-strip run-commands" aria-label="Run controls">
+        {canControlProgression && (
+          <button type="button" className="secondary-button run-button" data-testid="run-begin-node" onClick={applyBeginNode}>
+            Begin node
+          </button>
+        )}
+        {combat !== null && (
+          <>
+            <button
+              type="button"
+              className="secondary-button run-button"
+              data-testid="run-fixture-damage-morrow"
+              onClick={applyFixtureDamageMorrow}
+            >
+              Fixture damage Morrow
+            </button>
+            <button
+              type="button"
+              className="secondary-button run-button"
+              data-testid="run-resolve-node"
+              onClick={applyResolveNode}
+            >
+              Resolve node
+            </button>
+          </>
+        )}
+        {canRest && (
+          <>
+            <button type="button" className="secondary-button run-button" data-testid="run-rest-morrow" onClick={applyRestMorrow}>
+              Rest Morrow
+            </button>
+            <button type="button" className="secondary-button run-button" data-testid="run-rest-switch" onClick={applyRestSwitch}>
+              Rest Switch
+            </button>
+          </>
+        )}
+        {canControlProgression && (
+          <button
+            type="button"
+            className="secondary-button run-button"
+            data-testid="run-advance"
+            onClick={applyAdvance}
+          >
+            Advance
+          </button>
+        )}
+        {combat !== null && combatEnemyId !== null && (
+          <p data-testid="run-combat-enemy">
+            {combatEnemyId} · {combatEnemyHp}
+          </p>
+        )}
+      </section>
+
+      {state.rewards.pending !== null && (
+        <section className="reward-panel" aria-label="Run reward choices">
+          {state.rewards.pending.choices.map((choice) => (
+            <div className="reward-choice" key={choice.choiceId}>
+              <div className="reward-options">
+                {choice.options.map((option) => (
+                  <button
+                    className="reward-option"
+                    key={option.id}
+                    type="button"
+                    data-testid={`run-reward-option-${option.id}`}
+                    onClick={() => claimOption(option.id)}
+                  >
+                    <strong>{option.id}</strong>
+                  </button>
+                ))}
+              </div>
+              {choice.kind === "card" && (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  data-testid="run-reward-skip"
+                  onClick={skipReward}
+                >
+                  Skip
+                </button>
+              )}
+            </div>
+          ))}
+        </section>
+      )}
+
+      {error !== null && (
+        <p className="error-banner" role="alert" data-testid="run-error">
+          {error}
+        </p>
+      )}
     </main>
   );
 }

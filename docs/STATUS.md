@@ -2,19 +2,35 @@
 
 ## Current milestone
 
-**M14 — first relics — acceptance candidate**
+**M14 — first relics — accepted**
+
+M14 is accepted on `claude/m14-first-relics`. GitHub Actions run
+[`34548620092`](https://github.com/MarkJRogers92/Card/actions/runs/34548620092)
+passed the exact implementation head
+`2221c093c6cca649b62a8d811188e0fba3a2ce2b`, including installation,
+type/generated-content checks, general engine/content/validation/replay/
+property suites, focused M03–M14 tests, production build, Chromium
+installation, and the unchanged M10 browser/replay regression.
 
 M14 completes Shared Warranty, Wetware Die, Clot Filter, Organ Bag, and
-Parallel Port as validated production content plus a generic
-relic-content compiler. All local type, content, unit, replay, property,
-focused M03–M14, and build checks pass. GitHub Actions remains the final
-acceptance gate because this container could not download Chromium for
-the unchanged M10 browser regression.
-
-See `docs/milestones/M14_FIRST_RELICS.md` and
+Parallel Port as validated production content plus a generic relic-content
+compiler. See `docs/milestones/M14_FIRST_RELICS.md` and
 `docs/M14_NORMAL_CHAT_HANDOFF.md` for the exact contracts and evidence.
 
-## Last accepted milestone
+## M14 acceptance checklist
+
+- [x] Shared Warranty grants 3 Block to the incoming Front after the first swap each player turn
+- [x] Wetware Die multiplies Reaction direct damage by 1.5 only against targets currently carrying Bleed, including mixed-target evaluation
+- [x] Clot Filter grants the current Front 2 Block per distinct enemy to which the primary Reaction applied Bleed, with command-scoped limiting
+- [x] Organ Bag raises Reaction Recovery's per-combat actual-healing allowance from 6 to 10
+- [x] Parallel Port repeats the largest direct-damage packet from the first primary Reaction each player turn at 50% output against the same target, with the accepted snapshot/floor/current-target-modifier ordering
+- [x] Relic execution is compiled generically from validated schema fields rather than relic-ID branches
+- [x] Relic bindings coexist with M09 character passives
+- [x] Prior accepted suites continue to pass
+- [x] Production build passes
+- [x] M10 Playwright browser/replay regression remains green
+
+## Last accepted milestone before M14
 
 **M13 — Shaper, Crew, and junk card pool — accepted**
 
@@ -104,9 +120,26 @@ boundary/integration coverage listed in the milestone doc
 The M10 checkpoint remains intentionally stable as a regression fixture
 and was not touched.
 
-`main` remains unchanged by M02–M13 work.
+## M14 verification record
+
+`src/engine/relic-content.ts` compiles validated relic modifiers and
+triggers generically by schema fields (`channel`, `condition`, `event`,
+`effect.op`, and limit), with setup-time append functions that allow relic
+bindings to coexist with the accepted M09 character passives. The trigger
+runtime supports schema-aligned `command` scope without persisting a counter
+beyond one dispatch. Reaction Recovery use and Parallel Port's packet
+snapshot remain authoritative combat state from the initial M14 checkpoint.
+No relic-ID branches were added.
+
+GitHub Actions run `34548620092` passed at exact implementation commit
+`2221c093c6cca649b62a8d811188e0fba3a2ce2b`. The single acceptance job
+completed successfully across all steps, including the focused M03–M14
+suite, production build, Chromium installation, and M10 browser/replay
+regression.
+
+`main` remains unchanged by M02–M14 work.
 
 ## Next eligible milestone
 
-**M15 — remaining relics** becomes eligible only after M14's GitHub
-Actions acceptance gate passes and its exact run/commit are recorded.
+**M15 — remaining relics** is now eligible because M14 is accepted, but it
+has not been started in this acceptance-record commit.

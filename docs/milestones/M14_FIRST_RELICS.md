@@ -1,6 +1,12 @@
 # M14 — First Relics
 
-Status: **acceptance candidate; GitHub Actions pending**
+Status: **accepted**
+
+Accepted implementation commit:
+`2221c093c6cca649b62a8d811188e0fba3a2ce2b`
+
+GitHub Actions acceptance run:
+[`34548620092`](https://github.com/MarkJRogers92/Card/actions/runs/34548620092)
 
 ## Scope
 
@@ -57,12 +63,40 @@ coexistence with character passives, every printed relic effect,
 target-dependent damage, per-target Clot accounting, Recovery limits,
 and Parallel Port limits/snapshot math.
 
-The local Playwright run could not start because this container lacked
-Chromium, and the browser CDN timed out while installing it. The M14
-GitHub Actions workflow installs Chromium and remains the acceptance
-gate for the two unchanged M10 browser/replay regressions.
+The local Playwright run could not start because the local container
+lacked Chromium and its CDN timed out while installing it. That
+environmental gap is now closed by the exact-head GitHub Actions
+acceptance run below.
+
+### Exact GitHub Actions acceptance
+
+Workflow: **M14 Acceptance**
+
+Run: [`34548620092`](https://github.com/MarkJRogers92/Card/actions/runs/34548620092)
+
+Exact head SHA:
+`2221c093c6cca649b62a8d811188e0fba3a2ce2b`
+
+Conclusion: **success**
+
+The acceptance job passed:
+
+- Install locked dependencies
+- Type and generated-content checks
+- Engine tests
+- Content tests
+- Production content validation
+- Replay determinism tests
+- Engine property tests
+- Focused M03–M14 tests
+- Production build
+- Install Chromium for browser regression
+- M10 browser replay regression
+
+No tests were weakened and the stable M10 browser fixture remained
+unchanged.
 
 ## Next milestone
 
-M15 is the next eligible milestone only after this candidate passes the
-full GitHub Actions acceptance workflow.
+M15 — remaining relics — is eligible after this acceptance, but it is not
+started by the M14 documentation-only acceptance record.

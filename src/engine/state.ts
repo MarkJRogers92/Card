@@ -2,6 +2,7 @@ import { hashCanonical } from "./canonical";
 import { CONTENT_VERSION, ENGINE_VERSION } from "./bootstrap";
 import type { CombatState } from "./combat";
 import { createRewardState, type RewardState } from "./rewards";
+import type { RunState } from "./run";
 import {
   createGameplayRngState,
   drawGameplayInt,
@@ -23,6 +24,7 @@ export interface AuthoritativeState {
   readonly rng: GameplayRngState;
   readonly combat: CombatState | null;
   readonly rewards: RewardState;
+  readonly run: RunState | null;
 }
 
 export interface AuthoritativeStateOptions {
@@ -53,6 +55,7 @@ export function createAuthoritativeState(
     rng: createGameplayRngState(options.seed),
     combat: null,
     rewards: createRewardState(),
+    run: null,
   };
 }
 

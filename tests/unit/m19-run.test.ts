@@ -2,11 +2,25 @@ import { describe, expect, it } from "vitest";
 import {
   M10_MORROW_ID,
   M10_SWITCH_ID,
+  M19_NODE_IDS,
   createAct1Combat,
+  createM19Run,
+  currentRunNode,
   createM10Fight,
 } from "../../src/engine";
 
 describe("M19 fixed test act", () => {
+  it("creates the fixed seven-node route before any combat begins", () => {
+    const state = createM19Run(19);
+
+    expect(M19_NODE_IDS).toEqual([
+      "ordinary_1", "rest_1", "ordinary_2", "elite", "rest_2", "ordinary_3", "boss",
+    ]);
+    expect(currentRunNode(state)).toBe("ordinary_1");
+    expect(state.run?.completedNodeIds).toEqual([]);
+    expect(state.combat).toBeNull();
+  });
+
   it("starts an Act 1 formation from persistent player HP with fresh combat state", () => {
     const previousCombat = createM10Fight(19).combat;
     const state = createAct1Combat({

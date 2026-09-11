@@ -65,7 +65,7 @@ test("restart restores the deterministic opening state and clears the UI command
 });
 
 test("claims the deterministic M18 reward and shows its Scrap", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?fixture=m18");
 
   await expect(page.getByTestId("reward-panel")).toBeVisible();
   await page.getByTestId("reward-option-source.open_wound").click();

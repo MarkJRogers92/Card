@@ -5,6 +5,7 @@ import {
   M10_SWITCH_ID,
   applyM10Command,
   claimRewardOption,
+  createM10Fight,
   createM10RewardFixture,
   getM10Hand,
   hashM10Fight,
@@ -29,8 +30,14 @@ function positionLabel(
   return actorId === frontCharacterId ? "FRONT" : "RESERVE";
 }
 
+function createInitialState(): AuthoritativeState {
+  return new URLSearchParams(window.location.search).get("fixture") === "m18"
+    ? createM10RewardFixture()
+    : createM10Fight();
+}
+
 export function App() {
-  const [state, setState] = useState<AuthoritativeState>(() => createM10RewardFixture());
+  const [state, setState] = useState<AuthoritativeState>(createInitialState);
   const [commands, setCommands] = useState<readonly M10Command[]>([]);
   const [selectedTarget, setSelectedTarget] = useState(M10_CLAIMS_ADJUSTER_ID);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +68,7 @@ export function App() {
   }
 
   function restart(): void {
-    setState(createM10RewardFixture());
+    setState(createInitialState());
     setCommands([]);
     setSelectedTarget(M10_CLAIMS_ADJUSTER_ID);
     setError(null);

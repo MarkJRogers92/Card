@@ -2,13 +2,14 @@
 
 ## Current milestone
 
-**M18 — rewards — design checkpoint**
+**M18 — rewards — implementation checkpoint**
 
-M17 is accepted on `codex/m16-family-transformations`: GitHub Actions run
-[`34567795787`](https://github.com/MarkJRogers92/Card/actions/runs/34567795787)
-passed at exact head `e8f88a87f0aa87c24faad7e11db31a3ddff8dd74`. M18 design is
-recorded in `docs/superpowers/specs/2026-09-11-m18-rewards-design.md`; M19
-will follow M18 as a separate source and CI checkpoint.
+M18 adds deterministic, gameplay-RNG reward transactions: 15/35/50 Scrap for
+ordinary/elite/Act 1 boss encounters, role-aware card options, relic options,
+and idempotent claim or card-skip commands. The browser M10 fixture exposes an
+ordinary reward panel with authoritative Scrap and no client-side rolls. M19
+will connect the claimed definitions to a run deck and map progression; it
+does not change M18's reward-generation contracts.
 
 ## Previous accepted milestone
 

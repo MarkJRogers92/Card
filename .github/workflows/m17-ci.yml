@@ -1,4 +1,4 @@
-name: M17 Acceptance
+name: M18 Acceptance
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
       - run: npm run content:validate
       - run: npm run test:replay
       - run: npm run test:properties
-      - name: Focused M03-M17 tests
+      - name: Focused M03-M18 tests
         run: |
           npm run test:m03
           npm run test:m04
@@ -56,6 +56,7 @@ jobs:
           npm run test:m15
           npm run test:m16
           npm run test:m17
+          npm run test:m18
       - run: npm run build
       - name: Install Chromium for browser regression
         run: npx playwright install --with-deps chromium

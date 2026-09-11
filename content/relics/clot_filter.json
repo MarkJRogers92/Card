@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.clot_filter",
+  "name": "Clot Filter",
+  "rarity": "common",
+  "family": "anatomy",
+  "modifiers": [],
+  "triggers": [{
+    "event": "after_primary_reaction",
+    "filter": { "event": "primary_reaction_applied_bleed" },
+    "effects": [{ "op": "block", "target": "front", "amount": { "const": 2 } }],
+    "limit": { "scope": "command", "count": 1, "keying": "relic_instance" },
+    "priority": 100
+  }],
+  "unlockId": null,
+  "artId": "relic.clot_filter"
+}

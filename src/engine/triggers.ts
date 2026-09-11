@@ -20,7 +20,7 @@ export const MAX_GENERATED_EVENTS_PER_DISPATCH = 256 as const;
 export const MAX_MODIFIERS_PER_CHANNEL = 256 as const;
 
 export type TriggerEventKind = "card_played" | "after_swap" | "primary_reaction";
-export type TriggerLimitScope = "turn" | "combat";
+export type TriggerLimitScope = "command" | "turn" | "combat";
 export type TriggerSwapMode = "manual" | "card_free";
 
 export type TriggerCondition =
@@ -356,6 +356,30 @@ export function installTriggerBindings(
   };
 }
 
+export function appendSetupTriggerBindings(
+  state: AuthoritativeState,
+  bindings: readonly TriggerBinding[],
+): AuthoritativeState {
+  const combat = requireCombat(state);
+  if (combat.phase !== "setup") {
+    throw new Error("Trigger bindings must be installed during combat setup.");
+  }
+  const seen = new Set(combat.triggerBindings.map(bindingKey));
+  const cloned = bindings.map((binding) => {
+    validateBinding(binding);
+    const key = bindingKey(binding);
+    if (seen.has(key)) {
+      throw new Error(`Duplicate trigger binding: ${key}.`);
+    }
+    seen.add(key);
+    return cloneBinding(binding);
+  });
+  return {
+    ...state,
+    combat: { ...combat, triggerBindings: [...combat.triggerBindings, ...cloned] },
+  };
+}
+
 function cloneModifierCondition(
   condition: ModifierCondition | null,
 ): ModifierCondition | null {
@@ -407,6 +431,34 @@ export function installModifierBindings(
   };
 }
 
+export function appendSetupModifierBindings(
+  state: AuthoritativeState,
+  bindings: readonly ModifierBinding[],
+): AuthoritativeState {
+  const combat = requireCombat(state);
+  if (combat.phase !== "setup") {
+    throw new Error("Modifier bindings must be installed during combat setup.");
+  }
+  const seen = new Set(
+    combat.modifierBindings.map(
+      (binding) => `${binding.sourceId}::${binding.modifierId}`,
+    ),
+  );
+  const cloned = bindings.map((binding) => {
+    validateModifier(binding);
+    const key = `${binding.sourceId}::${binding.modifierId}`;
+    if (seen.has(key)) {
+      throw new Error(`Duplicate modifier binding: ${key}.`);
+    }
+    seen.add(key);
+    return cloneModifierBinding(binding);
+  });
+  return {
+    ...state,
+    combat: { ...combat, modifierBindings: [...combat.modifierBindings, ...cloned] },
+  };
+}
+
 function ingredientMatches(actual: Ingredient, expected: Ingredient): boolean {
   return actual.kind === expected.kind && actual.id === expected.id;
 }
@@ -431,6 +483,9 @@ function conditionMatches(condition: TriggerCondition, event: TriggerEvent): boo
 }
 
 function counterFor(combat: CombatState, binding: TriggerBinding): number {
+  if (binding.limit.scope === "command") {
+    return 0;
+  }
   const key = bindingKey(binding);
   const counters =
     binding.limit.scope === "turn"
@@ -497,6 +552,12 @@ function consumeCounter(
   state: AuthoritativeState,
   binding: TriggerBinding,
 ): AuthoritativeState {
+  // A command-scoped trigger is projected and resolved at most once by a
+  // single dispatch. It deliberately leaves no authoritative counter behind,
+  // so the next command/event starts with a fresh allowance.
+  if (binding.limit.scope === "command") {
+    return state;
+  }
   const combat = requireCombat(state);
   const key = bindingKey(binding);
   const bucket =

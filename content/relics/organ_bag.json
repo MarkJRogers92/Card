@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.organ_bag",
+  "name": "Organ Bag",
+  "rarity": "uncommon",
+  "family": "anatomy",
+  "modifiers": [{
+    "channel": "reaction.recovery_allowance",
+    "condition": null,
+    "operation": "set",
+    "value": 10,
+    "priority": 100
+  }],
+  "triggers": [],
+  "unlockId": null,
+  "artId": "relic.organ_bag"
+}

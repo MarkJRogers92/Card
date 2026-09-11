@@ -2,6 +2,20 @@
 
 ## Current milestone
 
+**M14 — first relics — acceptance candidate**
+
+M14 completes Shared Warranty, Wetware Die, Clot Filter, Organ Bag, and
+Parallel Port as validated production content plus a generic
+relic-content compiler. All local type, content, unit, replay, property,
+focused M03–M14, and build checks pass. GitHub Actions remains the final
+acceptance gate because this container could not download Chromium for
+the unchanged M10 browser regression.
+
+See `docs/milestones/M14_FIRST_RELICS.md` and
+`docs/M14_NORMAL_CHAT_HANDOFF.md` for the exact contracts and evidence.
+
+## Last accepted milestone
+
 **M13 — Shaper, Crew, and junk card pool — accepted**
 
 M13 is accepted on `claude/m13-shaper-crew-junk-pool`. GitHub Actions run
@@ -94,9 +108,5 @@ and was not touched.
 
 ## Next eligible milestone
 
-**M14 — add Shared Warranty and the Anatomy/Circuit relics through Organ
-Bag and Parallel Port** (the first five relic definitions). Reuse
-existing modifier/trigger primitives where possible; extend
-`card-content.ts`/the relic-equivalent executor only for operations M14
-content genuinely needs. Do not begin M15 (the remaining five relics)
-until M14 is accepted.
+**M15 — remaining relics** becomes eligible only after M14's GitHub
+Actions acceptance gate passes and its exact run/commit are recorded.

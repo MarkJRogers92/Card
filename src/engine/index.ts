@@ -350,11 +350,15 @@ export {
   combineMultiplierModifiers,
   createTriggerCounters,
   dispatchTriggerEvent,
+  appendSetupModifierBindings,
+  appendSetupTriggerBindings,
   installModifierBindings,
   installTriggerBindings,
   previewTriggerEvent,
   resetTurnTriggerCounters,
 } from "./triggers";
+export { compileRelicContent, installRelicContent } from "./relic-content";
+export type { CompiledRelicContent } from "./relic-content";
 export type {
   AfterSwapTriggerEvent,
   CardPlayedTriggerEvent,

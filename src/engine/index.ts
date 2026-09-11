@@ -33,10 +33,14 @@ export {
 export {
   M19_NODE_IDS,
   RUN_STATE_VERSION,
+  M19_REWARD_CATALOG,
   M19_PARTY_MAX_HP,
   M19_REST_HEAL,
+  completeRunCombat,
+  advanceRunNode,
   beginRunNode,
   createM19Run,
+  restRunCharacter,
   currentRunNode,
   currentRunEncounter,
 } from "./run";

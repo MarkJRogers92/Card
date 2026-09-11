@@ -1,10 +1,10 @@
 # M19 — fixed test act
 
-**Status:** local implementation checkpoint (not accepted, not pushed, CI acceptance pending)
+**Status:** local implementation checkpoint (not merged to `main`, acceptance evidence recorded on push)
 
 **Branch:** `codex/m19-fixed-test-act`
 
-**Head:** `ed7f9f5` (later documentation-only commit)
+**Head:** `bef04e3` (`docs: add M19 publish handoff`, pushed branch head)
 
 ## Scope
 
@@ -60,6 +60,29 @@ The fixture intentionally adds two test-only controls:
 
 This route uses fixture commands so route persistence can be verified without replaying the full combat UI loop.
 
+## Verification recorded at head `bef04e3`
+
+GitHub Actions workflow **M19 Acceptance** completed successfully on
+`2026-09-11` for branch `codex/m19-fixed-test-act` with run
+[`34646210340`](https://github.com/MarkJRogers92/Card/actions/runs/34646210340) at
+commit `bef04e38e08a031cd99db15cda907c1a54573236` (`bef04e3`) and conclusion
+`success` (started `2026-09-11T20:49:12Z`).
+
+- `npm ci`
+- `npm run check`
+- `npm run test:engine`
+- `npm run test:content`
+- `npm run content:validate`
+- `npm run test:replay`
+- `npm run test:properties`
+- `npm run test:m03`, `npm run test:m04`, `npm run test:m05`, `npm run test:m06`, `npm run test:m07`,
+  `npm run test:m08`, `npm run test:m09`, `npm run test:m10`, `npm run test:m11`,
+  `npm run test:m12`, `npm run test:m13`, `npm run test:m14`, `npm run test:m15`,
+  `npm run test:m16`, `npm run test:m17`, `npm run test:m18`, `npm run test:m19`
+- `npm run build`
+- Chromium installation
+- `npm run test:browser`
+
 ## Verification recorded at head `ed7f9f5`
 
 Local verification performed after this milestone implementation:
@@ -78,7 +101,7 @@ Local verification performed after this milestone implementation:
 - `npm run build` pass
 - `npm run test:browser` 4 tests pass (including new M19 route test)
 
-Branch is not pushed; CI acceptance is pending.
+This local evidence remains accurate for the implementation commit and precedes the pushed CI acceptance record.
 
 ## Boundaries
 

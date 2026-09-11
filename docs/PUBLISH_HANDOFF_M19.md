@@ -6,14 +6,25 @@ Branch: `codex/m19-fixed-test-act`
 
 Worktree: `/Users/markrogers/Documents/Github Code/Card/.worktrees/m19-fixed-test-act`
 
-This handoff records that M19 fixed test act acceptance is fully committed locally on top of M18 and is not yet pushed due to a read-only GitHub credential on this machine.
+This handoff is resolved. M19 fixed test act was successfully pushed to
+`MarkJRogers92/Card` on `2026-09-11` and is no longer blocked.
+
+Push details:
+- Branch `codex/m19-fixed-test-act` was pushed to `MarkJRogers92/Card` with remote head `bef04e3` (subject `docs: add M19 publish handoff`), which is the local head.
+- GitHub Actions workflow **M19 Acceptance** run
+  [`34646210340`](https://github.com/MarkJRogers92/Card/actions/runs/34646210340) passed (started `2026-09-11T20:49:12Z`, conclusion `success`).
+- Push succeeded with a write-scoped fine-grained token supplied by the repository owner.
+- Because this push updated `.github/workflows/*`, `workflow` scope was required and included.
+- Delete the push token file and/or revoke the token now that publishing is complete.
+
+The original 403 credential failure and alternate publication paths below remain historical notes only.
 
 ## What is on GitHub right now
 
 - `codex/m16-family-transformations` at remote head `be3181e` (`fix: scope M18 reward claims to transactions`), which already includes committed M18 reward changes.
-- No pushed head yet for `codex/m19-fixed-test-act`.
+- `codex/m19-fixed-test-act` at remote head `bef04e3`.
 
-## Environment limitations observed while attempting publish
+## Historical environment limitations observed while attempting publish
 
 - `gh` CLI is not installed.
 - `~/.ssh` has no usable key for GitHub (`agent/` and `known_hosts` only).
@@ -32,10 +43,10 @@ This handoff records that M19 fixed test act acceptance is fully committed local
 
 - M18 head content is present and complete.
 - M19 commits are present on `codex/m19-fixed-test-act` in order:
-  `c21c41f`, `583951f`, `9c8e315`, `6cdd597`, `2421a35`, `ed7f9f5`, `5140eb5`.
-- Current tip is `5140eb5` with subject `ci: record M19 fixed test act acceptance`.
+  `c21c41f`, `583951f`, `9c8e315`, `6cdd597`, `2421a35`, `ed7f9f5`, `5140eb5`, `bef04e3`.
+- Current tip is `bef04e3` with subject `docs: add M19 publish handoff`.
 
-## How to publish (one copy-paste block)
+## Historical publish command (one copy-paste block)
 
 Run this from a terminal with write access to GitHub:
 
@@ -51,7 +62,7 @@ git rev-parse HEAD
 git push -u origin codex/m19-fixed-test-act
 ~~~
 
-Expected after push:
+Expected after push (historical):
 
 - The workflow file `.github/workflows/m17-ci.yml` is now named **M19 Acceptance**.
 - It triggers on pushes to `codex/m19-fixed-test-act`.
@@ -121,8 +132,8 @@ Then inspect and fast-forward/push from that environment.
 
 ## What the next chat should do
 
-1. If the branch is still unpushed, publishing is the only remaining step; do not begin new implementation work.
-2. Once pushed and green, treat `codex/m19-fixed-test-act` as the accepted head for M18+M19, and do not merge `main` for acceptance flow.
+1. `main` remains unchanged; this milestone is branch-based and remains independent.
+2. `codex/m19-fixed-test-act` is accepted at head `bef04e3`; do not merge `main` for acceptance flow.
 3. Start next milestones in order: `M20 serialization`, `M21 persistent browser storage`, `M22 map/shops/events/treasure/workshop`.
 
 ## M19 caveats for reviewers

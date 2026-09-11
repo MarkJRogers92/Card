@@ -10,7 +10,8 @@ Scrap, and claimed reward IDs between nodes through `src/engine/run.ts` while
 rebuilding combat-only state per node. The browser route is exposed only through
 `?fixture=m19` with run-focused controls and local verification evidence in
 `docs/milestones/M19_FIXED_TEST_ACT.md`. This checkpoint is complete locally on
-`codex/m19-fixed-test-act` and has not been pushed.
+`codex/m19-fixed-test-act` and pushed to `MarkJRogers92/Card` with passing
+GitHub Actions run [`34646210340`](https://github.com/MarkJRogers92/Card/actions/runs/34646210340) (`M19 Acceptance`).
 
 ## Previous accepted milestone
 

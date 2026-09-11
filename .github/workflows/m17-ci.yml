@@ -57,6 +57,7 @@ jobs:
           npm run test:m16
           npm run test:m17
           npm run test:m18
+          npm run test:m19
       - run: npm run build
       - name: Install Chromium for browser regression
         run: npx playwright install --with-deps chromium

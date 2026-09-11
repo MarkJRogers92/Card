@@ -2,6 +2,20 @@
 
 ## Current milestone
 
+**M19 — fixed test act — implementation checkpoint**
+
+M19 adds the second playable checkpoint: a deterministic seven-node Act 1
+route (`ordinary_1`, `rest_1`, `ordinary_2`, `elite`, `rest_2`, `ordinary_3`,
+`boss`) driven by a versioned `RunState` in authoritative state. Party HP,
+deck instances, Scrap, and claimed reward IDs persist between combats while
+turn, zone, status, intent, and combat-RNG state are rebuilt for each
+encounter. Victory creates the M18 reward, rest heals one character for 18
+capped at maximum HP, and advance is rejected until the node is complete and
+its reward resolved. See `docs/milestones/M19_FIXED_TEST_ACT.md`. M20 owns
+serialization and M22 owns map generation.
+
+## Previous checkpoint
+
 **M18 — rewards — implementation checkpoint**
 
 M18 adds deterministic, gameplay-RNG reward transactions: 15/35/50 Scrap for

@@ -46,6 +46,12 @@ export const M10_MORROW_ID = "morrow" as const;
 export const M10_SWITCH_ID = "switch" as const;
 export const M10_CLAIMS_ADJUSTER_ID = "claims-adjuster" as const;
 
+export interface Act1CombatInput {
+  readonly seed: number;
+  readonly formationId: "claims_adjuster";
+  readonly playerHp: Readonly<Record<typeof M10_MORROW_ID | typeof M10_SWITCH_ID, number>>;
+}
+
 const M18_REWARD_FIXTURE_CATALOG: RewardCatalog = {
   cards: [
     { id: "source.open_wound", role: "source", rarity: "common", unlocked: true },
@@ -397,6 +403,31 @@ export function createM10Fight(seed: number = M10_DEFAULT_SEED): AuthoritativeSt
     includeSharedWarranty: true,
   });
   return beginPlayerTurn(state);
+}
+
+/**
+ * M19's first reusable encounter seam. It deliberately preserves M10's
+ * initialization order (including its combat-RNG shuffle) and changes only
+ * persistent player HP after the fresh combat has been composed.
+ */
+export function createAct1Combat(input: Act1CombatInput): AuthoritativeState {
+  if (input.formationId !== "claims_adjuster") {
+    throw new Error(`Unsupported M19 formation: ${input.formationId}.`);
+  }
+  const state = createM10Fight(input.seed);
+  const combat = state.combat;
+  if (combat === null) throw new Error("M10 combat setup did not create combat.");
+  return {
+    ...state,
+    combat: {
+      ...combat,
+      actors: {
+        ...combat.actors,
+        [M10_MORROW_ID]: { ...combat.actors[M10_MORROW_ID]!, hp: input.playerHp[M10_MORROW_ID] },
+        [M10_SWITCH_ID]: { ...combat.actors[M10_SWITCH_ID]!, hp: input.playerHp[M10_SWITCH_ID] },
+      },
+    },
+  };
 }
 
 export function createM10RewardFixture(): AuthoritativeState {

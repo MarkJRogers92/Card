@@ -243,6 +243,7 @@ export {
   M10_DEFAULT_SEED,
   M10_MORROW_ID,
   M10_STARTER_CARDS,
+  createAct1Combat,
   M10_SWITCH_ID,
   applyM10Command,
   createM10Fight,
@@ -256,6 +257,7 @@ export {
   swapM10Characters,
 } from "./m10-fight";
 export type {
+  Act1CombatInput,
   M10CardDestination,
   M10CardEffect,
   M10CardOwner,

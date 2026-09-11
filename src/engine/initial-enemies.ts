@@ -45,6 +45,14 @@ export const ACT_1_ORDINARY_ENCOUNTERS: readonly InitialEncounterFormation[] = [
   { id: "adjuster_and_intern", enemyDefinitionIds: ["enemy.claims_adjuster", "enemy.unpaid_intern"] },
 ];
 
+export const ACT_1_ELITE_ENCOUNTERS: readonly InitialEncounterFormation[] = [
+  { id: "repo_foreman", enemyDefinitionIds: ["enemy.repo_foreman"] },
+];
+
+export const ACT_1_BOSS_ENCOUNTER: readonly InitialEncounterFormation[] = [
+  { id: "head_of_recovery", enemyDefinitionIds: ["enemy.head_of_recovery"] },
+];
+
 export const ACT_1_FIRST_ENCOUNTERS = ACT_1_ORDINARY_ENCOUNTERS.filter(
   (formation) => formation.enemyDefinitionIds.length === 1,
 );

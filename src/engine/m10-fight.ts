@@ -40,6 +40,12 @@ import {
   hashAuthoritativeState,
   type AuthoritativeState,
 } from "./state";
+import {
+  ACT_1_BOSS_ENCOUNTER,
+  ACT_1_ELITE_ENCOUNTERS,
+  ACT_1_ORDINARY_ENCOUNTERS,
+  INITIAL_ENEMY_REGISTRY,
+} from "./initial-enemies";
 
 export const M10_DEFAULT_SEED = 1010 as const;
 export const M10_MORROW_ID = "morrow" as const;
@@ -48,9 +54,31 @@ export const M10_CLAIMS_ADJUSTER_ID = "claims-adjuster" as const;
 
 export interface Act1CombatInput {
   readonly seed: number;
-  readonly formationId: "claims_adjuster";
+  readonly formationId:
+    | "claims_adjuster"
+    | "compliance_slug"
+    | "two_taxidermy_drones"
+    | "drone_and_intern"
+    | "adjuster_and_intern"
+    | "repo_foreman"
+    | "head_of_recovery";
   readonly playerHp: Readonly<Record<typeof M10_MORROW_ID | typeof M10_SWITCH_ID, number>>;
 }
+
+const ACT_1_ENCOUNTER_FORMATIONS = [
+  ...ACT_1_ORDINARY_ENCOUNTERS,
+  ...ACT_1_ELITE_ENCOUNTERS,
+  ...ACT_1_BOSS_ENCOUNTER,
+];
+
+const ACT_1_ENEMY_MAX_HP_BY_DEFINITION: Readonly<Record<string, number>> = {
+  "enemy.claims_adjuster": 30,
+  "enemy.compliance_slug": 28,
+  "enemy.taxidermy_drone": 24,
+  "enemy.unpaid_intern": 20,
+  "enemy.repo_foreman": 78,
+  "enemy.head_of_recovery": 150,
+};
 
 const M18_REWARD_FIXTURE_CATALOG: RewardCatalog = {
   cards: [
@@ -373,6 +401,47 @@ function applyBaseEffect(
   ).state;
 }
 
+function resolveAct1Formation(formationId: Act1CombatInput["formationId"]) {
+  const formation = ACT_1_ENCOUNTER_FORMATIONS.find((candidate) => candidate.id === formationId);
+  if (formation === undefined) {
+    throw new Error(`Unsupported M19 formation: ${formationId}.`);
+  }
+  return formation;
+}
+
+function enemyIdForFormation(
+  formationId: Act1CombatInput["formationId"],
+  definitionId: string,
+  enemyIndex: number,
+): string {
+  if (formationId === "claims_adjuster" && definitionId === "enemy.claims_adjuster") {
+    return M10_CLAIMS_ADJUSTER_ID;
+  }
+  return `${formationId}_enemy_${enemyIndex + 1}`;
+}
+
+function withAct1PlayerHp(
+  state: AuthoritativeState,
+  playerHp: Readonly<Record<typeof M10_MORROW_ID | typeof M10_SWITCH_ID, number>>,
+): AuthoritativeState {
+  const combat = state.combat;
+  if (combat === null) {
+    throw new Error("M10 combat setup did not create combat.");
+  }
+
+  return {
+    ...state,
+    combat: {
+      ...combat,
+      actors: {
+        ...combat.actors,
+        [M10_MORROW_ID]: { ...combat.actors[M10_MORROW_ID]!, hp: playerHp[M10_MORROW_ID] },
+        [M10_SWITCH_ID]: { ...combat.actors[M10_SWITCH_ID]!, hp: playerHp[M10_SWITCH_ID] },
+      },
+    },
+  };
+}
+
 export function createM10Fight(seed: number = M10_DEFAULT_SEED): AuthoritativeState {
   assertNonnegativeInteger("M10 seed", seed);
   let state = startCombat(
@@ -412,22 +481,51 @@ export function createM10Fight(seed: number = M10_DEFAULT_SEED): AuthoritativeSt
  */
 export function createAct1Combat(input: Act1CombatInput): AuthoritativeState {
   if (input.formationId !== "claims_adjuster") {
-    throw new Error(`Unsupported M19 formation: ${input.formationId}.`);
+    const formation = resolveAct1Formation(input.formationId);
+    assertNonnegativeInteger("M10 seed", input.seed);
+    let state = startCombat(
+      createAuthoritativeState({
+        seed: input.seed,
+        contentVersion: "m10.checkpoint",
+        contentHash: "joint-liability-m10-checkpoint-v1",
+      }),
+      createStarterDeck(),
+    );
+    const enemies = formation.enemyDefinitionIds.map((definitionId, index) => {
+      const enemyActorId = enemyIdForFormation(input.formationId, definitionId, index);
+      const maxHp = ACT_1_ENEMY_MAX_HP_BY_DEFINITION[definitionId];
+      if (maxHp === undefined) {
+        throw new Error(`Unsupported enemy definition: ${definitionId}.`);
+      }
+      return {
+        actorId: enemyActorId,
+        definitionId,
+        maxHp,
+      };
+    });
+
+    state = initializeCombatActors(state, {
+      playerCharacters: [
+        { actorId: M10_MORROW_ID, maxHp: 44 },
+        { actorId: M10_SWITCH_ID, maxHp: 36 },
+      ],
+      enemies,
+      frontCharacterId: M10_MORROW_ID,
+    });
+    state = initializeEnemyControllers(
+      state,
+      INITIAL_ENEMY_REGISTRY,
+      enemies.map(({ actorId, definitionId }) => ({ actorId, definitionId })),
+    );
+    state = installInitialPassives(state, {
+      morrowActorId: M10_MORROW_ID,
+      switchActorId: M10_SWITCH_ID,
+      includeSharedWarranty: true,
+    });
+    return withAct1PlayerHp(beginPlayerTurn(state), input.playerHp);
   }
   const state = createM10Fight(input.seed);
-  const combat = state.combat;
-  if (combat === null) throw new Error("M10 combat setup did not create combat.");
-  return {
-    ...state,
-    combat: {
-      ...combat,
-      actors: {
-        ...combat.actors,
-        [M10_MORROW_ID]: { ...combat.actors[M10_MORROW_ID]!, hp: input.playerHp[M10_MORROW_ID] },
-        [M10_SWITCH_ID]: { ...combat.actors[M10_SWITCH_ID]!, hp: input.playerHp[M10_SWITCH_ID] },
-      },
-    },
-  };
+  return withAct1PlayerHp(state, input.playerHp);
 }
 
 export function createM10RewardFixture(): AuthoritativeState {

@@ -177,7 +177,13 @@ export {
   projectEnemyIntent,
   projectSelectedEnemyIntents,
 } from "./enemies";
-export { ACT_1_FIRST_ENCOUNTERS, ACT_1_ORDINARY_ENCOUNTERS, INITIAL_ENEMY_REGISTRY } from "./initial-enemies";
+export {
+  ACT_1_BOSS_ENCOUNTER,
+  ACT_1_ELITE_ENCOUNTERS,
+  ACT_1_FIRST_ENCOUNTERS,
+  ACT_1_ORDINARY_ENCOUNTERS,
+  INITIAL_ENEMY_REGISTRY,
+} from "./initial-enemies";
 export type { InitialEncounterFormation } from "./initial-enemies";
 export type {
   EnemyAiDefinition,

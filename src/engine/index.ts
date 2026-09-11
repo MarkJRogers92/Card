@@ -23,8 +23,21 @@ export {
   hashCanonical,
 } from "./canonical";
 export type { JsonPrimitive, JsonValue } from "./canonical";
-export { REWARD_STATE_VERSION, createRewardState } from "./rewards";
-export type { RewardState } from "./rewards";
+export { REWARD_STATE_VERSION, createEncounterReward, createRewardState } from "./rewards";
+export type {
+  CardRewardOption,
+  CreateEncounterRewardInput,
+  PendingReward,
+  PendingRewardChoice,
+  RewardCardDefinition,
+  RewardCardRarity,
+  RewardCardRole,
+  RewardCatalog,
+  RewardEncounterKind,
+  RewardOption,
+  RewardRelicDefinition,
+  RewardState,
+} from "./rewards";
 export {
   CARD_INSTANCE_VERSION,
   createCardInstance,

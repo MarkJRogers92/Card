@@ -94,6 +94,18 @@ selected intent, so swapping never redirects the attack. The elite and Act 1
 boss now resolve through the real `applyM19Command` surface. See the "Locked
 enemy targeting" section of `docs/milestones/M17_INITIAL_ENEMIES.md`.
 
+## Follow-up correction — M17 locked enemy targeting
+
+Commits `648be20` (this branch), `08e5ea8` (`codex/m20-serialization`), and
+`74f9584` (`codex/m16-family-transformations`) carry the same correction, each
+with a docs commit on top. Every branch's acceptance workflow passed:
+
+| Branch | Head | Run |
+|---|---|---|
+| `codex/m16-family-transformations` | `b170a10` | [`34664233324`](https://github.com/MarkJRogers92/Card/actions/runs/34664233324) |
+| `codex/m20-serialization` | `b54e5b0` | [`34664229423`](https://github.com/MarkJRogers92/Card/actions/runs/34664229423) |
+| `codex/m21-persistence` | `3376123` | [`34664229323`](https://github.com/MarkJRogers92/Card/actions/runs/34664229323) |
+
 ## Tooling note
 
 The GPT worker launcher (`~/.codex/gpt-workers/run`) requires a real `.git`

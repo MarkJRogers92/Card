@@ -14,9 +14,13 @@ pending rewards, deck instances, and run progress. The `?fixture=m20` browser
 route exports, reimports, and rejects a tampered save. See
 `docs/milestones/M20_SNAPSHOT_SERIALIZATION.md`. M21 owns IndexedDB
 persistence, the active save, and rotating backups. That milestone document
-also records an M17 elite/boss intent-selection defect the M20 trace surfaced:
-the authored `named_claim`/`named_in_claim` moves target the placeholder
-`{ kind: "locked", actorId: "source" }`, which throws during intent selection.
+records an M17 elite/boss intent-selection defect the M20 trace surfaced, which
+is corrected on this branch: the authored `named_claim`/`named_in_claim` moves
+carry the `LOCKED_AT_REVEAL_ACTOR_ID` marker, and a Locked enemy move names the
+character occupying Front when the intent is revealed and stores that character
+in the selected intent, so swapping never redirects the attack. Both encounters
+now resolve through the real `applyM19Command` surface; see the "Locked enemy
+targeting" section of `docs/milestones/M17_INITIAL_ENEMIES.md`.
 This checkpoint is pushed to `MarkJRogers92/Card` on
 `codex/m20-serialization` with passing GitHub Actions run
 [`34662179579`](https://github.com/MarkJRogers92/Card/actions/runs/34662179579)

@@ -141,3 +141,10 @@ cannot be finished end to end.
 The M20 replay trace stops at the elite node boundary for that reason. Fixing
 the enemy move requires an M17 decision about what a locked `source` target
 means for an enemy, so M20 records the defect rather than inventing a rule.
+
+**Resolved.** M17 now defines that rule: a Locked enemy move authored with
+`LOCKED_AT_REVEAL_ACTOR_ID` names the character occupying Front when the intent
+is revealed, and the selected intent stores that character. M20's trace still
+stops before the elite because its checkpoint is bounded there, but the elite
+and Act 1 boss now resolve through the real command surface. See the "Locked
+enemy targeting" section of `docs/milestones/M17_INITIAL_ENEMIES.md`.

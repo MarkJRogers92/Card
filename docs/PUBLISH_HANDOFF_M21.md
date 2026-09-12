@@ -114,6 +114,40 @@ directory and therefore rejects a linked Git worktree such as
 convention, so an external worker needs either the main checkout (a different
 branch) or a temporary clone of the milestone branch.
 
+## Follow-up — Act 1 first pass
+
+Commit `e6562e5` (`fix: carry card rewards into the run deck and play content
+cards`) closes the M18→M19 handoff gap found while playing through Act 1.
+GitHub Actions run
+[`34664952428`](https://github.com/MarkJRogers92/Card/actions/runs/34664952428)
+passed at `e6562e527353fa2e29e664c5e1444fdde125fe2d`.
+
+Found and fixed:
+
+- A claimed card reward only recorded an id, so the pick had no effect. It now
+  becomes a deck instance carried into every later node.
+- The act refused any definition outside the M10 starter set, and the browser
+  had no runtime content source. `src/content/bundle.ts` collects the
+  checked-in JSON for the browser and tests, and content cards play through
+  `playContentCard`.
+- A deck containing content cards now settles Retain, Fleeting, Exhaust, and
+  unplayable junk through the M11 lifecycle; starter-only decks keep the
+  original end-turn path, so existing traces and hashes are unchanged.
+
+Still open, in priority order:
+
+1. Claimed relics are inert — `installRelicContent` is used only by tests. This
+   needs `RunState.relicIds`, an authoritative-shape change, and therefore a
+   save-schema migration.
+2. The boss victory reward omits the design's 5 Evidence (M29) and the
+   post-boss heal of 8 for each character (Act 2 transition, M22).
+3. The starting loadout's Suture Kit consumable is not implemented (M23/M26).
+4. Balance: the elite is a real difficulty check. The first-pass playthrough
+   wins `ordinary_1` in 2 turns and `ordinary_2` in 3, then loses the elite on
+   turn 5 to a policy that does not use Retain, handoffs, or Imprints well.
+   That is expected for an unguarded damage race and belongs to the difficulty
+   pass rather than this fix.
+
 ## Next
 
 M22 is the branching two-act map: the map template, generator constraints, and

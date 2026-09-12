@@ -150,7 +150,9 @@ Relics were the top item on that list and are now wired: see "Relic rewards" in
 relics, `beginRunNode` installs the claimed ones during combat setup, an owned
 relic is never offered again, and the run state change ships with
 `AUTHORITATIVE_STATE_VERSION` 9 and `SAVE_SCHEMA_VERSION` 2 plus the first
-`SAVE_MIGRATIONS` rung.
+`SAVE_MIGRATIONS` rung. Commits `57f0e2d` and `35b05b5`; GitHub Actions run
+[`34665513977`](https://github.com/MarkJRogers92/Card/actions/runs/34665513977)
+passed at `35b05b5fb46078e9eea3db613b13fb4cafdd3d23`.
 
 ## Next
 

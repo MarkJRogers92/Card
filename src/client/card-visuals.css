@@ -1,0 +1,199 @@
+/*
+ * First-pass production card treatment.
+ *
+ * This layer is intentionally presentation-only: it does not know combat rules,
+ * card costs, targeting, or reactions. Final art can replace these CSS mockups
+ * later without changing HandCard markup or engine state.
+ */
+
+.card-slot .play-card {
+  min-height: 15.75rem;
+  padding: 0.78rem 0.78rem 0.85rem;
+  overflow: hidden;
+  border-width: 2px;
+  border-color: rgba(235, 226, 211, 0.22);
+  border-radius: 0.9rem;
+  background:
+    linear-gradient(180deg, rgba(42, 42, 46, 0.98) 0%, rgba(23, 24, 28, 0.99) 58%, rgba(14, 15, 18, 1) 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035),
+    0 0.55rem 1rem rgba(0, 0, 0, 0.24);
+  transition:
+    transform 130ms ease,
+    border-color 130ms ease,
+    box-shadow 130ms ease;
+}
+
+.card-slot .play-card::before {
+  content: "";
+  display: block;
+  height: 5.45rem;
+  margin: 1.42rem -0.2rem 0.72rem;
+  border: 1px solid rgba(236, 232, 223, 0.14);
+  border-radius: 0.58rem;
+  background-image:
+    radial-gradient(circle at 72% 28%, rgba(221, 166, 107, 0.24) 0 0.5rem, transparent 0.55rem),
+    linear-gradient(135deg, rgba(125, 76, 56, 0.4), rgba(42, 50, 59, 0.75) 52%, rgba(14, 15, 18, 0.95));
+  background-size: cover;
+  box-shadow:
+    inset 0 0 1.6rem rgba(0, 0, 0, 0.35),
+    0 0.3rem 0.7rem rgba(0, 0, 0, 0.18);
+}
+
+.card-slot .play-card:hover:not(:disabled) {
+  transform: translateY(-4px) scale(1.01);
+  border-color: rgba(230, 160, 93, 0.74);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0.85rem 1.45rem rgba(0, 0, 0, 0.34);
+}
+
+.card-slot .play-card:focus-visible {
+  outline: 2px solid rgba(241, 179, 119, 0.95);
+  outline-offset: 3px;
+}
+
+.card-slot .card-owner {
+  position: absolute;
+  top: 0.63rem;
+  left: 0.72rem;
+  margin: 0;
+  max-width: calc(100% - 3.2rem);
+  color: rgba(238, 231, 218, 0.66);
+  font-size: 0.6rem;
+  font-weight: 850;
+  letter-spacing: 0.13em;
+}
+
+.card-slot .card-cost {
+  top: 0.45rem;
+  right: 0.5rem;
+  width: 1.82rem;
+  height: 1.82rem;
+  border: 1px solid rgba(255, 236, 209, 0.6);
+  background:
+    radial-gradient(circle at 35% 30%, #f5c98d, #d78c42 68%, #9a572e 100%);
+  box-shadow: 0 0.2rem 0.45rem rgba(0, 0, 0, 0.42);
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+.card-slot .play-card strong {
+  min-height: 2.35rem;
+  margin-top: 0.05rem;
+  color: #f1ece3;
+  font-size: 0.98rem;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.card-slot .card-classification {
+  margin-top: 0.36rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.11em;
+}
+
+.card-slot .card-ingredient {
+  min-height: 1.05rem;
+  margin-top: 0.2rem;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.61rem;
+  line-height: 1.2;
+}
+
+.card-slot .card-effect {
+  min-height: 2.55rem;
+  margin-top: 0.55rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(236, 232, 223, 0.12);
+  color: #d8d0c5;
+  font-size: 0.68rem;
+  line-height: 1.34;
+}
+
+/* Source / Morrow visual family. */
+.card-slot .play-card.owner-source,
+.card-slot .play-card.owner-morrow {
+  border-color: rgba(174, 84, 75, 0.5);
+  background:
+    linear-gradient(180deg, rgba(55, 35, 35, 0.98) 0%, rgba(32, 28, 30, 0.99) 58%, rgba(17, 16, 18, 1) 100%);
+}
+
+.card-slot .play-card.owner-source .card-classification,
+.card-slot .play-card.owner-morrow .card-classification {
+  color: #de8c79;
+}
+
+/* Shaper / Switch family fallback for later art replacement. */
+.card-slot .play-card.owner-shaper,
+.card-slot .play-card.owner-switch {
+  border-color: rgba(87, 133, 153, 0.5);
+  background:
+    linear-gradient(180deg, rgba(29, 45, 53, 0.98) 0%, rgba(25, 31, 37, 0.99) 58%, rgba(14, 17, 20, 1) 100%);
+}
+
+.card-slot .play-card.owner-shaper .card-classification,
+.card-slot .play-card.owner-switch .card-classification {
+  color: #83b8c9;
+}
+
+/* Crew remains deliberately neutral and visually distinct. */
+.card-slot .play-card.owner-crew {
+  border-style: dashed;
+  border-color: rgba(184, 168, 123, 0.52);
+  background:
+    linear-gradient(180deg, rgba(48, 44, 34, 0.98) 0%, rgba(31, 30, 27, 0.99) 58%, rgba(17, 17, 16, 1) 100%);
+}
+
+/*
+ * Provisional signature-card mockups. These are CSS-only so final images can be
+ * dropped in later without touching gameplay. Selectors use the already-existing
+ * data-card-name attribute on the actual playable card button.
+ */
+.card-slot .play-card[data-card-name="Open Wound"]::before {
+  background-image:
+    radial-gradient(circle at 24% 36%, rgba(139, 12, 19, 0.92) 0 0.48rem, transparent 0.53rem),
+    radial-gradient(circle at 68% 67%, rgba(101, 7, 13, 0.8) 0 0.28rem, transparent 0.33rem),
+    linear-gradient(102deg, transparent 0 43%, rgba(235, 194, 169, 0.78) 44% 46%, rgba(91, 8, 15, 0.95) 47% 53%, rgba(238, 198, 174, 0.76) 54% 56%, transparent 57%),
+    linear-gradient(145deg, #442326, #251d21 54%, #131417);
+}
+
+.card-slot .play-card[data-card-name="Bone Saw"]::before {
+  background-image:
+    repeating-linear-gradient(104deg, transparent 0 0.72rem, rgba(232, 220, 201, 0.68) 0.76rem 0.9rem, transparent 0.94rem 1.62rem),
+    linear-gradient(20deg, transparent 0 45%, rgba(205, 198, 184, 0.72) 46% 54%, transparent 55%),
+    radial-gradient(circle at 75% 25%, rgba(127, 21, 24, 0.58), transparent 1.5rem),
+    linear-gradient(145deg, #3f3431, #20262a 55%, #131517);
+}
+
+.card-slot .play-card[data-card-name="Thick Skin"]::before {
+  background-image:
+    radial-gradient(ellipse at 50% 44%, transparent 0 1.1rem, rgba(120, 57, 48, 0.5) 1.16rem 1.28rem, transparent 1.34rem),
+    radial-gradient(ellipse at 50% 44%, transparent 0 2rem, rgba(226, 155, 123, 0.22) 2.06rem 2.22rem, transparent 2.28rem),
+    repeating-linear-gradient(12deg, rgba(255, 228, 207, 0.04) 0 0.18rem, rgba(80, 38, 34, 0.08) 0.2rem 0.34rem),
+    linear-gradient(145deg, #5a3c36, #372825 58%, #191718);
+}
+
+.card-slot .play-card[data-card-name="Unlicensed Procedure"]::before {
+  background-image:
+    radial-gradient(circle at 50% 45%, rgba(247, 224, 188, 0.18) 0 1.35rem, transparent 1.42rem),
+    linear-gradient(90deg, transparent 0 48.5%, rgba(225, 221, 204, 0.64) 49% 51%, transparent 51.5%),
+    linear-gradient(0deg, transparent 0 47.5%, rgba(225, 221, 204, 0.54) 48% 52%, transparent 52.5%),
+    radial-gradient(circle at 50% 45%, rgba(126, 12, 18, 0.9) 0 0.36rem, transparent 0.43rem),
+    linear-gradient(145deg, #33282a, #1e2629 60%, #111315);
+}
+
+@media (max-width: 900px) {
+  .card-slot .play-card {
+    min-height: 14.5rem;
+  }
+
+  .card-slot .play-card::before {
+    height: 4.65rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-slot .play-card {
+    transition: none;
+  }
+}

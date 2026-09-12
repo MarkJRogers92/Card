@@ -18,6 +18,11 @@ corrupted active record in real Chromium. See
 `docs/milestones/M21_BROWSER_PERSISTENCE.md`. M22 owns the branching map, M23
 owns purchases, and M29 owns the profile payload's semantics.
 
+This checkpoint is pushed to `MarkJRogers92/Card` on `codex/m21-persistence`
+with passing GitHub Actions run
+[`34662896299`](https://github.com/MarkJRogers92/Card/actions/runs/34662896299)
+(`M21 Acceptance`) at `2b1ab5a`; see `docs/PUBLISH_HANDOFF_M21.md`.
+
 ## Previous checkpoint
 
 **M20 — snapshot serialization — local implementation checkpoint**

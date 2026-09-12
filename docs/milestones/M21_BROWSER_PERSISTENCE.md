@@ -1,7 +1,9 @@
 # M21 — Browser Persistence
 
 **Status:** local implementation checkpoint on `codex/m21-persistence`, branched
-from the accepted M20 head `e968d3e`.
+from the accepted M20 head `e968d3e`, pushed with passing GitHub Actions run
+[`34662896299`](https://github.com/MarkJRogers92/Card/actions/runs/34662896299)
+(`M21 Acceptance`) at `2b1ab5a`.
 
 **Branch:** `codex/m21-persistence`
 

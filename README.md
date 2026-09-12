@@ -4,15 +4,19 @@ This repository contains the browser-first foundation for *Joint Liability*, a
 single-player roguelike deckbuilder about two medically inseparable fugitives.
 The complete design snapshot is preserved in [docs/DESIGN.md](docs/DESIGN.md).
 
-M00 through M14 are accepted, and M15 is implemented and awaiting CI
-acceptance on `codex/m15-remaining-relics`. The repository currently contains
-the strict TypeScript/Vite foundation, a rendering-independent authoritative
-combat engine (deck/turn, HP/Block/damage, enemy intents, statuses, the duo
-Lead/Support swap system, all 16 Reactions, delayed packets, keywords, and
-bounded trigger/modifier dispatch), validated production content for the
-Source, Shaper, Crew, and junk pools, all ten Section 3.10 relics, and a
-minimal playable browser combat screen whose final state hash matches a
-headless replay.
+M00 through M17 are accepted. M18 through M21 are implemented checkpoints on
+milestone branches whose focused GitHub Actions acceptance runs pass; none of
+them has been merged into `main`. The repository currently contains the strict
+TypeScript/Vite foundation, a rendering-independent authoritative combat engine
+(deck/turn, HP/Block/damage, enemy intents, statuses, the duo Lead/Support swap
+system, all 16 Reactions, delayed packets, keywords, and bounded
+trigger/modifier dispatch), validated production content for the Source,
+Shaper, Crew, and junk pools, all ten Section 3.10 relics, the initial enemies
+and encounters, Scrap and reward transactions, a deterministic seven-node test
+act, versioned save serialization, and a browser persistence layer with one
+active save and two rotating backups. The M10 browser combat screen matches a
+headless replay hash, and `?fixture=m21` persists and recovers a run in real
+IndexedDB.
 
 The authoritative list of what is accepted, what is in flight, and what is
 next lives in [docs/STATUS.md](docs/STATUS.md). If you are continuing this work

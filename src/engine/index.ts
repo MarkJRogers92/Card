@@ -24,6 +24,27 @@ export {
 } from "./canonical";
 export type { JsonPrimitive, JsonValue } from "./canonical";
 export {
+  SAVE_ENVELOPE_KEYS,
+  SAVE_MIGRATIONS,
+  SAVE_SCHEMA_VERSION,
+  SAVE_SNAPSHOT_KEYS,
+  applySaveMigrations,
+  createSaveEnvelope,
+  exportSave,
+  importSave,
+} from "./save";
+export type {
+  ImportSaveOptions,
+  SaveContentIdentity,
+  SaveEnvelope,
+  SaveImportFailure,
+  SaveImportFailureCode,
+  SaveImportResult,
+  SaveImportSuccess,
+  SaveMigration,
+  SaveMigrationTable,
+} from "./save";
+export {
   REWARD_STATE_VERSION,
   claimRewardOption,
   createEncounterReward,

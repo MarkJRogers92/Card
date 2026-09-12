@@ -14,10 +14,12 @@ import {
   createM10RewardFixture,
   createM19Run,
   currentRunNode,
+  exportSave,
   getM10Hand,
   getM19Hand,
   hashAuthoritativeState,
   hashM10Fight,
+  importSave,
   projectSelectedEnemyIntents,
   restRunCharacter,
   skipCardReward,
@@ -53,6 +55,7 @@ export function App() {
     () => new URLSearchParams(window.location.search).get("fixture"),
     [],
   );
+  if (fixture === "m20") return <M19TestAct showSavePanel />;
   return fixture === "m19" ? <M19TestAct /> : <M10Checkpoint />;
 }
 
@@ -341,11 +344,13 @@ function M10Checkpoint() {
   );
 }
 
-function M19TestAct() {
+function M19TestAct({ showSavePanel = false }: { showSavePanel?: boolean } = {}) {
   const [state, setState] = useState<AuthoritativeState>(() => createM19Run());
   const [commands, setCommands] = useState<readonly M19Command[]>([]);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [saveText, setSaveText] = useState("");
+  const [saveStatus, setSaveStatus] = useState<string | null>(null);
 
   const hash = useMemo(() => hashAuthoritativeState(state), [state]);
   const run = state.run;
@@ -413,6 +418,28 @@ function M19TestAct() {
     combat.outcome === "victory" &&
     pending === null;
 
+  function exportState(): void {
+    setSaveText(exportSave(state));
+    setSaveStatus("exported");
+  }
+
+  function importState(): void {
+    const result = importSave(saveText, {
+      content: {
+        contentVersion: state.contentVersion,
+        contentHash: state.contentHash,
+      },
+    });
+    if (!result.ok) {
+      setSaveStatus(`rejected: ${result.code}`);
+      return;
+    }
+    setState(result.state);
+    setCommands([]);
+    setSelectedTarget(null);
+    setSaveStatus(`loaded: v${result.saveVersion}`);
+  }
+
   return (
     <main className="combat-shell">
       <header className="combat-header">
@@ -429,6 +456,41 @@ function M19TestAct() {
           </button>
         </div>
       </header>
+
+      {showSavePanel && (
+        <section className="save-panel" aria-label="M20 save">
+          <div className="save-controls">
+            <p className="eyebrow">M20 SAVE</p>
+            <button
+              className="secondary-button"
+              type="button"
+              data-testid="save-export"
+              onClick={exportState}
+            >
+              Export save
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              data-testid="save-import"
+              onClick={importState}
+            >
+              Import save
+            </button>
+            <span className="turn-pill" data-testid="save-status">
+              {saveStatus ?? "idle"}
+            </span>
+          </div>
+          <textarea
+            className="save-text"
+            data-testid="save-text"
+            aria-label="Canonical save text"
+            value={saveText}
+            spellCheck={false}
+            onChange={(event) => setSaveText(event.target.value)}
+          />
+        </section>
+      )}
 
       <section className="command-bar" aria-label="Test act status">
         <div className="resource-strip">

@@ -18,7 +18,11 @@ import {
   type StatusTick,
 } from "./status-runtime";
 import { assertCardConservation } from "./deck";
-import { resolveTargetRule, type TargetRule } from "./targeting";
+import {
+  resolveTargetRule,
+  resolveTargetRuleAtReveal,
+  type TargetRule,
+} from "./targeting";
 
 export const ENEMY_CONTROLLER_VERSION = 2 as const;
 export const ENEMY_INTENT_VERSION = 1 as const;
@@ -381,7 +385,14 @@ function selectIntent(
   }
 
   const move = requireMove(definition, moveId);
-  validateMoveTarget(combat, controller.actorId, move.target);
+  // A Locked move that names no character is locked to whoever is in Front at
+  // this moment; the selected intent stores that character, so a later swap
+  // never redirects the attack.
+  const target: EnemyMoveTarget =
+    move.target.kind === "self"
+      ? move.target
+      : resolveTargetRuleAtReveal(combat, move.target);
+  validateMoveTarget(combat, controller.actorId, target);
   const selectionNumber = controller.selections + 1;
 
   return {
@@ -399,7 +410,7 @@ function selectIntent(
       selectionNumber,
       moveId: move.id,
       label: move.label,
-      target: cloneTarget(move.target),
+      target: cloneTarget(target),
       effects: move.effects.map(cloneEffect),
       attackDamageBonus:
         definition.phaseThreshold !== undefined && enemy.hp <= definition.phaseThreshold.hpAtOrBelow

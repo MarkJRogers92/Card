@@ -14,6 +14,19 @@ capped at maximum HP, and advance is rejected until the node is complete and
 its reward resolved. See `docs/milestones/M19_FIXED_TEST_ACT.md`. M20 owns
 serialization and M22 owns map generation.
 
+**M17 locked enemy targeting — corrected on this branch.** `enemy.repo_foreman`
+`named_claim` and `enemy.head_of_recovery` `named_in_claim` previously carried
+the unresolved placeholder `{ kind: "locked", actorId: "source" }`, so selecting
+either move threw and the elite and Act 1 boss fights could not be played at all;
+M19's tests missed it because they resolve those encounters with a direct-damage
+helper. A Locked enemy move authored with `LOCKED_AT_REVEAL_ACTOR_ID` now names
+the character occupying Front when the intent is revealed, and the selected
+intent stores that character, so a later swap moves the named character but
+never redirects the attack. Both encounters resolve through the real
+`applyM19Command` surface. The same correction is on
+`codex/m20-serialization` and `codex/m21-persistence`; see the "Locked enemy
+targeting" section of `docs/milestones/M17_INITIAL_ENEMIES.md`.
+
 ## Previous checkpoint
 
 **M18 — rewards — implementation checkpoint**

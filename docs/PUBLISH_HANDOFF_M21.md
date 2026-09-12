@@ -86,13 +86,13 @@ No branch has been merged into `main`, and no release was published.
 
 ## Open items carried forward
 
-The M20 defect is unchanged: `enemy.repo_foreman` `named_claim` and
-`enemy.head_of_recovery` `named_in_claim` target the placeholder
-`{ kind: "locked", actorId: "source" }`, so real play cannot finish the elite or
-Act 1 boss encounter and the seven-node act is not completable end to end. It
-needs an M17 decision about what a locked `source` target means for an enemy.
-See the "Boundary found during M20" section of
-`docs/milestones/M20_SNAPSHOT_SERIALIZATION.md`.
+None. The M20 locked-target defect is resolved on this branch, on
+`codex/m20-serialization`, and on `codex/m16-family-transformations`: a Locked
+enemy move authored with `LOCKED_AT_REVEAL_ACTOR_ID` names the character
+occupying Front when the intent is revealed and stores that character in the
+selected intent, so swapping never redirects the attack. The elite and Act 1
+boss now resolve through the real `applyM19Command` surface. See the "Locked
+enemy targeting" section of `docs/milestones/M17_INITIAL_ENEMIES.md`.
 
 ## Tooling note
 

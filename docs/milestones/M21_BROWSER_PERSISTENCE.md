@@ -205,20 +205,24 @@ store, so the browser proves the same protocol the unit tests prove.
 
 ## Open item carried forward
 
-The M20 defect recorded in
-`docs/milestones/M20_SNAPSHOT_SERIALIZATION.md` is unchanged by M21:
-`enemy.repo_foreman` `named_claim` and `enemy.head_of_recovery`
-`named_in_claim` target the placeholder `{ kind: "locked", actorId: "source" }`,
-so real play cannot finish the elite or Act 1 boss encounter. M21's tests drive
-combat with the existing direct-damage shortcut and therefore stay unaffected,
-but the act is still not completable end to end by honest play.
+The M20 defect recorded in `docs/milestones/M20_SNAPSHOT_SERIALIZATION.md` is
+resolved on this branch. M17 now defines what the authored `source` marker means
+for an enemy: a Locked move names the character occupying Front when the intent
+is revealed, and the selected intent stores that character, so swapping never
+redirects the attack. `enemy.repo_foreman` `named_claim` and
+`enemy.head_of_recovery` `named_in_claim` therefore resolve instead of throwing,
+and both encounters can be played through the real `applyM19Command` surface.
+M21's own tests still drive combat with the direct-damage shortcut, so this
+correction is covered by M17's and M19's suites; see
+`tests/unit/initial-enemies.test.ts` and `tests/unit/m19-run.test.ts`.
 
 ## Local verification
 
 - `npm run check` — generated content types and `tsc --noEmit` clean.
 - `npm run test:m21` — 25 focused persistence tests passed, including the abort
   and torn-write cases at every transaction boundary.
-- `npm run test:engine` — 336 tests passed (311 before M21).
+- `npm run test:engine` — 336 tests passed (311 before M21). The branch now
+  reports 339 after the M17 locked-target correction added three tests.
 - `npm run test:content`, `npm run content:validate`, `npm run test:replay`,
   `npm run test:properties` — all passed.
 - `npm run build` — production build passed.

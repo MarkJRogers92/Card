@@ -25,6 +25,20 @@ with passing GitHub Actions run
 
 ## Previous checkpoint
 
+**M17 locked enemy targeting — corrected on this branch**
+
+`enemy.repo_foreman` `named_claim` and `enemy.head_of_recovery`
+`named_in_claim` previously carried the unresolved placeholder
+`{ kind: "locked", actorId: "source" }`, so selecting either move threw and the
+elite and Act 1 boss fights could not be played at all. M17 now defines the
+rule: a Locked enemy move authored with `LOCKED_AT_REVEAL_ACTOR_ID` names the
+character occupying Front when the intent is revealed, and the selected intent
+stores that character, so a later swap moves the named character but never
+redirects the attack. Both encounters now resolve through the real
+`applyM19Command` surface. The same correction is on
+`codex/m16-family-transformations` and `codex/m20-serialization`; see the
+"Locked enemy targeting" section of `docs/milestones/M17_INITIAL_ENEMIES.md`.
+
 **M20 — snapshot serialization — local implementation checkpoint**
 
 M20 adds the pure save-encoding layer in `src/engine/save.ts`: a versioned save

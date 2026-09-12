@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./client/App";
+import "./client/card-visuals.css";
 import { MorrowPreview } from "./client/MorrowPreview";
 
 const rootElement = document.getElementById("root");

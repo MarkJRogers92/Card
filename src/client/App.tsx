@@ -22,11 +22,93 @@ import {
   restRunCharacter,
   skipCardReward,
   completeRunCombat,
+  ingredientPhrase,
+  positionText,
   type AuthoritativeState,
+  type M10CardView,
   type M10Command,
   type M19Command,
 } from "../engine";
 import "./App.css";
+
+type HandCardData = M10CardView & { readonly isPlayable?: boolean };
+
+/**
+ * One hand card. The face always states the card's effect, and the full
+ * explanation (cost rows, family, target, ingredient, keyword rules, position)
+ * opens on hover or keyboard focus so a player never has to guess what a card
+ * does. See docs/DESIGN.md 7.5.
+ */
+function HandCard({
+  card,
+  ingredientLabel,
+  disabled,
+  onPlay,
+}: {
+  card: HandCardData;
+  ingredientLabel: string;
+  disabled: boolean;
+  onPlay: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const detailId = `card-detail-${card.instanceId}`;
+  const position = positionText(card.classification);
+  const spokenDetail = [
+    card.explanation.summary,
+    ...card.explanation.lines.map((line) => `${line.label}: ${line.text}`),
+    position,
+  ].join(" ");
+
+  return (
+    <div className="card-slot">
+      <button
+        type="button"
+        className={`play-card owner-${card.owner}`}
+        disabled={disabled}
+        onClick={onPlay}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onKeyDown={(event) => {
+          if (event.key === "Escape") setOpen(false);
+        }}
+        aria-describedby={detailId}
+        data-testid={`card-${card.instanceId}`}
+        data-card-name={card.name}
+        data-card-damage={card.isDamageCard ? "true" : "false"}
+      >
+        <span className="card-cost">{card.energyCost}</span>
+        <span className="card-owner">{card.owner}</span>
+        <strong>{card.name}</strong>
+        <span className="card-classification">{card.classification}</span>
+        <span className="card-ingredient">{ingredientLabel}</span>
+        <span className="card-effect" data-testid={`card-effect-${card.instanceId}`}>
+          {card.explanation.summary}
+        </span>
+      </button>
+
+      <p className="sr-only" id={detailId} data-testid={`card-detail-${card.instanceId}`}>
+        {spokenDetail}
+      </p>
+
+      {open && (
+        <div className="card-popup" role="tooltip" data-testid="card-tooltip">
+          <p className="card-popup-title">{card.name}</p>
+          <dl className="card-popup-lines">
+            {card.explanation.lines.map((line, index) => (
+              <div className="card-popup-line" key={`${line.label}-${index}`}>
+                <dt>{line.label}</dt>
+                <dd>{line.text}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="card-popup-position">{position}</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function actorLabel(actorId: string): string {
   if (actorId === M10_MORROW_ID) return "Morrow";
@@ -284,37 +366,25 @@ function M10Checkpoint() {
         </div>
 
         <div className="hand" data-testid="hand">
-          {hand.map((card) => {
-            const disabled = !active || card.energyCost > combat.energy;
-            return (
-              <button
-                key={card.instanceId}
-                type="button"
-                className={`play-card owner-${card.owner}`}
-                disabled={disabled}
-                onClick={() =>
-                  commit({
-                    kind: "play_card",
-                    instanceId: card.instanceId,
-                    targetActorId: selectedTarget,
-                  })
-                }
-                data-testid={`card-${card.instanceId}`}
-                data-card-name={card.name}
-                data-card-damage={card.isDamageCard ? "true" : "false"}
-              >
-                <span className="card-cost">{card.energyCost}</span>
-                <span className="card-owner">{card.owner}</span>
-                <strong>{card.name}</strong>
-                <span className="card-classification">{card.classification}</span>
-                <span className="card-ingredient">
-                  {card.ingredient === null
-                    ? "No ingredient"
-                    : `${card.ingredient.id} · Prime ${card.ingredient.prime}`}
-                </span>
-              </button>
-            );
-          })}
+          {hand.map((card) => (
+            <HandCard
+              key={card.instanceId}
+              card={card}
+              ingredientLabel={
+                card.ingredient === null
+                  ? "No ingredient"
+                  : ingredientPhrase(card.ingredient)
+              }
+              disabled={!active || card.energyCost > combat.energy}
+              onPlay={() =>
+                commit({
+                  kind: "play_card",
+                  instanceId: card.instanceId,
+                  targetActorId: selectedTarget,
+                })
+              }
+            />
+          ))}
           {hand.length === 0 && (
             <p className="empty-hand">
               {active ? "No cards in hand." : "Combat complete."}
@@ -677,38 +747,29 @@ function M19TestAct() {
 
           <div className="hand" data-testid="hand">
             {hand.map((card) => (
-              <button
+              <HandCard
                 key={card.instanceId}
-                type="button"
-                className={`play-card owner-${card.owner}`}
+                card={card}
+                ingredientLabel={
+                  card.isPlayable
+                    ? card.ingredient === null
+                      ? "No ingredient"
+                      : ingredientPhrase(card.ingredient)
+                    : "Unplayable"
+                }
                 disabled={
                   !active ||
                   !card.isPlayable ||
                   card.energyCost > (combat?.energy ?? 0)
                 }
-                onClick={() =>
+                onPlay={() =>
                   commit({
                     kind: "play_card",
                     instanceId: card.instanceId,
                     targetActorId: card.isDamageCard ? targetActorId : null,
                   })
                 }
-                data-testid={`card-${card.instanceId}`}
-                data-card-name={card.name}
-                data-card-damage={card.isDamageCard ? "true" : "false"}
-              >
-                <span className="card-cost">{card.energyCost}</span>
-                <span className="card-owner">{card.owner}</span>
-                <strong>{card.name}</strong>
-                <span className="card-classification">{card.classification}</span>
-                <span className="card-ingredient">
-                  {card.isPlayable
-                    ? card.ingredient === null
-                      ? "No ingredient"
-                      : `${card.ingredient.id} · Prime ${card.ingredient.prime}`
-                    : "Unplayable"}
-                </span>
-              </button>
+              />
             ))}
             {hand.length === 0 && (
               <p className="empty-hand">

@@ -17,6 +17,10 @@ persistence, the active save, and rotating backups. That milestone document
 also records an M17 elite/boss intent-selection defect the M20 trace surfaced:
 the authored `named_claim`/`named_in_claim` moves target the placeholder
 `{ kind: "locked", actorId: "source" }`, which throws during intent selection.
+This checkpoint is pushed to `MarkJRogers92/Card` on
+`codex/m20-serialization` with passing GitHub Actions run
+[`34662179579`](https://github.com/MarkJRogers92/Card/actions/runs/34662179579)
+(`M20 Acceptance`) at `b12cf5a`; see `docs/PUBLISH_HANDOFF_M20.md`.
 
 ## Previous checkpoint
 

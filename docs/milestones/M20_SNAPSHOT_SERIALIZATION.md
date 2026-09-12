@@ -1,5 +1,12 @@
 # M20 — Snapshot Serialization
 
+**Status:** local implementation checkpoint on `codex/m20-serialization`,
+pushed with passing GitHub Actions run
+[`34662179579`](https://github.com/MarkJRogers92/Card/actions/runs/34662179579)
+(`M20 Acceptance`) at `b12cf5ab758159c57e6778aca106e047fb873eef`.
+
+**Branch:** `codex/m20-serialization`
+
 ## Scope
 
 M20 delivers the pure save-encoding layer: one versioned save envelope,

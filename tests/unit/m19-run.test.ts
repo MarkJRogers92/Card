@@ -288,4 +288,19 @@ describe("M19 node progression", () => {
     expect(lost.rewards.pending).toBeNull();
     expect(() => advanceRunNode(lost)).toThrow(/already defeat/);
   });
+
+  it("plays the elite and boss encounters through the real command surface", () => {
+    // The elite's Named in the Claim and the boss's lock are authored with the
+    // reveal-time marker; before that rule existed, selecting either move threw
+    // and the seven-node act could not be played past `ordinary_3`.
+    for (const nodeId of ["elite", "boss"] as const) {
+      const resolved = playToVictory(
+        beginRunNode(atNode(createM19Run(1900), nodeId)),
+      );
+      expect(["victory", "defeat"]).toContain(resolved.combat?.outcome);
+      expect(resolved.combat?.selectedEnemyIntents.every(
+        (intent) => intent.target.kind !== "locked" || intent.target.actorId !== "source",
+      )).toBe(true);
+    }
+  });
 });

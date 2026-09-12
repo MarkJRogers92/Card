@@ -453,7 +453,10 @@ export type {
 } from "./triggers";
 export {
   TARGET_RULE_KINDS,
+  LOCKED_AT_REVEAL_ACTOR_ID,
+  getFrontCharacterId,
   getReserveCharacterId,
+  resolveTargetRuleAtReveal,
   resolveTargetRule,
 } from "./targeting";
 export type { TargetRule, TargetRuleKind } from "./targeting";

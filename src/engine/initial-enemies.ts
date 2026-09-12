@@ -1,4 +1,5 @@
 import type { EnemyBehaviorRegistry } from "./enemies";
+import { LOCKED_AT_REVEAL_ACTOR_ID } from "./targeting";
 
 export interface InitialEncounterFormation {
   readonly id: string;
@@ -31,13 +32,13 @@ export const INITIAL_ENEMY_REGISTRY: EnemyBehaviorRegistry = {
   ], ai: { kind: "cycle", moveIds: ["errand", "all_hands"], startIndex: 0 }, deathEffects: [{ op: "grant_living_enemy_strength", amount: 2 }] },
   "enemy.repo_foreman": { id: "enemy.repo_foreman", moves: [
     { id: "repossession", label: "Repossession", target: { kind: "front" }, effects: [{ op: "damage", amount: 12, hits: 1 }] },
-    { id: "named_claim", label: "Named in the Claim", target: { kind: "locked", actorId: "source" }, effects: [{ op: "damage", amount: 14, hits: 1 }] },
+    { id: "named_claim", label: "Named in the Claim", target: { kind: "locked", actorId: LOCKED_AT_REVEAL_ACTOR_ID }, effects: [{ op: "damage", amount: 14, hits: 1 }] },
     { id: "work_order", label: "Work Order", target: { kind: "both" }, effects: [{ op: "damage", amount: 7, hits: 1 }] },
   ], ai: { kind: "cycle", moveIds: ["repossession", "named_claim", "work_order"], startIndex: 0 } },
   "enemy.head_of_recovery": { id: "enemy.head_of_recovery", moves: [
     { id: "performance_review", label: "Performance Review", target: { kind: "front" }, effects: [{ op: "damage", amount: 12, hits: 1 }] },
     { id: "cross_departmental_issue", label: "Cross-Departmental Issue", target: { kind: "both" }, effects: [{ op: "damage", amount: 7, hits: 1 }] },
-    { id: "named_in_claim", label: "Named in the Claim", target: { kind: "locked", actorId: "source" }, effects: [{ op: "damage", amount: 18, hits: 1 }] },
+    { id: "named_in_claim", label: "Named in the Claim", target: { kind: "locked", actorId: LOCKED_AT_REVEAL_ACTOR_ID }, effects: [{ op: "damage", amount: 18, hits: 1 }] },
     { id: "budget_cuts", label: "Budget Cuts", target: { kind: "self" }, effects: [{ op: "block", amount: 14 }, { op: "add_card_to_discard", cardId: "junk.invoice", count: 2 }] },
   ], ai: { kind: "cycle", moveIds: ["performance_review", "cross_departmental_issue", "named_in_claim", "budget_cuts"], startIndex: 0 }, phaseThreshold: { hpAtOrBelow: 75, attackDamageBonus: 3 } },
 };

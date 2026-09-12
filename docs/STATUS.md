@@ -20,8 +20,8 @@ owns purchases, and M29 owns the profile payload's semantics.
 
 This checkpoint is pushed to `MarkJRogers92/Card` on `codex/m21-persistence`
 with passing GitHub Actions run
-[`34662896299`](https://github.com/MarkJRogers92/Card/actions/runs/34662896299)
-(`M21 Acceptance`) at `2b1ab5a`; see `docs/PUBLISH_HANDOFF_M21.md`.
+[`34663330230`](https://github.com/MarkJRogers92/Card/actions/runs/34663330230)
+(`M21 Acceptance`) at `f5926d3`; see `docs/PUBLISH_HANDOFF_M21.md`.
 
 ## Previous checkpoint
 

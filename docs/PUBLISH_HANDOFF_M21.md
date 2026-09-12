@@ -7,16 +7,20 @@ Branch: `codex/m21-persistence`
 Worktree: `/Users/markrogers/Documents/Github Code/Card/.worktrees/m21-persistence`
 
 This handoff is resolved. M21 browser persistence was pushed to
-`MarkJRogers92/Card` on `2026-09-11` and the acceptance workflow passed.
+`MarkJRogers92/Card` on `2026-09-11` and the acceptance workflow passed on the
+final head.
 
 ## Push details
 
 - Branch `codex/m21-persistence` was created from the accepted M20 head
-  `e968d3e` and pushed with remote head `2b1ab5a`.
+  `e968d3e` and pushed with remote head `f5926d3`.
 - GitHub Actions workflow **M21 Acceptance** run
-  [`34662896299`](https://github.com/MarkJRogers92/Card/actions/runs/34662896299)
-  passed at `2b1ab5ab3697bff1219948ff4ec3d4d3680aaf6f` (started
-  `2026-09-12T00:49:29Z`, conclusion `success`).
+  [`34663330230`](https://github.com/MarkJRogers92/Card/actions/runs/34663330230)
+  passed at `f5926d3e59ad4b3882c9930730b2c8cf39457aca` (conclusion `success`).
+- The first push (`2b1ab5a`, run `34662896299`) also passed, and an independent
+  review of that state found two real defects in the rotation and selection
+  rules. `f5926d3` fixes both and adds the tests that reproduce them; see
+  "Review findings" below.
 
 ## What is on this branch
 
@@ -27,18 +31,42 @@ Commits in order:
 3. `a8fcfc4` — `test: add M21 persistence fault injection`
 4. `85764f0` — `feat: add M21 persistence browser route`
 5. `2b1ab5a` — `ci: add M21 focused test script and test dependency`
+6. `f846b24` — `ci: record M21 persistence acceptance`
+7. `f5926d3` — `fix: harden M21 rotation and generation selection`
 
 `src/platform/save-store.ts` owns the generation protocol (one active
 generation, two rotating backups, atomic rotation, newest-valid recovery, and a
-quarantine slot that preserves a rejected payload). `src/platform/indexeddb.ts`
+quarantine history that preserves rejected payloads). `src/platform/indexeddb.ts`
 supplies the browser backend. `?fixture=m21` commits a run, reloads it, and
 repairs a corrupted active record.
+
+## Review findings folded into the final head
+
+An independent review of `2b1ab5a` reported two defects, both verified against
+the code and both now fixed:
+
+1. **Critical — a torn commit could destroy the only good generation.** The
+   commit rotated `active` and `backup.1` whenever they were structurally
+   well-formed, even when their checksums failed. With `active` and `backup.1`
+   corrupt and `backup.2` valid, the first write copied the corrupt record over
+   the last good one, and an interruption before the final write left no
+   loadable generation. Rotation now happens only for records that already
+   loaded as valid generations.
+2. **High — untrusted metadata could select a stale generation.** Selection
+   used the highest self-reported `generation`, which is not covered by the
+   save checksum, and a record's embedded `key` was not checked against its
+   slot. Selection now follows slot order and rejects a mislabelled record.
+
+The review also noted that only the first rejected slot was quarantined and
+that the reward test did not interrupt the claim itself. Quarantine now keeps an
+appended history of every rejection, and the suite adds the interrupted-claim,
+lost-acknowledgement, corrupt-neighbour, and mislabelled-record cases.
 
 ## Local verification before the push
 
 - `npm run check` — generated content types and `tsc --noEmit` clean.
-- `npm run test:m21` — 21 focused tests passed.
-- `npm run test:engine` — 332 tests passed (311 before M21).
+- `npm run test:m21` — 25 focused tests passed.
+- `npm run test:engine` — 336 tests passed (311 before M21).
 - `npm run test:content`, `npm run content:validate`, `npm run test:replay`,
   `npm run test:properties` — all passed.
 - `npm run build` — production build passed.

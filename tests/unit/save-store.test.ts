@@ -31,8 +31,8 @@ function freshDatabase(): Promise<IDBDatabase> {
   return openSaveDatabase(new IDBFactory());
 }
 
-/** A run whose first reward has been claimed exactly once. */
-function runWithClaim(seed: number): {
+/** A run that has just resolved its first encounter into a pending reward. */
+function resolveFirstEncounter(seed: number): {
   readonly state: AuthoritativeState;
   readonly transactionId: string;
   readonly optionId: string;
@@ -55,9 +55,22 @@ function runWithClaim(seed: number): {
     throw new Error("Expected a pending M19 reward with a card option.");
   }
   return {
-    state: claimRewardOption(rewarded, pending.transactionId, optionId),
+    state: rewarded,
     transactionId: pending.transactionId,
     optionId,
+  };
+}
+
+/** A run whose first reward has been claimed exactly once. */
+function runWithClaim(seed: number): {
+  readonly state: AuthoritativeState;
+  readonly transactionId: string;
+  readonly optionId: string;
+} {
+  const resolved = resolveFirstEncounter(seed);
+  return {
+    ...resolved,
+    state: claimRewardOption(resolved.state, resolved.transactionId, resolved.optionId),
   };
 }
 
@@ -103,6 +116,63 @@ function abortingBackend(database: IDBDatabase, failAtWrite: number): SaveBacken
       }
     },
   });
+}
+
+/**
+ * A backend whose acknowledgement is lost: the transaction commits durably and
+ * then the caller is told it failed, as a process that dies after the commit
+ * but before the caller resumes would report.
+ */
+function lostAcknowledgementBackend(database: IDBDatabase): SaveBackend {
+  const inner = createIndexedDbBackend(database);
+  return {
+    read: (key: string) => inner.read(key),
+    async commit(writes): Promise<void> {
+      await inner.commit(writes);
+      throw new Error("acknowledgement lost after a durable commit");
+    },
+    close: () => inner.close(),
+  };
+}
+
+/**
+ * A backend that dies before its final write, which is the interruption shape
+ * that would destroy the last good generation if a damaged slot were rotated
+ * over it.
+ */
+function tornBeforeLastWriteBackend(database: IDBDatabase): SaveBackend {
+  const inner = createIndexedDbBackend(database);
+  return {
+    read: (key: string) => inner.read(key),
+    async commit(writes): Promise<void> {
+      for (let index = 0; index < writes.length - 1; index += 1) {
+        await inner.commit([writes[index]!]);
+      }
+      throw new Error("simulated crash before the final write");
+    },
+    close: () => inner.close(),
+  };
+}
+
+/**
+ * A key/value backend whose keys and record labels are independent, which is
+ * how a label mismatch can reach the store at all. IndexedDB's keyPath store
+ * always files a record under the label it carries.
+ */
+function memoryBackend(records: Map<string, unknown>): SaveBackend {
+  return {
+    read: (key: string) => Promise.resolve(records.get(key)),
+    async commit(writes): Promise<void> {
+      for (const write of writes) {
+        if (write.value === null) {
+          records.delete(write.key);
+        } else {
+          records.set(write.key, write.value);
+        }
+      }
+    },
+    close: () => undefined,
+  };
 }
 
 async function requireLoaded(store: SaveStore) {
@@ -293,6 +363,59 @@ describe("M21 fault injection at every transaction boundary", () => {
       claim.transactionId,
     ]);
   });
+
+  it("applies an interrupted claim exactly once when it is retried", async () => {
+    const database = await freshDatabase();
+    const store = createSaveStore({ backend: createIndexedDbBackend(database) });
+    const resolved = resolveFirstEncounter(1900);
+    await store.commit(resolved.state);
+    const claimed = claimRewardOption(
+      resolved.state,
+      resolved.transactionId,
+      resolved.optionId,
+    );
+
+    // Interrupt the commit that would install the claim itself.
+    const interrupted = await createSaveStore({
+      backend: abortingBackend(database, 1),
+    }).commit(claimed);
+    expect(interrupted).toMatchObject({ ok: false, code: "write_failed" });
+
+    const reloaded = await requireLoaded(store);
+    expect(reloaded.generation).toBe(1);
+    expect(reloaded.state.rewards.pending?.transactionId).toBe(resolved.transactionId);
+    expect(reloaded.state.rewards.claimedCardIds).toStrictEqual([]);
+
+    const retried = claimRewardOption(
+      reloaded.state,
+      resolved.transactionId,
+      resolved.optionId,
+    );
+    expect(retried.rewards.claimedCardIds).toStrictEqual([resolved.optionId]);
+    expect(retried.rewards.completedTransactionIds).toStrictEqual([
+      resolved.transactionId,
+    ]);
+  });
+
+  it("treats a lost acknowledgement as a durable generation rather than a duplicate", async () => {
+    const database = await freshDatabase();
+    const store = createSaveStore({ backend: createIndexedDbBackend(database) });
+    const claim = runWithClaim(1900);
+    await store.commit(claim.state);
+
+    const unacknowledged = await createSaveStore({
+      backend: lostAcknowledgementBackend(database),
+    }).commit(advanceRunNode(claim.state));
+    expect(unacknowledged).toMatchObject({ ok: false, code: "write_failed" });
+
+    const loaded = await requireLoaded(store);
+    expect(loaded.generation).toBe(2);
+    expect(loaded.state.rewards.scrap).toBe(15);
+    expect(loaded.state.rewards.completedTransactionIds).toStrictEqual([
+      claim.transactionId,
+    ]);
+    expect(loaded.state.rewards.claimedCardIds).toStrictEqual([claim.optionId]);
+  });
 });
 
 describe("M21 recovery", () => {
@@ -326,10 +449,101 @@ describe("M21 recovery", () => {
     });
 
     const quarantine = (await raw.read(QUARANTINE_SLOT_KEY)) as QuarantineRecord;
-    expect(quarantine.text).toBe(corrupt);
-    expect(quarantine.reason).toContain("invalid_envelope");
+    expect(quarantine.entries).toHaveLength(1);
+    expect(quarantine.entries[0]).toMatchObject({
+      slot: "active",
+      generation: 2,
+      code: "invalid_envelope",
+      text: corrupt,
+    });
     const repairedActive = (await raw.read(ACTIVE_SLOT_KEY)) as { text: string };
     expect(repairedActive.text).toBe(exportSave(first!));
+
+    // The repair is idempotent: loading again adds no duplicate history.
+    const again = await requireLoaded(store);
+    expect(again).toMatchObject({ slot: "active", generation: 1, repairedOnDisk: false });
+    const unchanged = (await raw.read(QUARANTINE_SLOT_KEY)) as QuarantineRecord;
+    expect(unchanged.entries).toHaveLength(1);
+  });
+
+  it("keeps the only valid generation when the newer slots are corrupt", async () => {
+    const database = await freshDatabase();
+    const store = createSaveStore({ backend: createIndexedDbBackend(database) });
+    const raw = createIndexedDbBackend(database);
+    const [first] = generationStates();
+    await store.commit(first!);
+
+    // `active` and `backup.1` are damaged; only `backup.2` still holds a valid
+    // generation. Rotating either damaged record over it would lose the run.
+    await raw.commit([
+      {
+        key: ACTIVE_SLOT_KEY,
+        value: { key: ACTIVE_SLOT_KEY, generation: 2, text: "{}", profile: null },
+      },
+      {
+        key: BACKUP_SLOT_KEYS[0],
+        value: { key: BACKUP_SLOT_KEYS[0], generation: 2, text: "{}", profile: null },
+      },
+      {
+        key: BACKUP_SLOT_KEYS[1],
+        value: {
+          key: BACKUP_SLOT_KEYS[1],
+          generation: 1,
+          text: exportSave(first!),
+          profile: null,
+        },
+      },
+    ]);
+
+    const attempted = await createSaveStore({
+      backend: tornBeforeLastWriteBackend(database),
+    }).commit(beginRunNode(first!));
+    expect(attempted).toMatchObject({ ok: false, code: "write_failed" });
+
+    const survived = (await raw.read(BACKUP_SLOT_KEYS[1])) as { text: string };
+    expect(survived.text).toBe(exportSave(first!));
+
+    const recovered = await requireLoaded(store);
+    expect(hashAuthoritativeState(recovered.state)).toBe(hashAuthoritativeState(first!));
+    expect(recovered.rejected).toHaveLength(2);
+    expect(recovered.rejected.map((entry) => entry.slot)).toStrictEqual([
+      "active",
+      "backup.1",
+    ]);
+  });
+
+  it("rejects a record whose label does not match its slot", async () => {
+    const [first, second] = generationStates();
+    const records = new Map<string, unknown>([
+      [
+        ACTIVE_SLOT_KEY,
+        {
+          key: BACKUP_SLOT_KEYS[0],
+          generation: 999,
+          text: exportSave(second!),
+          profile: null,
+        },
+      ],
+      [
+        BACKUP_SLOT_KEYS[0],
+        {
+          key: BACKUP_SLOT_KEYS[0],
+          generation: 1,
+          text: exportSave(first!),
+          profile: null,
+        },
+      ],
+    ]);
+    const store = createSaveStore({ backend: memoryBackend(records) });
+
+    // The mislabelled record claims generation 999 but is not a valid `active`
+    // record, so the newest generation that is actually loadable wins.
+    const loaded = await requireLoaded(store);
+    expect(loaded).toMatchObject({ slot: "backup.1", generation: 1 });
+    expect(hashAuthoritativeState(loaded.state)).toBe(hashAuthoritativeState(first!));
+    expect(loaded.rejected).toHaveLength(1);
+    expect(loaded.rejected[0]).toMatchObject({ slot: "active", code: "invalid_record" });
+    expect(loaded.rejected[0]?.message).toContain("labelled backup.1");
   });
 
   it("never deletes anything when every generation is unreadable", async () => {

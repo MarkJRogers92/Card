@@ -30,17 +30,21 @@ store      saves          (keyPath: key)
 slots      active         the current generation
            backup.1       the previous generation
            backup.2       the generation before that
-           quarantine     the most recent record rejected on load
+           quarantine     history of records rejected on load
 ```
 
 Each slot holds a plain JSON-cloneable record:
 
 ```text
-key         the slot name
+key         the slot name; a record read from a slot must carry that slot's name
 generation  monotonic counter, starts at 1 for the first commit
 text        the canonical M20 save text for that generation
 profile     opaque platform payload reserved for M29; null in M21
 ```
+
+Only the `text` field is covered by the M20 checksum, so `key` and `generation`
+are treated as untrusted hints: a record whose label does not match the slot it
+was read from is rejected, and slot order decides which generation is newest.
 
 `src/engine/save.ts` remains the only encoder. M21 consumes `exportSave` and
 `importSave` and never reimplements the envelope, the checksum, or the
@@ -48,20 +52,27 @@ migration table.
 
 ## Commit protocol
 
-A commit writes the repository's `active`/`backup.1`/`backup.2` rotation in one
-atomic transaction, in this order:
+A commit writes the `active`/`backup.1`/`backup.2` rotation in one atomic
+transaction, in this order:
 
-1. `backup.2` ← the current `backup.1`
-2. `backup.1` ← the current `active`
+1. `backup.2` ← the current `backup.1`, only when `backup.1` loaded as a valid
+   generation
+2. `backup.1` ← the current `active`, only when `active` loaded as a valid
+   generation
 3. `active` ← the new generation
 
-Two properties follow from that ordering:
+Three properties follow:
 
-- The new generation is written last, so no legal interruption can leave
-  `active` pointing at a generation whose backups have not been written.
-- Backups are written before the record they protect, so a backend that loses
-  atomicity (a torn write) can only damage `backup.2` or `backup.1`, each of
-  which is already superseded by `active` at the moment it is replaced.
+- The new generation is written last, so an interruption cannot leave `active`
+  pointing at a generation whose backups were never written.
+- A slot is only overwritten with a record that already loaded successfully. A
+  damaged record is therefore never copied over the last good one, which is the
+  defect an independent review found in the first implementation: rotating by
+  structural shape alone could move a corrupt `backup.1` into `backup.2` and
+  destroy the only valid generation.
+- Together those two rules mean every prefix of a commit leaves at least one
+  loadable generation: each write replaces a slot whose replacement already
+  exists elsewhere, and the final write only ever adds a new valid generation.
 
 A commit is a single authoritative state. Because the engine resolves every
 command to completion before returning, any returned state is a legal save
@@ -73,15 +84,19 @@ deltas. A generation is written whole or not at all.
 ## Load and recovery protocol
 
 Load reads all three generation slots, validates every present record with
-`importSave`, and selects the valid record with the highest generation
-(ties resolve to `active`). Recovery never throws and never deletes.
+`importSave`, and selects the first loadable record in slot order
+(`active`, `backup.1`, `backup.2`). Slot order is the protocol's own ordering,
+so store metadata cannot promote an older snapshot over a newer one. Recovery
+never throws and never deletes.
 
 - **All three slots valid and consistent** — the newest generation loads.
-- **One or more slots invalid, at least one valid** — the newest valid
-  generation loads, and the store repairs itself: the rejected text is copied
-  into `quarantine` and the recovered record is rewritten into `active`, both
-  in one atomic transaction. The corrupt payload is therefore preserved for a
-  later diagnosis instead of being overwritten or dropped.
+- **One or more slots invalid, at least one loadable** — the newest loadable
+  generation loads, and the store repairs itself: every rejected payload is
+  appended to the `quarantine` history and the recovered record is rewritten
+  into `active`, both in one atomic transaction. The corrupt payloads are
+  therefore preserved for later diagnosis instead of being overwritten or
+  dropped, repeated loads add nothing to the history, and a repair that has
+  nothing new to write performs no write at all.
 - **No slot valid** — the result is `no_valid_generation` with the per-slot
   rejection reasons. Nothing is written and nothing is deleted.
 - **No slot present** — the result is `empty`, which is the normal first-run
@@ -91,6 +106,10 @@ If the repair write itself fails, the recovered state is still returned; the
 result reports that the on-disk repair was deferred, and the next successful
 commit performs the same rotation. Recovery never depends on a write
 succeeding.
+
+A commit also refuses to read a damaged neighbour as if it were a backup, so a
+run whose `active` and `backup.1` records are both unreadable still recovers the
+generation held in `backup.2` instead of overwriting it.
 
 ## Failure taxonomy
 
@@ -146,6 +165,13 @@ generation and a claimed reward is never applied twice, because a generation is
 written whole and reward claims are already idempotent by transaction ID inside
 the snapshot.
 
+The suite also covers the three interruptions that a boundary loop alone would
+miss: corrupting the neighbours of the only good generation, a record whose
+label does not match its slot, and a lost acknowledgement, where the
+transaction commits durably and then the caller is told it failed. In that last
+case the run reloads at the newer generation with exactly one claim, because a
+committed generation is never replayed.
+
 ## Run and profile atomicity
 
 The commit writes one generation record, and that record carries both the run
@@ -190,9 +216,9 @@ but the act is still not completable end to end by honest play.
 ## Local verification
 
 - `npm run check` — generated content types and `tsc --noEmit` clean.
-- `npm run test:m21` — 21 focused persistence tests passed, including the abort
+- `npm run test:m21` — 25 focused persistence tests passed, including the abort
   and torn-write cases at every transaction boundary.
-- `npm run test:engine` — 332 tests passed (311 before M21).
+- `npm run test:engine` — 336 tests passed (311 before M21).
 - `npm run test:content`, `npm run content:validate`, `npm run test:replay`,
   `npm run test:properties` — all passed.
 - `npm run build` — production build passed.

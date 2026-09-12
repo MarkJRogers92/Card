@@ -6,15 +6,15 @@
 
 M21 adds the browser persistence adapter in `src/platform/`: one IndexedDB
 database (`joint-liability`), one active save generation, two rotating backups,
-an atomic commit that writes the backups before the record they protect, a
-loader that selects the newest valid generation, and a quarantine slot that
-preserves a rejected payload instead of deleting it. The run save text and the
-reserved profile payload are written as a single generation record, so run and
-profile cannot diverge. Fault-injection tests abort a genuine IndexedDB
-transaction and simulate a torn write at every transaction boundary; after each
-interruption the store reloads a valid generation and a claimed reward is never
-applied twice. The `?fixture=m21` route commits, reloads, and repairs a
-corrupted active record in real Chromium. See
+an atomic commit that rotates only generations which already loaded, a loader
+that selects the newest loadable generation by slot order, and a quarantine
+history that preserves every rejected payload instead of deleting it. The run
+save text and the reserved profile payload are written as a single generation
+record, so run and profile cannot diverge. Fault-injection tests abort a genuine
+IndexedDB transaction and simulate a torn write at every transaction boundary;
+after each interruption the store reloads a valid generation and a claimed
+reward is never applied twice. The `?fixture=m21` route commits, reloads, and
+repairs a corrupted active record in real Chromium. See
 `docs/milestones/M21_BROWSER_PERSISTENCE.md`. M22 owns the branching map, M23
 owns purchases, and M29 owns the profile payload's semantics.
 

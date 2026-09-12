@@ -18,6 +18,17 @@ import {
  *
  * The engine boundary is unchanged: `src/engine/save.ts` remains the only
  * encoder, and nothing in `src/engine` imports this module.
+ *
+ * Two invariants drive every rule below:
+ *
+ * 1. At least one loadable generation survives any prefix of a commit. Slots
+ *    are only overwritten when the record replacing them is already known to
+ *    be a valid generation, so a damaged slot is never propagated over the
+ *    last good one.
+ * 2. A generation is selected by slot order (`active`, `backup.1`,
+ *    `backup.2`), not by a self-reported generation number. Store metadata
+ *    sits outside the save checksum, so it must not be able to promote an
+ *    older snapshot over a newer one.
  */
 
 export const SAVE_DB_NAME = "joint-liability";
@@ -39,12 +50,19 @@ export interface SaveGenerationRecord {
   readonly profile: unknown;
 }
 
-/** The most recent record rejected on load, preserved for diagnosis. */
+/** One rejected payload, preserved for diagnosis. */
+export interface QuarantineEntry {
+  readonly slot: string;
+  readonly generation: number | null;
+  readonly code: SaveImportFailureCode | "invalid_record";
+  readonly message: string;
+  readonly text: string;
+}
+
+/** History of rejected payloads. Entries are appended, never rewritten. */
 export interface QuarantineRecord {
   readonly key: typeof QUARANTINE_SLOT_KEY;
-  readonly generation: number | null;
-  readonly text: string;
-  readonly reason: string;
+  readonly entries: readonly QuarantineEntry[];
 }
 
 export interface BackendWrite {
@@ -56,9 +74,8 @@ export interface BackendWrite {
 export interface SaveBackend {
   read(key: string): Promise<unknown>;
   /**
-   * Apply every write in one atomic step: all of them or none. The backend is
-   * responsible for ordering; the store supplies writes in the order they must
-   * be applied.
+   * Apply every write in one atomic step: all of them or none. The store
+   * supplies writes in the order they must be applied.
    */
   commit(writes: readonly BackendWrite[]): Promise<void>;
   close(): void;
@@ -76,6 +93,8 @@ export interface RejectedGeneration {
   readonly generation: number | null;
   readonly code: SaveImportFailureCode | "invalid_record";
   readonly message: string;
+  /** The payload that was preserved, so a rejection never loses data. */
+  readonly text: string;
 }
 
 export interface SaveLoadSuccess {
@@ -83,7 +102,7 @@ export interface SaveLoadSuccess {
   readonly state: AuthoritativeState;
   readonly slot: SaveSlotKey;
   readonly generation: number;
-  /** True when the corrupt record was quarantined and `active` was rewritten. */
+  /** True when the recovered generation is the one stored in `active`. */
   readonly repairedOnDisk: boolean;
   readonly rejected: readonly RejectedGeneration[];
   readonly warnings: readonly string[];
@@ -116,13 +135,18 @@ export interface SaveCommitOptions {
   readonly profile?: unknown;
 }
 
+export interface SaveProfileResult {
+  readonly ok: true;
+  readonly profile: unknown;
+}
+
 export interface SaveStore {
   load(): Promise<SaveLoadResult>;
   commit(
     state: AuthoritativeState,
     options?: SaveCommitOptions,
   ): Promise<SaveCommitResult>;
-  readProfile(): Promise<{ readonly ok: true; readonly profile: unknown } | SaveLoadFailure>;
+  readProfile(): Promise<SaveProfileResult | SaveLoadFailure>;
   /** Explicit user action: remove every slot, including the quarantine. */
   clear(): Promise<SaveCommitResult>;
   close(): void;
@@ -132,20 +156,46 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isSaveGenerationRecord(value: unknown): value is SaveGenerationRecord {
+/**
+ * A slot record is only recognized when its embedded key matches the slot it
+ * was read from, so a mislabelled record cannot be selected or rotated.
+ */
+function isGenerationRecord(
+  value: unknown,
+  slot: SaveSlotKey,
+): value is SaveGenerationRecord {
   if (!isPlainRecord(value)) {
     return false;
   }
-  if (!SAVE_SLOT_KEYS.includes(value.key as SaveSlotKey)) {
+  if (value.key !== slot) {
     return false;
   }
-  if (typeof value.generation !== "number" || !Number.isInteger(value.generation)) {
-    return false;
-  }
-  if (value.generation < 0) {
+  if (
+    typeof value.generation !== "number" ||
+    !Number.isSafeInteger(value.generation) ||
+    value.generation < 0
+  ) {
     return false;
   }
   return typeof value.text === "string";
+}
+
+function quarantineEntries(value: unknown): readonly QuarantineEntry[] {
+  if (!isPlainRecord(value) || value.key !== QUARANTINE_SLOT_KEY) {
+    return [];
+  }
+  const entries = value.entries;
+  if (!Array.isArray(entries)) {
+    return [];
+  }
+  return entries.filter(
+    (entry): entry is QuarantineEntry =>
+      isPlainRecord(entry) &&
+      typeof entry.slot === "string" &&
+      typeof entry.code === "string" &&
+      typeof entry.message === "string" &&
+      typeof entry.text === "string",
+  );
 }
 
 function messageOf(caught: unknown): string {
@@ -176,6 +226,13 @@ interface ValidGeneration {
   readonly warnings: readonly string[];
 }
 
+interface Evaluation {
+  readonly validBySlot: ReadonlyMap<SaveSlotKey, ValidGeneration>;
+  /** The newest valid generation, by slot order rather than by metadata. */
+  readonly selected: ValidGeneration | null;
+  readonly rejected: readonly RejectedGeneration[];
+}
+
 export function createSaveStore(options: SaveStoreOptions): SaveStore {
   const { backend } = options;
   const migrations = options.migrations ?? SAVE_MIGRATIONS;
@@ -188,27 +245,29 @@ export function createSaveStore(options: SaveStoreOptions): SaveStore {
   }
 
   /**
-   * Validate every present slot and pick the newest valid generation. Reads
-   * never throw for bad data: a rejected slot becomes a diagnosis, not a crash.
+   * Validate every present slot. Reads never throw for bad data: a rejected
+   * slot becomes a diagnosis, not a crash, and it carries its payload so the
+   * rejection can be preserved.
    */
-  function evaluate(reads: readonly SlotRead[]):
-    | {
-        readonly valid: ValidGeneration | null;
-        readonly rejected: readonly RejectedGeneration[];
-      } {
+  function evaluate(reads: readonly SlotRead[]): Evaluation {
+    const validBySlot = new Map<SaveSlotKey, ValidGeneration>();
     const rejected: RejectedGeneration[] = [];
-    let valid: ValidGeneration | null = null;
 
     for (const { slot, raw } of reads) {
       if (raw === undefined || raw === null) {
         continue;
       }
-      if (!isSaveGenerationRecord(raw)) {
+      if (!isGenerationRecord(raw, slot)) {
+        const label = isPlainRecord(raw) ? raw.key : undefined;
         rejected.push({
           slot,
           generation: null,
           code: "invalid_record",
-          message: `${slot} does not hold a save generation record.`,
+          message:
+            typeof label === "string"
+              ? `${slot} holds a record labelled ${label}.`
+              : `${slot} does not hold a save generation record.`,
+          text: preservedText(raw),
         });
         continue;
       }
@@ -219,50 +278,92 @@ export function createSaveStore(options: SaveStoreOptions): SaveStore {
           generation: raw.generation,
           code: imported.code,
           message: imported.message,
+          text: raw.text,
         });
         continue;
       }
-      if (valid === null || raw.generation > valid.record.generation) {
-        valid = { slot, record: raw, state: imported.state, warnings: imported.warnings };
+      validBySlot.set(slot, {
+        slot,
+        record: raw,
+        state: imported.state,
+        warnings: imported.warnings,
+      });
+    }
+
+    let selected: ValidGeneration | null = null;
+    for (const slot of SAVE_SLOT_KEYS) {
+      const candidate = validBySlot.get(slot);
+      if (candidate !== undefined) {
+        selected = candidate;
+        break;
       }
     }
 
-    return { valid, rejected };
+    return { validBySlot, selected, rejected };
   }
 
   /**
-   * Move a rejected payload into quarantine and rewrite the recovered record
-   * into `active` in one transaction. The reject itself never deletes and never
-   * depends on this succeeding.
+   * Make the recovery durable: append every rejected payload to the quarantine
+   * history and rewrite `active` with the recovered generation, in one atomic
+   * transaction. Nothing is deleted, repeated loads add nothing, and a failed
+   * repair write still returns the recovered state.
    */
   async function repair(
-    rejected: RejectedGeneration,
+    rejected: readonly RejectedGeneration[],
     recovered: ValidGeneration,
     reads: readonly SlotRead[],
   ): Promise<boolean> {
-    const source = reads.find((read) => read.slot === rejected.slot);
-    const sourceRaw = source?.raw;
-    const quarantine: QuarantineRecord = {
-      key: QUARANTINE_SLOT_KEY,
-      generation: rejected.generation,
-      // Preserve the save text itself when there is one; otherwise keep
-      // whatever occupied the slot so the payload is not lost.
-      text: isSaveGenerationRecord(sourceRaw)
-        ? sourceRaw.text
-        : preservedText(sourceRaw),
-      reason: `${rejected.code}: ${rejected.message}`,
-    };
-    const repaired: SaveGenerationRecord = {
-      key: ACTIVE_SLOT_KEY,
-      generation: recovered.record.generation,
-      text: recovered.record.text,
-      profile: recovered.record.profile ?? null,
-    };
+    let known: readonly QuarantineEntry[] = [];
     try {
-      await backend.commit([
-        { key: QUARANTINE_SLOT_KEY, value: quarantine },
-        { key: ACTIVE_SLOT_KEY, value: repaired },
-      ]);
+      known = quarantineEntries(await backend.read(QUARANTINE_SLOT_KEY));
+    } catch {
+      known = [];
+    }
+    const seen = new Set(
+      known.map((entry) => `${entry.slot}|${entry.generation}|${entry.code}`),
+    );
+    const additions = rejected
+      .filter((entry) => !seen.has(`${entry.slot}|${entry.generation}|${entry.code}`))
+      .map((entry) => ({
+        slot: entry.slot,
+        generation: entry.generation,
+        code: entry.code,
+        message: entry.message,
+        text: entry.text,
+      }));
+
+    const activeRaw = reads.find((read) => read.slot === ACTIVE_SLOT_KEY)?.raw;
+    const activeAlreadyRecovered =
+      isGenerationRecord(activeRaw, ACTIVE_SLOT_KEY) &&
+      activeRaw.text === recovered.record.text &&
+      activeRaw.generation === recovered.record.generation;
+
+    const writes: BackendWrite[] = [];
+    if (additions.length > 0) {
+      writes.push({
+        key: QUARANTINE_SLOT_KEY,
+        value: {
+          key: QUARANTINE_SLOT_KEY,
+          entries: [...known, ...additions],
+        } satisfies QuarantineRecord,
+      });
+    }
+    if (!activeAlreadyRecovered) {
+      writes.push({
+        key: ACTIVE_SLOT_KEY,
+        value: {
+          key: ACTIVE_SLOT_KEY,
+          generation: recovered.record.generation,
+          text: recovered.record.text,
+          profile: recovered.record.profile ?? null,
+        } satisfies SaveGenerationRecord,
+      });
+    }
+    if (writes.length === 0) {
+      return true;
+    }
+    try {
+      await backend.commit(writes);
       return true;
     } catch {
       return false;
@@ -283,9 +384,9 @@ export function createSaveStore(options: SaveStoreOptions): SaveStore {
         };
       }
 
-      const { valid, rejected } = evaluate(reads);
+      const { selected, rejected } = evaluate(reads);
 
-      if (valid === null) {
+      if (selected === null) {
         if (rejected.length === 0) {
           return {
             ok: false,
@@ -302,18 +403,21 @@ export function createSaveStore(options: SaveStoreOptions): SaveStore {
         };
       }
 
-      const firstRejected = rejected[0];
+      // Repair when a slot was rejected, or when the recovered generation is
+      // not the one `active` holds.
       const repairedOnDisk =
-        firstRejected === undefined ? false : await repair(firstRejected, valid, reads);
+        rejected.length === 0 && selected.slot === ACTIVE_SLOT_KEY
+          ? false
+          : await repair(rejected, selected, reads);
 
       return {
         ok: true,
-        state: valid.state,
-        slot: valid.slot,
-        generation: valid.record.generation,
+        state: selected.state,
+        slot: selected.slot,
+        generation: selected.record.generation,
         repairedOnDisk,
         rejected,
-        warnings: valid.warnings,
+        warnings: selected.warnings,
       };
     },
 
@@ -343,23 +447,27 @@ export function createSaveStore(options: SaveStoreOptions): SaveStore {
         };
       }
 
-      const { valid } = evaluate(reads);
-      const generation = (valid?.record.generation ?? 0) + 1;
-      const active = reads.find((read) => read.slot === ACTIVE_SLOT_KEY)?.raw;
-      const backupOne = reads.find(
-        (read) => read.slot === BACKUP_SLOT_KEYS[0],
-      )?.raw;
+      const { validBySlot } = evaluate(reads);
+      let highestGeneration = 0;
+      for (const valid of validBySlot.values()) {
+        highestGeneration = Math.max(highestGeneration, valid.record.generation);
+      }
+      const generation = highestGeneration + 1;
+
+      const active = validBySlot.get(ACTIVE_SLOT_KEY)?.record;
+      const backupOne = validBySlot.get(BACKUP_SLOT_KEYS[0])?.record;
 
       const writes: BackendWrite[] = [];
-      // Backups first, the replacement last: no legal interruption can leave
-      // `active` pointing at a generation whose predecessors are unwritten.
-      if (isSaveGenerationRecord(backupOne)) {
+      // Backups first, the replacement last, and only ever from a record that
+      // already loaded as a valid generation: a damaged slot is never promoted
+      // over the last good one.
+      if (backupOne !== undefined) {
         writes.push({
           key: BACKUP_SLOT_KEYS[1],
           value: { ...backupOne, key: BACKUP_SLOT_KEYS[1] },
         });
       }
-      if (isSaveGenerationRecord(active)) {
+      if (active !== undefined) {
         writes.push({
           key: BACKUP_SLOT_KEYS[0],
           value: { ...active, key: BACKUP_SLOT_KEYS[0] },
@@ -387,35 +495,35 @@ export function createSaveStore(options: SaveStoreOptions): SaveStore {
       return { ok: true, generation };
     },
 
-    async readProfile() {
+    async readProfile(): Promise<SaveProfileResult | SaveLoadFailure> {
       let reads: readonly SlotRead[];
       try {
         reads = await readSlots();
       } catch (caught) {
         return {
-          ok: false as const,
-          code: "unavailable" as const,
+          ok: false,
+          code: "unavailable",
           message: `Save storage is unavailable: ${messageOf(caught)}`,
           rejected: [],
         };
       }
-      const { valid, rejected } = evaluate(reads);
-      if (valid === null) {
+      const { selected, rejected } = evaluate(reads);
+      if (selected === null) {
         return rejected.length === 0
           ? {
-              ok: false as const,
-              code: "empty" as const,
+              ok: false,
+              code: "empty",
               message: "No save has been written yet.",
               rejected,
             }
           : {
-              ok: false as const,
-              code: "no_valid_generation" as const,
+              ok: false,
+              code: "no_valid_generation",
               message: "Every stored save generation was rejected; nothing was deleted.",
               rejected,
             };
       }
-      return { ok: true as const, profile: valid.record.profile ?? null };
+      return { ok: true, profile: selected.record.profile ?? null };
     },
 
     async clear(): Promise<SaveCommitResult> {

@@ -10,6 +10,7 @@ export {
 } from "./save-store";
 export type {
   BackendWrite,
+  QuarantineEntry,
   QuarantineRecord,
   RejectedGeneration,
   SaveBackend,
@@ -21,6 +22,7 @@ export type {
   SaveLoadFailure,
   SaveLoadResult,
   SaveLoadSuccess,
+  SaveProfileResult,
   SaveSlotKey,
   SaveStore,
   SaveStoreOptions,

@@ -7,12 +7,22 @@ if (firstCard === undefined) {
   throw new Error("Expected the opening hand to contain at least one card.");
 }
 
-test("hand cards expose a reusable visual-art surface without changing play controls", async ({ page }) => {
+test("hand cards expose a reusable visual-art surface without changing rules text", async ({ page }) => {
   await page.goto("/");
   const card = page.getByTestId(`card-${firstCard.instanceId}`);
+  await expect(card).toBeVisible();
 
-  await expect(card).toHaveAttribute("data-card-definition", firstCard.definitionId);
-  await expect(card.locator(".card-art")).toBeVisible();
-  await expect(card.locator(".card-art-mark")).toBeVisible();
+  const artSurface = await card.evaluate((element) => {
+    const style = window.getComputedStyle(element, "::before");
+    return {
+      content: style.content,
+      height: Number.parseFloat(style.height),
+      backgroundImage: style.backgroundImage,
+    };
+  });
+
+  expect(artSurface.content).not.toBe("none");
+  expect(artSurface.height).toBeGreaterThan(40);
+  expect(artSurface.backgroundImage).not.toBe("none");
   await expect(card.locator(".card-effect")).toHaveText(firstCard.explanation.summary);
 });

@@ -1,4 +1,8 @@
 import {
+  describeM10StarterCard,
+  type CardExplanation,
+} from "./card-text";
+import {
   createCardInstance,
   createCardInstanceId,
   type CardInstance,
@@ -219,6 +223,7 @@ export interface M10CardView {
   readonly classification: CardPositionClassification;
   readonly ingredient: Ingredient | null;
   readonly isDamageCard: boolean;
+  readonly explanation: CardExplanation;
 }
 
 export interface Act1CombatSetup {
@@ -501,6 +506,7 @@ export function getM10CardView(
     classification: classifyCardPosition(combat, owner),
     ingredient: definition.ingredient === null ? null : ingredient(definition.ingredient),
     isDamageCard: definition.effects.some((effect) => effect.op === "damage"),
+    explanation: describeM10StarterCard(definition),
   };
 }
 

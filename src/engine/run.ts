@@ -1,3 +1,7 @@
+import {
+  describeUnplayableCard,
+  type CardExplanation,
+} from "./card-text";
 import type { CardInstance, CardInstanceId } from "./cards";
 import type { CardPositionClassification } from "./duo";
 import type { Ingredient } from "./imprint";
@@ -100,6 +104,7 @@ export interface M19CardView {
   readonly ingredient: Ingredient | null;
   readonly isDamageCard: boolean;
   readonly isPlayable: boolean;
+  readonly explanation: CardExplanation;
 }
 
 const M19_NODE_KINDS: Readonly<Record<M19NodeId, M19NodeKind>> = {
@@ -421,6 +426,7 @@ export function getM19Hand(state: AuthoritativeState): readonly M19CardView[] {
       ingredient: null,
       isDamageCard: false,
       isPlayable: false,
+      explanation: describeUnplayableCard(instance.definitionId),
     };
   });
 }

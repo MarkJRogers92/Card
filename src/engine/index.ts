@@ -56,6 +56,24 @@ export type {
   CardOrigin,
 } from "./cards";
 export {
+  CARD_KEYWORD_GLOSSARY,
+  CARD_TEXT_VERSION,
+  describeContentCard,
+  describeEffect,
+  describeM10StarterCard,
+  describeM10StarterEffect,
+  describeUnplayableCard,
+  ingredientPhrase,
+  keywordText,
+  positionText,
+} from "./card-text";
+export type {
+  CardExplanation,
+  CardKeywordText,
+  CardTextLine,
+  CardValueSource,
+} from "./card-text";
+export {
   CARD_KEYWORDS,
   CARD_LIFECYCLE_VERSION,
   appendProtocolTriggerBindings,

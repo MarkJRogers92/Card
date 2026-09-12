@@ -2,6 +2,31 @@
 
 ## Current milestone
 
+**Card explanations — readability slice (first slice of roadmap M38) —
+implementation checkpoint**
+
+Hand cards previously showed a name, cost, and ingredient but never stated what
+the card does, which breaks design pillar P2. Every playable card now carries a
+machine-derived, plain-English explanation of its base effect: a one-line
+summary on the card face plus a detail popup on hover, keyboard focus, or
+click/tap that lists cost, additional costs, family, target, ingredient,
+effect lines, after-play destination, keyword rules, and whether the card is
+currently Lead, Support, or Crew and what that means.
+
+The text comes from the new pure `src/engine/card-text.ts`
+(`CARD_TEXT_VERSION = 1`), the single source of player-facing card text. It
+derives from schema fields only, never from card IDs, and both effect renderers
+end in an `assertNever` so a future effect operation fails the type check until
+it is described. `M10CardView` and `M19CardView` gain one additive
+`explanation` field; no authoritative state, hash, or replay contract changed.
+
+This covers only the base-effect half of `docs/DESIGN.md` 7.5. Prospective
+Reaction/Imprint preview, post-modifier exact cost, intent forecasts, the
+encyclopedia, contextual tutorials, and reward-option tooltips remain open; see
+`docs/milestones/CARD_EXPLANATIONS.md` and `docs/CARD_EXPLANATIONS_HANDOFF.md`.
+
+## Previous checkpoint
+
 **M19 — fixed test act — implementation checkpoint**
 
 M19 adds the second playable checkpoint: a deterministic seven-node Act 1
@@ -27,7 +52,7 @@ never redirects the attack. Both encounters resolve through the real
 `codex/m20-serialization` and `codex/m21-persistence`; see the "Locked enemy
 targeting" section of `docs/milestones/M17_INITIAL_ENEMIES.md`.
 
-## Previous checkpoint
+## Earlier checkpoint
 
 **M18 — rewards — implementation checkpoint**
 

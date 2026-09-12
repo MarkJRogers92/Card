@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   M10_CLAIMS_ADJUSTER_ID,
   M10_MORROW_ID,
@@ -28,6 +28,7 @@ import {
   type M10Command,
   type M19Command,
 } from "../engine";
+import { openIndexedDbSaveStore, type SaveStore } from "../platform";
 import "./App.css";
 
 function actorLabel(actorId: string): string {
@@ -56,6 +57,7 @@ export function App() {
     [],
   );
   if (fixture === "m20") return <M19TestAct showSavePanel />;
+  if (fixture === "m21") return <M19TestAct showStorePanel />;
   return fixture === "m19" ? <M19TestAct /> : <M10Checkpoint />;
 }
 
@@ -344,13 +346,75 @@ function M10Checkpoint() {
   );
 }
 
-function M19TestAct({ showSavePanel = false }: { showSavePanel?: boolean } = {}) {
+function M19TestAct({
+  showSavePanel = false,
+  showStorePanel = false,
+}: { showSavePanel?: boolean; showStorePanel?: boolean } = {}) {
   const [state, setState] = useState<AuthoritativeState>(() => createM19Run());
   const [commands, setCommands] = useState<readonly M19Command[]>([]);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveText, setSaveText] = useState("");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [store, setStore] = useState<SaveStore | null>(null);
+  const [storeStatus, setStoreStatus] = useState<string | null>(null);
+  const [storeGeneration, setStoreGeneration] = useState<number | null>(null);
+
+  const runningContent = useMemo(() => {
+    const fresh = createM19Run();
+    return {
+      contentVersion: fresh.contentVersion,
+      contentHash: fresh.contentHash,
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showStorePanel) return;
+    let cancelled = false;
+    let opened: SaveStore | null = null;
+
+    void (async () => {
+      let openedStore: SaveStore;
+      try {
+        openedStore = await openIndexedDbSaveStore({ content: runningContent });
+      } catch (caught) {
+        if (!cancelled) {
+          setStoreStatus(
+            `unavailable: ${caught instanceof Error ? caught.message : String(caught)}`,
+          );
+        }
+        return;
+      }
+      if (cancelled) {
+        openedStore.close();
+        return;
+      }
+      opened = openedStore;
+      setStore(openedStore);
+
+      const result = await openedStore.load();
+      if (cancelled) return;
+      if (result.ok) {
+        setState(result.state);
+        setCommands([]);
+        setSelectedTarget(null);
+        setStoreGeneration(result.generation);
+        setStoreStatus(
+          `loaded: ${result.slot} generation ${result.generation}${
+            result.repairedOnDisk ? " (repaired)" : ""
+          }`,
+        );
+      } else {
+        setStoreGeneration(null);
+        setStoreStatus(result.code === "empty" ? "empty" : `load failed: ${result.code}`);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      opened?.close();
+    };
+  }, [showStorePanel, runningContent]);
 
   const hash = useMemo(() => hashAuthoritativeState(state), [state]);
   const run = state.run;
@@ -440,6 +504,58 @@ function M19TestAct({ showSavePanel = false }: { showSavePanel?: boolean } = {})
     setSaveStatus(`loaded: v${result.saveVersion}`);
   }
 
+  function persistState(): void {
+    if (store === null) {
+      setStoreStatus("unavailable: storage is not open");
+      return;
+    }
+    void (async () => {
+      const result = await store.commit(state);
+      if (result.ok) {
+        setStoreGeneration(result.generation);
+        setStoreStatus(`committed: generation ${result.generation}`);
+        return;
+      }
+      setStoreStatus(`commit failed: ${result.code}`);
+    })();
+  }
+
+  function reloadFromStore(): void {
+    if (store === null) {
+      setStoreStatus("unavailable: storage is not open");
+      return;
+    }
+    void (async () => {
+      const result = await store.load();
+      if (result.ok) {
+        setState(result.state);
+        setCommands([]);
+        setSelectedTarget(null);
+        setStoreGeneration(result.generation);
+        setStoreStatus(
+          `loaded: ${result.slot} generation ${result.generation}${
+            result.repairedOnDisk ? " (repaired)" : ""
+          }`,
+        );
+        return;
+      }
+      setStoreGeneration(null);
+      setStoreStatus(result.code === "empty" ? "empty" : `load failed: ${result.code}`);
+    })();
+  }
+
+  function resetStore(): void {
+    if (store === null) {
+      setStoreStatus("unavailable: storage is not open");
+      return;
+    }
+    void (async () => {
+      const result = await store.clear();
+      setStoreGeneration(null);
+      setStoreStatus(result.ok ? "cleared" : `clear failed: ${result.code}`);
+    })();
+  }
+
   return (
     <main className="combat-shell">
       <header className="combat-header">
@@ -489,6 +605,44 @@ function M19TestAct({ showSavePanel = false }: { showSavePanel?: boolean } = {})
             spellCheck={false}
             onChange={(event) => setSaveText(event.target.value)}
           />
+        </section>
+      )}
+
+      {showStorePanel && (
+        <section className="save-panel" aria-label="M21 persistence">
+          <div className="save-controls">
+            <p className="eyebrow">M21 PERSISTENCE</p>
+            <button
+              className="secondary-button"
+              type="button"
+              data-testid="store-commit"
+              onClick={persistState}
+            >
+              Save now
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              data-testid="store-load"
+              onClick={reloadFromStore}
+            >
+              Load from storage
+            </button>
+            <button
+              className="secondary-button"
+              type="button"
+              data-testid="store-clear"
+              onClick={resetStore}
+            >
+              Reset storage
+            </button>
+            <span className="turn-pill" data-testid="store-status">
+              {storeStatus ?? "opening"}
+            </span>
+            <span className="turn-pill" data-testid="store-generation">
+              {storeGeneration === null ? "no generation" : `generation ${storeGeneration}`}
+            </span>
+          </div>
         </section>
       )}
 

@@ -12,7 +12,12 @@ import {
   RNG_ALGORITHM_VERSION,
   RNG_STATE_VERSION,
 } from "./rng";
-import { M19_NODE_IDS, M19_RUN_VERSION, type M19RunOutcome } from "./run";
+import {
+  M19_NODE_IDS,
+  M19_RUN_VERSION,
+  M19_STARTING_RELIC_IDS,
+  type M19RunOutcome,
+} from "./run";
 import {
   AUTHORITATIVE_STATE_VERSION,
   type AuthoritativeState,
@@ -26,7 +31,7 @@ import {
  * the active save, rotating backups, and atomic commits.
  */
 
-export const SAVE_SCHEMA_VERSION = 1 as const;
+export const SAVE_SCHEMA_VERSION = 2 as const;
 
 export const SAVE_ENVELOPE_KEYS = [
   "saveVersion",
@@ -72,8 +77,28 @@ export interface SaveMigration {
 
 export type SaveMigrationTable = readonly SaveMigration[];
 
-/** Appended to whenever `SAVE_SCHEMA_VERSION` increases. Empty until then. */
-export const SAVE_MIGRATIONS: SaveMigrationTable = [];
+/** Appended to whenever `SAVE_SCHEMA_VERSION` increases. */
+export const SAVE_MIGRATIONS: SaveMigrationTable = [
+  {
+    from: 1,
+    to: 2,
+    /**
+     * Version 1 predates run relic ownership. A version 1 run owns the starting
+     * relic, which the combat setup installs as a passive, and no other relic.
+     */
+    migrate: (snapshot: unknown) => {
+      const record = isPlainObject(snapshot) ? snapshot : {};
+      const run = isPlainObject(record.run) ? record.run : null;
+      return {
+        ...record,
+        stateVersion: AUTHORITATIVE_STATE_VERSION,
+        ...(run === null
+          ? {}
+          : { run: { ...run, relicIds: [...M19_STARTING_RELIC_IDS] } }),
+      };
+    },
+  },
+];
 
 export type SaveImportFailureCode =
   | "malformed_json"
@@ -512,6 +537,9 @@ function validateRun(run: unknown): ValidationFailure | null {
   }
   if (run.deck !== null && !Array.isArray(run.deck)) {
     return invalid("run.deck must be null or an array of instances.");
+  }
+  if (!isStringArray(run.relicIds)) {
+    return invalid("run.relicIds must be an array of relic ids.");
   }
   return null;
 }

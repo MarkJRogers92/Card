@@ -11,10 +11,13 @@ import {
   createCardInstance,
   createCardInstanceId,
   createDirectDamagePacket,
+  createEncounterReward,
   createM19Run,
   currentRunNode,
   getM19Hand,
+  M19_SELECTED_REWARD_ROLES,
   restRunCharacter,
+  skipCardReward,
   type AuthoritativeState,
   type CardInstance,
   type CardInstanceId,
@@ -218,5 +221,92 @@ describe("M19 card rewards", () => {
       }),
     ).toThrow(/not playable in the M19 test act/);
     expect(next).toBe(next);
+  });
+});
+
+/** Build a pending elite reward without having to win the elite fight. */
+function eliteReward(state: AuthoritativeState): AuthoritativeState {
+  return createEncounterReward(state, M19_TEST_ACT_REWARD_CATALOG, {
+    transactionId: "test.elite.reward",
+    encounter: "elite",
+    selectedRoles: M19_SELECTED_REWARD_ROLES,
+    ownedRelicIds: state.run?.relicIds ?? [],
+  });
+}
+
+describe("M19 relic rewards", () => {
+  it("carries a claimed relic into the next combat", () => {
+    const rewarded = eliteReward(createM19Run(1900));
+    const pending = rewarded.rewards.pending;
+    if (pending === null) throw new Error("Expected a pending elite reward.");
+    const relicId = pending.choices
+      .find((choice) => choice.kind === "relic")
+      ?.options[0]?.id;
+    if (relicId === undefined) throw new Error("Expected a relic option.");
+
+    const claimed = claimRunReward(rewarded, pending.transactionId, relicId);
+    expect(claimed.run?.relicIds).toContain(relicId);
+
+    const resolved = skipCardReward(claimed, pending.transactionId);
+    expect(resolved.rewards.pending).toBeNull();
+
+    const control = beginRunNode(createM19Run(1900), content).combat;
+    const combat = beginRunNode(resolved, content).combat;
+    if (combat === null || control === null) {
+      throw new Error("Expected an active combat.");
+    }
+    expect(combat.installedRelics.map((relic) => relic.id)).toContain(relicId);
+    const ownBindings =
+      combat.modifierBindings.length + combat.triggerBindings.length;
+    const controlBindings =
+      control.modifierBindings.length + control.triggerBindings.length;
+    expect(ownBindings).toBeGreaterThan(controlBindings);
+  });
+
+  it("never offers a relic the run already owns", () => {
+    const state = createM19Run(1900);
+    expect(state.run?.relicIds).toStrictEqual(["relic.shared_warranty"]);
+
+    const rewarded = eliteReward(state);
+    const options = (rewarded.rewards.pending?.choices ?? [])
+      .filter((choice) => choice.kind === "relic")
+      .flatMap((choice) => choice.options.map((option) => option.id));
+    expect(options).not.toContain("relic.shared_warranty");
+    expect(options).toHaveLength(2);
+  });
+
+  it("installs two claimed relics together without duplicating a binding", () => {
+    const first = eliteReward(createM19Run(1900));
+    const firstPending = first.rewards.pending;
+    if (firstPending === null) throw new Error("Expected a pending reward.");
+    const firstId = firstPending.choices
+      .find((choice) => choice.kind === "relic")
+      ?.options[0]?.id;
+    if (firstId === undefined) throw new Error("Expected a relic option.");
+    const claimedFirst = skipCardReward(
+      claimRunReward(first, firstPending.transactionId, firstId),
+      firstPending.transactionId,
+    );
+
+    const second = createEncounterReward(claimedFirst, M19_TEST_ACT_REWARD_CATALOG, {
+      transactionId: "test.boss.reward",
+      encounter: "act_1_boss",
+      selectedRoles: M19_SELECTED_REWARD_ROLES,
+      ownedRelicIds: claimedFirst.run?.relicIds ?? [],
+    });
+    const secondPending = second.rewards.pending;
+    if (secondPending === null) throw new Error("Expected a pending boss reward.");
+    const secondId = secondPending.choices
+      .find((choice) => choice.kind === "relic")
+      ?.options[0]?.id;
+    if (secondId === undefined) throw new Error("Expected a relic option.");
+    const claimedBoth = claimRunReward(second, secondPending.transactionId, secondId);
+
+    const combat = beginRunNode(claimedBoth, content).combat;
+    if (combat === null) throw new Error("Expected an active combat.");
+    const installed = combat.installedRelics.map((relic) => relic.id);
+    expect(installed).toContain(firstId);
+    expect(installed).toContain(secondId);
+    expect(new Set(installed).size).toBe(installed.length);
   });
 });

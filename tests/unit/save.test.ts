@@ -384,4 +384,44 @@ describe("M20 save migration contract", () => {
     expect(called).toBe(false);
     expect(result.migratedFrom).toBeNull();
   });
+
+  it("migrates a version 1 save that predates run relic ownership", () => {
+    const current = exportSave(createM19Run(1900));
+    const snapshot = structuredClone(envelopeOf(current).snapshot) as Record<
+      string,
+      unknown
+    >;
+    // Version 1 predates both the run relic list and authoritative version 9.
+    snapshot.stateVersion = 8;
+    const run = { ...(snapshot.run as Record<string, unknown>) };
+    delete run.relicIds;
+    snapshot.run = run;
+
+    const legacy = reseal(current, { saveVersion: 1, snapshot });
+    const result = importSave(legacy);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.saveVersion).toBe(1);
+    expect(result.migratedFrom).toBe(1);
+    expect(result.state.stateVersion).toBe(AUTHORITATIVE_STATE_VERSION);
+    expect(result.state.run?.relicIds).toStrictEqual(["relic.shared_warranty"]);
+    expect(exportSave(result.state)).toBe(exportSave(createM19Run(1900)));
+  });
+
+  it("rejects a run without relic ownership instead of guessing", () => {
+    const current = exportSave(createM19Run(1900));
+    const snapshot = structuredClone(envelopeOf(current).snapshot) as Record<
+      string,
+      unknown
+    >;
+    const run = { ...(snapshot.run as Record<string, unknown>) };
+    delete run.relicIds;
+    snapshot.run = run;
+
+    const result = importSave(reseal(current, { snapshot }));
+
+    expect(result.ok).toBe(false);
+    expect(result).toMatchObject({ code: "invalid_snapshot" });
+  });
 });

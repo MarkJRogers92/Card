@@ -136,17 +136,21 @@ Found and fixed:
 
 Still open, in priority order:
 
-1. Claimed relics are inert — `installRelicContent` is used only by tests. This
-   needs `RunState.relicIds`, an authoritative-shape change, and therefore a
-   save-schema migration.
-2. The boss victory reward omits the design's 5 Evidence (M29) and the
+1. The boss victory reward omits the design's 5 Evidence (M29) and the
    post-boss heal of 8 for each character (Act 2 transition, M22).
-3. The starting loadout's Suture Kit consumable is not implemented (M23/M26).
-4. Balance: the elite is a real difficulty check. The first-pass playthrough
+2. The starting loadout's Suture Kit consumable is not implemented (M23/M26).
+3. Balance: the elite is a real difficulty check. The first-pass playthrough
    wins `ordinary_1` in 2 turns and `ordinary_2` in 3, then loses the elite on
    turn 5 to a policy that does not use Retain, handoffs, or Imprints well.
    That is expected for an unguarded damage race and belongs to the difficulty
    pass rather than this fix.
+
+Relics were the top item on that list and are now wired: see "Relic rewards" in
+`docs/milestones/M19_FIXED_TEST_ACT.md`. `RunState.relicIds` carries owned
+relics, `beginRunNode` installs the claimed ones during combat setup, an owned
+relic is never offered again, and the run state change ships with
+`AUTHORITATIVE_STATE_VERSION` 9 and `SAVE_SCHEMA_VERSION` 2 plus the first
+`SAVE_MIGRATIONS` rung.
 
 ## Next
 

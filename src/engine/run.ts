@@ -1,4 +1,4 @@
-import type { CardDefinition } from "../content/generated";
+import type { CardDefinition, RelicDefinition } from "../content/generated";
 import {
   cardLifecycleSpecFor,
   playContentCard,
@@ -21,6 +21,7 @@ import { beginPlayerTurn } from "./combat";
 import { classifyCardPosition, type CardPositionClassification } from "./duo";
 import { executeEnemyPhase } from "./enemies";
 import type { Ingredient } from "./imprint";
+import { SHARED_WARRANTY_SOURCE_ID } from "./initial-passives";
 import {
   ACT_1_BOSS_ENCOUNTER,
   ACT_1_ELITE_ENCOUNTERS,
@@ -94,6 +95,8 @@ export interface RunState {
    * not left its first combat yet, so the starter deck is used as-is.
    */
   readonly deck: readonly CardInstance[] | null;
+  /** Owned relics, including the starting relic, in acquisition order. */
+  readonly relicIds: readonly string[];
 }
 
 export interface M19RunNodeView {
@@ -116,7 +119,15 @@ export type M19Command = M10Command;
  */
 export interface RunContent {
   readonly cardFor: (definitionId: string) => CardDefinition | undefined;
+  readonly relicFor: (relicId: string) => RelicDefinition | undefined;
 }
+
+/**
+ * Relics the run owns before any reward. Shared Warranty is installed as a
+ * setup-time passive, so it is owned, is never offered again, and is never
+ * passed back through the relic compiler.
+ */
+export const M19_STARTING_RELIC_IDS: readonly string[] = [SHARED_WARRANTY_SOURCE_ID];
 
 /** Instance ordinals for reward cards start above the 10-card starter deck. */
 const REWARD_CARD_ORDINAL_BASE = 1_000;
@@ -280,6 +291,26 @@ function requireCombatNode(node: M19RunNodeView): void {
   }
 }
 
+/**
+ * Relic definitions to install into the next combat. The starting relic is
+ * already installed as a setup passive, so only claimed relics are compiled.
+ */
+function runRelicDefinitions(
+  run: RunState,
+  content: RunContent | undefined,
+): readonly RelicDefinition[] {
+  const claimed = run.relicIds.filter(
+    (relicId) => !M19_STARTING_RELIC_IDS.includes(relicId),
+  );
+  return claimed.map((relicId) => {
+    const definition = content?.relicFor(relicId);
+    if (definition === undefined) {
+      throw new Error(`No relic content is available for ${relicId}.`);
+    }
+    return definition;
+  });
+}
+
 export function createM19Run(seed: number = M19_DEFAULT_SEED): AuthoritativeState {
   assertNonnegativeInteger("M19 seed", seed);
   const state = createAuthoritativeState({
@@ -295,6 +326,7 @@ export function createM19Run(seed: number = M19_DEFAULT_SEED): AuthoritativeStat
     outcome: "active",
     characters: M19_DEFAULT_CHARACTERS.map((character) => ({ ...character })),
     deck: null,
+    relicIds: [...M19_STARTING_RELIC_IDS],
   });
 }
 
@@ -313,7 +345,10 @@ export function currentRunNode(state: AuthoritativeState): M19RunNodeView {
   };
 }
 
-export function beginRunNode(state: AuthoritativeState): AuthoritativeState {
+export function beginRunNode(
+  state: AuthoritativeState,
+  content?: RunContent,
+): AuthoritativeState {
   const run = requireActiveRun(state);
   const node = requireRunNode(state);
   requireCombatNode(node);
@@ -330,6 +365,7 @@ export function beginRunNode(state: AuthoritativeState): AuthoritativeState {
     formation: formationForNode(state, node),
     characters: run.characters,
     deck: run.deck ?? undefined,
+    relics: runRelicDefinitions(run, content),
   });
 }
 
@@ -363,7 +399,7 @@ export function completeRunCombat(
     transactionId: `m19.${node.nodeId}.reward`,
     encounter,
     selectedRoles: M19_SELECTED_REWARD_ROLES,
-    ownedRelicIds: state.rewards.claimedRelicIds,
+    ownedRelicIds: run.relicIds,
   });
 
   return replaceRun(withReward, {
@@ -586,11 +622,21 @@ export function claimRunReward(
     .flatMap((choice) => choice.options)
     .find((candidate) => candidate.id === optionId);
   const claimed = claimRewardOption(state, transactionId, optionId);
-  if (claimed === state || option === undefined || option.kind !== "card") {
+  if (claimed === state || option === undefined) {
     return claimed;
   }
 
   const run = requireRun(claimed);
+  if (option.kind === "relic") {
+    if (run.relicIds.includes(option.id)) {
+      return claimed;
+    }
+    return replaceRun(claimed, { ...run, relicIds: [...run.relicIds, option.id] });
+  }
+  if (option.kind !== "card") {
+    return claimed;
+  }
+
   const deck =
     run.deck ??
     (claimed.combat === null ? [] : persistDeckInstances(claimed.combat.deck));

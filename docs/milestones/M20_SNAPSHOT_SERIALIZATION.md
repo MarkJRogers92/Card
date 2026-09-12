@@ -44,7 +44,7 @@ whitespace. A checksum detects corruption; it is not anti-cheat security.
 - `importSave(text, options)` returns a discriminated result instead of
   throwing: `{ ok: true, state, saveVersion, migratedFrom, warnings }` or
   `{ ok: false, code, message, saveVersion }`.
-- `SAVE_SCHEMA_VERSION` is `1`; `SAVE_MIGRATIONS` is the ordered migration
+- `SAVE_SCHEMA_VERSION` is `2`; `SAVE_MIGRATIONS` is the ordered migration
   table that later format changes append to. A migration receives the parsed
   snapshot and returns a new snapshot; it never mutates its input.
 - `importSave` verifies the checksum before it interprets anything, then applies
@@ -103,6 +103,16 @@ calls only engine commands, so the browser proves the same round trip the unit
 tests prove.
 
 ## Boundaries for later milestones
+
+### First migration (1 → 2)
+
+M21's Act 1 pass gave the run a relic list (`RunState.relicIds`), which moved
+`AUTHORITATIVE_STATE_VERSION` from 8 to 9. The version 1 → 2 rung adds
+`relicIds` to a stored run and rewrites the embedded state version, so an
+existing save still loads instead of being rejected as an incompatible state
+version. It is the first entry in `SAVE_MIGRATIONS` and the template later
+snapshot changes follow: append a rung, bump `SAVE_SCHEMA_VERSION`, and never
+reinterpret an older save without one.
 
 - M21 owns IndexedDB persistence, one active save, two rotating backups, and
   atomic run/profile commits; it consumes this module rather than replacing it.

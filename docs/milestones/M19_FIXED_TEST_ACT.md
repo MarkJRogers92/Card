@@ -112,12 +112,27 @@ defeat rather than an exception. The elite remains a real difficulty check for a
 policy that does not use Retain, handoffs, or Imprints well; that is a balance
 observation for the difficulty pass, not a defect.
 
-### Still open after this pass
+## Relic rewards
 
-Claimed relics are not installed into later combats — `installRelicContent` is
-used only by tests — so a relic pick is still inert. That correction needs a
-`RunState.relicIds` field, which changes the authoritative shape and therefore
-requires a save-schema migration.
+The same pass found the identical gap for relics: `installRelicContent` was used
+only by tests, `beginRunNode` never installed anything, and the elite relic pick
+had no effect. Relics are now owned by the run.
+
+- `RunState.relicIds` holds every owned relic in acquisition order and starts
+  with `M19_STARTING_RELIC_IDS` (`relic.shared_warranty`).
+- `claimRunReward` appends a claimed relic, and `completeRunCombat` passes the
+  run's relic list as `ownedRelicIds`, so an owned relic is never offered again.
+- `beginRunNode` resolves those ids through the content bundle and passes them
+  to `createAct1Combat`, which installs them with `installRelicContent` during
+  combat setup. The starting relic is excluded from that install because combat
+  setup already installs it as a passive; installing it twice would double its
+  printed effect, which `installRelicContent` rejects outright.
+
+`RunState` gained a field, so `AUTHORITATIVE_STATE_VERSION` moves from 8 to 9 and
+`SAVE_SCHEMA_VERSION` from 1 to 2 with the first `SAVE_MIGRATIONS` rung: a
+version 1 save is migrated by adding the starting relic to its run. A run that
+claims its first relic therefore keeps it in every later node and across a save
+and load.
 
 ## Local verification
 

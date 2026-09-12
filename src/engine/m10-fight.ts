@@ -18,6 +18,7 @@ import {
   createDirectDamagePacket,
   gainBlock,
 } from "./damage";
+import type { RelicDefinition } from "../content/generated";
 import { assertCardConservation, type DeckState } from "./deck";
 import {
   classifyCardPosition,
@@ -33,6 +34,7 @@ import {
 } from "./enemies";
 import type { Ingredient } from "./imprint";
 import { installInitialPassives } from "./initial-passives";
+import { installRelicContent } from "./relic-content";
 import {
   INITIAL_ENEMY_COMBAT_STATS,
   INITIAL_ENEMY_REGISTRY,
@@ -230,6 +232,8 @@ export interface Act1CombatSetup {
   }[];
   readonly frontCharacterId?: string;
   readonly deck?: readonly CardInstance[];
+  /** Relics the run owns, installed during combat setup. */
+  readonly relics?: readonly RelicDefinition[];
 }
 
 interface CombatEnemySetup {
@@ -315,7 +319,10 @@ function actorIdForEnemy(definitionId: string, occurrence: number): string {
 
 function createSharedCombat(
   state: AuthoritativeState,
-  setup: Pick<Act1CombatSetup, "characters" | "frontCharacterId" | "deck">,
+  setup: Pick<
+    Act1CombatSetup,
+    "characters" | "frontCharacterId" | "deck" | "relics"
+  >,
   enemies: readonly CombatEnemySetup[],
   registry: EnemyBehaviorRegistry,
 ): AuthoritativeState {
@@ -335,6 +342,7 @@ function createSharedCombat(
     switchActorId: characters[1].actorId,
     includeSharedWarranty: true,
   });
+  next = installRelicContent(next, setup.relics ?? []);
   return beginPlayerTurn(next);
 }
 

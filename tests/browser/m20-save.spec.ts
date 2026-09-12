@@ -18,14 +18,14 @@ test("exports, reimports, and rejects a tampered save in the browser", async ({ 
   await page.getByTestId("save-export").click();
   await expect(page.getByTestId("save-status")).toHaveText("exported");
   const exported = await page.getByTestId("save-text").inputValue();
-  expect(exported).toContain('"saveVersion":1');
+  expect(exported).toContain('"saveVersion":2');
   expect(exported).toContain('"checksum":"fnv1a64-utf8-v1:');
 
   await page.getByRole("button", { name: "Restart act" }).click();
   await expect(page.getByTestId("state-hash")).not.toHaveText(originalHash ?? "");
 
   await page.getByTestId("save-import").click();
-  await expect(page.getByTestId("save-status")).toHaveText("loaded: v1");
+  await expect(page.getByTestId("save-status")).toHaveText("loaded: v2");
   await expect(page.getByTestId("state-hash")).toHaveText(originalHash ?? "");
 
   const tampered = tamperChecksum(exported);

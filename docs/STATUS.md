@@ -33,10 +33,13 @@ effect and could not have been played. `claimRunReward` now appends a real deck
 instance that later nodes carry, `src/content/bundle.ts` gives the browser and
 tests the checked-in content definitions, and a deck containing content cards
 settles Retain, Fleeting, Exhaust, and unplayable junk through the M11
-lifecycle. Starter-only decks keep the original end-turn path. Claimed relics
-are still inert and need a `RunState.relicIds` field plus a save migration; see
-the "Card rewards and content cards" section of
-`docs/milestones/M19_FIXED_TEST_ACT.md`.
+lifecycle. Starter-only decks keep the original end-turn path. Relic rewards are
+wired the same way: `RunState.relicIds` holds the owned relics, `beginRunNode`
+installs the claimed ones during combat setup through the content bundle, and an
+owned relic is never offered again. That field moves
+`AUTHORITATIVE_STATE_VERSION` to 9 and `SAVE_SCHEMA_VERSION` to 2 with the first
+`SAVE_MIGRATIONS` rung (1 → 2). See the "Card rewards and content cards" and
+"Relic rewards" sections of `docs/milestones/M19_FIXED_TEST_ACT.md`.
 
 **M17 locked enemy targeting — corrected on this branch**
 

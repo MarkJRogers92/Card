@@ -39,6 +39,7 @@
     "test:m18": "vitest run tests/unit/rewards.test.ts",
     "test:m19": "vitest run tests/unit/m19-run.test.ts tests/replay/m19-act.test.ts",
     "test:m20": "vitest run tests/unit/save.test.ts tests/replay/save-roundtrip.test.ts",
+    "test:m21": "vitest run tests/unit/save-store.test.ts",
     "simulate": "node tools/not-implemented.mjs M33 \"simulation\"",
     "assets:audit": "node tools/not-implemented.mjs M35 \"asset audit\"",
     "build": "vite build"
@@ -55,6 +56,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.1",
+    "fake-indexeddb": "6.2.5",
     "fast-check": "4.9.0",
     "json-schema-to-typescript": "16.0.0",
     "typescript": "7.0.2",

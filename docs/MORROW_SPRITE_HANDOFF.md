@@ -1,8 +1,8 @@
 # Morrow sprite handoff
 
 Status: first production character asset is **generated, palette-controlled, and running in the
-actual PixiJS runtime**. One art fix is outstanding (ground contact during the walk), and one
-production decision is open (runtime scale).
+actual PixiJS runtime**. The walk ground-contact defect is corrected — every frame of the loop now
+plants the support foot on the ground. Scale is settled at 184 px native 1x.
 
 ## What exists now
 
@@ -25,6 +25,7 @@ would produce a different character, so the Blender stage was deliberately not u
 | --- | --- |
 | `public/assets/characters/morrow/morrow_walk.png` | 1024x256 indexed sprite sheet, 4 frames |
 | `public/assets/characters/morrow/morrow_walk.manifest.json` | PixiJS manifest (frames, size, anchor, fps) |
+| `assets/characters/morrow/source/keyposes_fixed/*.png` | Corrected source key poses the sheet is built from |
 | `assets/palettes/card-game-48.gpl` | Reusable 48-colour game palette (GIMP `.gpl`, Aseprite-readable) |
 | `src/client/MorrowPreview.tsx` | Development-only PixiJS surface that loads the sheet |
 | `src/main.tsx` | `?preview=morrow` switch; production UI is unchanged without it |
@@ -80,6 +81,32 @@ display         1x native (see open item 2)
 4. The red-handled industrial saw in the tool hand.
 5. Ivory/bloodied colour block across the torso and apron.
 
+## Ground-contact correction (walk)
+
+The original key poses left the **support (viewer-right) boot resting at row 200 in every frame**,
+while the ground row is 208. In `contact`/`down` the left foot was planted at row 207 so the
+character read as standing; once the left leg lifts in `passing`/`up`, nothing touched the ground and
+Morrow visibly floated.
+
+Fix: the support boot band (`x 148-181`, rows `183-200`) was shifted down 7 rows and the vacated rows
+were filled by repeating the last shin row (rows 180-182 are already identical), which lengthens the
+support shin as the leg straightens — the physically expected motion at passing. Only existing
+pixels are copied, so no colour is invented. The head (`min_y = 24`) and horizontal placement
+(`min_x = 73`) were untouched; nothing was translated as a whole.
+
+Measurements after the fix — all four poses identical:
+
+```text
+                 min_x  min_y  max_x  max_y   w    h
+contact            73     24    181    207   109  184
+down               73     24    181    207   109  184
+passing            73     24    181    207   109  184   (was max_y = 200)
+up                 73     24    181    207   109  184   (was max_y = 200)
+```
+
+Verified in the running game as well: every frame of the live preview reports its lowest sprite
+pixel at row 265 against a stage ground line at 266.
+
 ## How to view and verify
 
 ```sh
@@ -101,24 +128,18 @@ npm run check           pass (types + content types)
 npm run build           pass (PixiJS now bundles; first time it is actually imported)
 npm run test:browser    5/5 pass (4 existing + morrow-preview.spec.ts)
 bridge npm test         121/121 pass
-art_review (sheet)      10 pass / 0 warn / 1 fail / 1 skip
+art_review (sheet)      11 pass / 0 warn / 0 fail / 1 skip
 art_review (indexed)    palette budget PASS at 48 colours
 ```
 
 ## Open items
 
-1. **Ground contact drifts during the walk (art fix needed).** Across the four key poses
-   `min_x = 73` and `min_y = 24` are perfectly stable, but `max_y = 207, 207, 200, 200`. The
-   character therefore lifts 5-7px off the ground during *passing* and *up* instead of keeping the
-   support foot planted. `art_review` reports this as a 7px `origin_stability` failure and it was
-   deliberately left visible rather than tuned away. Fix in the pixel art (lower the passing/up
-   poses back to row 207) before in-between frames are drawn, or record that the lift is intended.
-2. **Runtime scale decision.** The character is 184px tall against a stated 96-160px runtime
-   target. Displaying at 1x is crisp; scaling to ~0.6 introduces nearest-neighbour shimmer. Decide
-   whether to re-author at a smaller cell or accept the larger native size.
-3. **Blender stage.** Morrow has no Blender source. If a Blender-authored Morrow is wanted, it is a
+1. **Walk frame count.** The four corrected keys form a valid minimal loop. The next decision is
+   whether four strong frames are sufficient or whether Morrow benefits from 6-8 final frames —
+   that is a deliberate choice, not a defect.
+2. **Blender stage.** Morrow has no Blender source. If a Blender-authored Morrow is wanted, it is a
    separate re-model that will not match the approved 2D art exactly.
-4. **`art_delegate` flakiness (bridge, unrelated to this asset).** Two calls returned
+3. **`art_delegate` flakiness (bridge, unrelated to this asset).** Two calls returned
    `PROVIDER_PROTOCOL` ("no usable text response") while `deepseek_ask` succeeded with an equivalent
    system prompt and `reasoning: high`. Looks specific to the thinking-enabled delegation path.
 

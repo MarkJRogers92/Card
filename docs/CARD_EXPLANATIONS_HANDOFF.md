@@ -8,6 +8,14 @@ sure there's a small explanation or a popup box that explains what each card
 does", which is the base-effect half of `docs/DESIGN.md` 7.5 and the first
 bounded slice of roadmap milestone **M38**.
 
+Published by fast-forwarding `codex/m16-family-transformations` to this tip and
+pushing both branches. GitHub Actions run
+[`34674163343`](https://github.com/MarkJRogers92/Card/actions/runs/34674163343)
+passed the full acceptance job at the exact head
+`2c014a4825a1b541ccedefb4f6e980c6d9eae5d2`. `main` remains the M00–M01
+foundation (`33be69f`); M02–M19 have never been merged there, so publishing this
+slice deliberately did not change that.
+
 Two commits:
 
 1. `feat: derive card explanations from content data` — the engine text layer

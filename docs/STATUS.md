@@ -5,6 +5,15 @@
 **Card explanations — readability slice (first slice of roadmap M38) —
 implementation checkpoint**
 
+Published on `codex/m16-family-transformations` and `codex/card-explanations`.
+GitHub Actions run
+[`34674163343`](https://github.com/MarkJRogers92/Card/actions/runs/34674163343)
+passed the exact head `2c014a4825a1b541ccedefb4f6e980c6d9eae5d2`. The
+acceptance job passed locked dependency installation, generated-content/type
+checks, the general engine/content/validation/replay/property suites, every
+focused M03–M19 command, the production build, Chromium installation, and the
+browser suite including the new card-explanation spec.
+
 Hand cards previously showed a name, cost, and ingredient but never stated what
 the card does, which breaks design pillar P2. Every playable card now carries a
 machine-derived, plain-English explanation of its base effect: a one-line

@@ -2,6 +2,24 @@
 
 ## Current milestone
 
+**M20 — snapshot serialization — local implementation checkpoint**
+
+M20 adds the pure save-encoding layer in `src/engine/save.ts`: a versioned save
+envelope (`saveVersion`, `engineVersion`, `contentVersion`, `contentHash`,
+`snapshot`, `checksum`), canonical JSON export/import, a migration contract,
+structural and embedded-version validation, and explicit content-identity
+rejection that preserves the original save text. Save → load preserves the
+authoritative hash, including RNG cursors, trigger counters, delayed packets,
+pending rewards, deck instances, and run progress. The `?fixture=m20` browser
+route exports, reimports, and rejects a tampered save. See
+`docs/milestones/M20_SNAPSHOT_SERIALIZATION.md`. M21 owns IndexedDB
+persistence, the active save, and rotating backups. That milestone document
+also records an M17 elite/boss intent-selection defect the M20 trace surfaced:
+the authored `named_claim`/`named_in_claim` moves target the placeholder
+`{ kind: "locked", actorId: "source" }`, which throws during intent selection.
+
+## Previous checkpoint
+
 **M19 — fixed test act — implementation checkpoint**
 
 M19 adds the second playable checkpoint: a deterministic seven-node Act 1

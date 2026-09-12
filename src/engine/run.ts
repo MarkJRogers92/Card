@@ -1,5 +1,25 @@
-import type { CardInstance, CardInstanceId } from "./cards";
-import type { CardPositionClassification } from "./duo";
+import type { CardDefinition } from "../content/generated";
+import {
+  cardLifecycleSpecFor,
+  playContentCard,
+  resolveAdditionalHpCosts,
+  resolveCardParameters,
+  resolveIngredient,
+  resolveValueExpr,
+} from "./card-content";
+import {
+  endPlayerTurnWithCardLifecycle,
+  type CardLifecycleSpec,
+} from "./card-lifecycle";
+import {
+  createCardInstance,
+  createCardInstanceId,
+  type CardInstance,
+  type CardInstanceId,
+} from "./cards";
+import { beginPlayerTurn } from "./combat";
+import { classifyCardPosition, type CardPositionClassification } from "./duo";
+import { executeEnemyPhase } from "./enemies";
 import type { Ingredient } from "./imprint";
 import {
   ACT_1_BOSS_ENCOUNTER,
@@ -20,7 +40,9 @@ import {
   type M10CardOwner,
 } from "./m10-fight";
 import {
+  claimRewardOption,
   createEncounterReward,
+  type RewardOption,
   type RewardCatalog,
   type RewardEncounterKind,
 } from "./rewards";
@@ -84,6 +106,20 @@ export interface M19RunNodeView {
 
 /** The M19 test act reuses the M10 card command surface over M17 enemies. */
 export type M19Command = M10Command;
+
+/**
+ * Definitions the test act needs to play cards that live in `content/`.
+ *
+ * The starter deck is authored in `m10-fight.ts`, but reward cards are real
+ * content definitions, so the run needs a way to resolve them. Callers supply
+ * the bundle; `src/content/bundle.ts` builds it for the browser and tests.
+ */
+export interface RunContent {
+  readonly cardFor: (definitionId: string) => CardDefinition | undefined;
+}
+
+/** Instance ordinals for reward cards start above the 10-card starter deck. */
+const REWARD_CARD_ORDINAL_BASE = 1_000;
 
 /**
  * Card view for Act 1 run combats. Starter cards behave exactly as they do in
@@ -379,26 +415,133 @@ export function restRunCharacter(
 export function applyM19Command(
   state: AuthoritativeState,
   command: M19Command,
+  content?: RunContent,
 ): M10CommandResult {
   if (command.kind === "play_card") {
     const instance = state.combat?.deck.instances[command.instanceId];
     if (instance === undefined) {
       throw new Error(`Unknown card instance: ${command.instanceId}.`);
     }
-    if (M10_STARTER_CARDS[instance.definitionId] === undefined) {
+    if (M10_STARTER_CARDS[instance.definitionId] !== undefined) {
+      return playM10Card(state, command.instanceId, command.targetActorId);
+    }
+    const definition = content?.cardFor(instance.definitionId);
+    if (definition === undefined) {
       throw new Error(
         `Card ${instance.definitionId} is not playable in the M19 test act.`,
       );
     }
-    return playM10Card(state, command.instanceId, command.targetActorId);
+    return {
+      state: playContentCard(state, {
+        instanceId: command.instanceId,
+        definition,
+        upgraded: instance.upgradeLevel > 0,
+        ownerCharacterId: instance.ownerCharacterId,
+        selectedEnemyActorId: command.targetActorId,
+      }).state,
+      command,
+    };
   }
   if (command.kind === "swap") {
     return swapM10Characters(state);
   }
+  if (runHasContentCards(state, content)) {
+    // A deck that carries content cards must settle Retain, Fleeting, Exhaust,
+    // and unplayable junk the way the M11 lifecycle defines it.
+    let current = endPlayerTurnWithCardLifecycle(state, runLifecycleResolver(content));
+    if (current.combat?.outcome === "active") {
+      current = executeEnemyPhase(current, INITIAL_ENEMY_REGISTRY).state;
+    }
+    if (current.combat?.outcome === "active") {
+      current = beginPlayerTurn(current);
+    }
+    return { state: current, command };
+  }
   return endCombatTurn(state, INITIAL_ENEMY_REGISTRY);
 }
 
-export function getM19Hand(state: AuthoritativeState): readonly M19CardView[] {
+function ownerCharacterIdForRole(role: string): M10CardOwner {
+  if (role === "source") return M19_MORROW_ID;
+  if (role === "shaper") return M19_SWITCH_ID;
+  return "crew";
+}
+
+function isContentDefinitionUnplayable(definition: CardDefinition): boolean {
+  return (definition.keywords as readonly string[]).includes("unplayable");
+}
+
+function contentCardView(
+  state: AuthoritativeState,
+  instance: CardInstance,
+  definition: CardDefinition,
+): M19CardView {
+  const combat = state.combat;
+  if (combat === null) {
+    throw new Error("No M19 combat is active.");
+  }
+  const parameters = resolveCardParameters(definition, instance.upgradeLevel > 0);
+  const ownerCharacterId = ownerCharacterIdForRole(definition.owner);
+  const owner =
+    definition.owner === "crew"
+      ? ({ kind: "crew" } as const)
+      : ({ kind: "character", actorId: ownerCharacterId } as const);
+  return {
+    instanceId: instance.instanceId,
+    definitionId: definition.id,
+    name: definition.name,
+    owner: ownerCharacterId,
+    energyCost: resolveValueExpr(definition.energyCost, parameters),
+    classification: classifyCardPosition(combat, owner),
+    ingredient: resolveIngredient(definition, parameters),
+    isDamageCard: definition.effects.some((effect) => effect.op === "damage"),
+    isPlayable: !isContentDefinitionUnplayable(definition),
+  };
+}
+
+function runHasContentCards(
+  state: AuthoritativeState,
+  content: RunContent | undefined,
+): boolean {
+  if (content === undefined) return false;
+  const instances = state.combat?.deck.instances ?? {};
+  return Object.values(instances).some(
+    (instance) => M10_STARTER_CARDS[instance.definitionId] === undefined,
+  );
+}
+
+/**
+ * Lifecycle for every instance in the run deck: starter cards discard unless
+ * their definition Exhausts, content cards use the M11 lifecycle compiled from
+ * their keywords, and anything unresolvable is treated as unplayable junk.
+ */
+function runLifecycleResolver(
+  content: RunContent | undefined,
+): (instance: CardInstance) => CardLifecycleSpec {
+  return (instance) => {
+    const starter = M10_STARTER_CARDS[instance.definitionId];
+    if (starter !== undefined) {
+      return {
+        category: "skill",
+        keywords: starter.destinationAfterPlay === "exhaust" ? ["exhaust"] : [],
+        additionalHpCosts: [],
+      };
+    }
+    const definition = content?.cardFor(instance.definitionId);
+    if (definition === undefined) {
+      return { category: "status", keywords: ["unplayable"], additionalHpCosts: [] };
+    }
+    const parameters = resolveCardParameters(definition, instance.upgradeLevel > 0);
+    return cardLifecycleSpecFor(
+      definition,
+      resolveAdditionalHpCosts(definition, parameters),
+    );
+  };
+}
+
+export function getM19Hand(
+  state: AuthoritativeState,
+  content?: RunContent,
+): readonly M19CardView[] {
   const combat = state.combat;
   if (combat === null) {
     throw new Error("No M19 combat is active.");
@@ -410,6 +553,10 @@ export function getM19Hand(state: AuthoritativeState): readonly M19CardView[] {
     }
     if (M10_STARTER_CARDS[instance.definitionId] !== undefined) {
       return { ...getM10CardView(state, instanceId), isPlayable: true };
+    }
+    const definition = content?.cardFor(instance.definitionId);
+    if (definition !== undefined) {
+      return contentCardView(state, instance, definition);
     }
     return {
       instanceId,
@@ -423,6 +570,38 @@ export function getM19Hand(state: AuthoritativeState): readonly M19CardView[] {
       isPlayable: false,
     };
   });
+}
+
+/**
+ * Claim a run reward. A card option becomes a real deck instance, so the pick
+ * is carried into every later node; the claim stays idempotent because a
+ * repeated option never reaches the insertion.
+ */
+export function claimRunReward(
+  state: AuthoritativeState,
+  transactionId: string,
+  optionId: string,
+): AuthoritativeState {
+  const option: RewardOption | undefined = state.rewards.pending?.choices
+    .flatMap((choice) => choice.options)
+    .find((candidate) => candidate.id === optionId);
+  const claimed = claimRewardOption(state, transactionId, optionId);
+  if (claimed === state || option === undefined || option.kind !== "card") {
+    return claimed;
+  }
+
+  const run = requireRun(claimed);
+  const deck =
+    run.deck ??
+    (claimed.combat === null ? [] : persistDeckInstances(claimed.combat.deck));
+  const instance = createCardInstance({
+    instanceId: createCardInstanceId(
+      REWARD_CARD_ORDINAL_BASE + claimed.rewards.claimedCardIds.length,
+    ),
+    definitionId: option.id,
+    ownerCharacterId: ownerCharacterIdForRole(option.role),
+  });
+  return replaceRun(claimed, { ...run, deck: [...deck, instance] });
 }
 
 export function advanceRunNode(state: AuthoritativeState): AuthoritativeState {

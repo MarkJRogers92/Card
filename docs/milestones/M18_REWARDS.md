@@ -32,6 +32,11 @@ M18 stores claimed definition IDs only. M19 will turn those choices into run
 deck instances and connect post-combat routing; it must not change the reward
 roll or transaction semantics established here.
 
+M19 now turns claimed card options into run deck instances through
+`claimRunReward`, and those cards are playable in every later node. The reward
+roll and transaction semantics below are unchanged. See the "Card rewards and
+content cards" section of `docs/milestones/M19_FIXED_TEST_ACT.md`.
+
 ## Local verification
 
 `npm run check`, `test:engine` (283 tests), `test:content` (29 tests),

@@ -9,6 +9,7 @@ import {
   applyM10Command,
   applyM19Command,
   beginRunNode,
+  claimRunReward,
   claimRewardOption,
   createM10Fight,
   createM10RewardFixture,
@@ -28,8 +29,16 @@ import {
   type M10Command,
   type M19Command,
 } from "../engine";
+import { createContentBundle } from "../content/bundle";
 import { openIndexedDbSaveStore, type SaveStore } from "../platform";
 import "./App.css";
+
+/**
+ * Checked-in content definitions. The test act's starter deck is authored in
+ * the engine, but claimed reward cards are real content, so the act needs them
+ * to render and play those cards.
+ */
+const CONTENT = createContentBundle();
 
 function actorLabel(actorId: string): string {
   if (actorId === M10_MORROW_ID) return "Morrow";
@@ -434,7 +443,7 @@ function M19TestAct({
     selectedTarget !== null && livingEnemyIds.includes(selectedTarget)
       ? selectedTarget
       : (livingEnemyIds[0] ?? null);
-  const hand = active && combat !== null ? getM19Hand(state) : [];
+  const hand = active && combat !== null ? getM19Hand(state, CONTENT) : [];
   const morrow = run.characters[0];
   const switchActor = run.characters[1];
   const nodeComplete = node.isCompleted;
@@ -450,7 +459,7 @@ function M19TestAct({
 
   function commit(command: M19Command): void {
     try {
-      const result = applyM19Command(state, command);
+      const result = applyM19Command(state, command, CONTENT);
       setState(result.state);
       setCommands((current) => [...current, command]);
       setError(null);
@@ -850,7 +859,7 @@ function M19TestAct({
                     data-testid={`reward-option-${option.id}`}
                     key={option.id}
                     onClick={() =>
-                      mutate(() => claimRewardOption(state, pending.transactionId, option.id))
+                      mutate(() => claimRunReward(state, pending.transactionId, option.id))
                     }
                     type="button"
                   >

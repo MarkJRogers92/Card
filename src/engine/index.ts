@@ -382,6 +382,7 @@ export {
   advanceRunNode,
   applyM19Command,
   beginRunNode,
+  claimRunReward,
   completeRunCombat,
   createM19Run,
   currentRunNode,
@@ -397,6 +398,7 @@ export type {
   M19RunNodeView,
   M19RunOutcome,
   RunCharacterState,
+  RunContent,
   RunState,
 } from "./run";
 export {
@@ -449,6 +451,7 @@ export {
   resetTurnTriggerCounters,
 } from "./triggers";
 export { compileRelicContent, installRelicContent } from "./relic-content";
+export { resolveIngredient } from "./card-content";
 export type { CompiledRelicContent } from "./relic-content";
 export type {
   AfterSwapTriggerEvent,

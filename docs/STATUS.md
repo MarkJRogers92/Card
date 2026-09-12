@@ -25,6 +25,19 @@ with passing GitHub Actions run
 
 ## Previous checkpoint
 
+**Act 1 first pass — card rewards corrected on this branch**
+
+Claiming a card reward used to record only an id: no deck instance was created,
+and the act refused any definition outside the M10 starter set, so a pick had no
+effect and could not have been played. `claimRunReward` now appends a real deck
+instance that later nodes carry, `src/content/bundle.ts` gives the browser and
+tests the checked-in content definitions, and a deck containing content cards
+settles Retain, Fleeting, Exhaust, and unplayable junk through the M11
+lifecycle. Starter-only decks keep the original end-turn path. Claimed relics
+are still inert and need a `RunState.relicIds` field plus a save migration; see
+the "Card rewards and content cards" section of
+`docs/milestones/M19_FIXED_TEST_ACT.md`.
+
 **M17 locked enemy targeting — corrected on this branch**
 
 `enemy.repo_foreman` `named_claim` and `enemy.head_of_recovery`

@@ -4,6 +4,7 @@ import {
   advanceRunNode,
   applyM19Command,
   beginRunNode,
+  claimRunReward,
   claimRewardOption,
   completeRunCombat,
   createM19Run,
@@ -89,7 +90,9 @@ function applyOp(state: AuthoritativeState, op: ActOp): AuthoritativeState {
       if (pending === null) throw new Error("Expected a pending reward.");
       const optionId = pending.choices[0]?.options[0]?.id;
       if (optionId === undefined) throw new Error("Expected a reward option.");
-      return claimRewardOption(state, pending.transactionId, optionId);
+      // The run-level claim also carries the picked card into the deck, so the
+      // round trip covers a deck that contains content-card instances.
+      return claimRunReward(state, pending.transactionId, optionId);
     }
     case "rest":
       return restRunCharacter(state, op.actorId);

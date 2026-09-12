@@ -195,7 +195,8 @@ export function isLiabilityCard(definition: CardDefinition): boolean {
   return (definition.keywords as readonly string[]).includes("liability");
 }
 
-function resolveIngredient(
+/** Ingredient a content card Primes, or `null` when it carries none. */
+export function resolveIngredient(
   definition: CardDefinition,
   parameters: ReadonlyMap<string, number>,
 ): Ingredient | null {

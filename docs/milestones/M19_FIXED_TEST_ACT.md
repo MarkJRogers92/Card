@@ -78,6 +78,47 @@ unchanged.
   `content/` cards and relics. Live unlocks and content-driven reward pools
   remain outside M19.
 
+## Card rewards and content cards
+
+A first pass over the act found that claiming a card did nothing: the option was
+recorded in `rewards.claimedCardIds`, but no deck instance was created, and the
+act refused any definition outside the M10 starter set, so a picked card could
+not have been played even if it had been.
+
+`claimRunReward` in `src/engine/run.ts` now claims the option and appends a real
+deck instance, which `completeRunCombat` persists and `beginRunNode` carries
+into every later node. The claim stays idempotent because a repeated option
+never reaches the insertion.
+
+Playing those cards needs their content definitions, so `src/content/bundle.ts`
+collects the checked-in JSON for the browser and tests while the CLI keeps using
+the validating `registry.mjs`; both read the same files. `applyM19Command`,
+`getM19Hand`, and the card views accept that bundle: starter cards keep the M10
+path, content cards run through `playContentCard`, and a deck that contains
+content cards settles its hand with the M11 lifecycle
+(`endPlayerTurnWithCardLifecycle`) so Retain, Fleeting, Exhaust, and unplayable
+junk behave as authored. Decks without content cards keep the original
+`endCombatTurn` path, so existing hashes and traces are unchanged. Without a
+bundle the act still refuses unknown definitions instead of silently ignoring
+them.
+
+### First-pass playthrough
+
+Driving the act with a damage/block policy that claims the first offered card:
+`ordinary_1` victory in 2 turns without taking damage, `rest_1`, `ordinary_2`
+victory in 3 turns, then defeat on turn 5 of the elite. Every node resolves, the
+claimed cards change the deck and the fights, and the run ends in a legitimate
+defeat rather than an exception. The elite remains a real difficulty check for a
+policy that does not use Retain, handoffs, or Imprints well; that is a balance
+observation for the difficulty pass, not a defect.
+
+### Still open after this pass
+
+Claimed relics are not installed into later combats — `installRelicContent` is
+used only by tests — so a relic pick is still inert. That correction needs a
+`RunState.relicIds` field, which changes the authoritative shape and therefore
+requires a save-schema migration.
+
 ## Local verification
 
 `npm run check`, `npm run test:engine` (292 tests), `npm run test:content`,

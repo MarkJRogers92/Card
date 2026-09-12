@@ -1,0 +1,17 @@
+{
+  "character": "morrow",
+  "sheet": "morrow_walk.png",
+  "frameWidth": 256,
+  "frameHeight": 256,
+  "anchor": {
+    "x": 0.5,
+    "y": 0.8125
+  },
+  "animations": {
+    "walk": [0, 1, 2, 3]
+  },
+  "layers": ["body"],
+  "totalFrames": 4,
+  "fps": 8,
+  "palette": "card-game-48"
+}

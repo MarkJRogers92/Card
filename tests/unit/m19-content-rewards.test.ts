@@ -14,7 +14,10 @@ import {
   createEncounterReward,
   createM19Run,
   currentRunNode,
+  exportSave,
   getM19Hand,
+  hashAuthoritativeState,
+  importSave,
   M19_SELECTED_REWARD_ROLES,
   restRunCharacter,
   skipCardReward,
@@ -250,8 +253,15 @@ describe("M19 relic rewards", () => {
     const resolved = skipCardReward(claimed, pending.transactionId);
     expect(resolved.rewards.pending).toBeNull();
 
+    // The relic survives a save round trip with the run.
+    const reloaded = importSave(exportSave(resolved));
+    expect(reloaded.ok).toBe(true);
+    if (!reloaded.ok) return;
+    expect(reloaded.state.run?.relicIds).toStrictEqual(resolved.run?.relicIds);
+    expect(hashAuthoritativeState(reloaded.state)).toBe(hashAuthoritativeState(resolved));
+
     const control = beginRunNode(createM19Run(1900), content).combat;
-    const combat = beginRunNode(resolved, content).combat;
+    const combat = beginRunNode(reloaded.state, content).combat;
     if (combat === null || control === null) {
       throw new Error("Expected an active combat.");
     }

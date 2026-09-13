@@ -431,39 +431,32 @@ export function reachableNodeIds(
   map: RunMap,
   completedNodeIds: readonly string[],
 ): ReadonlySet<string> {
-  const completed = new Set(completedNodeIds);
-  const maxCompletedRowByAct = new Map<MapActNumber, number>();
+  const act1 = map.acts.find((act) => act.act === 1);
+  if (act1 === undefined) return new Set();
 
-  for (const act of map.acts) {
-    for (const candidate of act.nodes) {
-      if (!completed.has(candidate.id)) continue;
-      const current = maxCompletedRowByAct.get(act.act);
-      if (current === undefined || candidate.row > current) {
-        maxCompletedRowByAct.set(act.act, candidate.row);
-      }
-    }
-  }
-
-  if (maxCompletedRowByAct.size === 0) {
-    if (completedNodeIds.length > 0) return new Set();
+  if (completedNodeIds.length === 0) {
     return new Set(
-      map.acts.flatMap((act) =>
-        act.nodes
-          .filter((candidate) => candidate.row === 1)
-          .map((candidate) => candidate.id),
-      ),
+      act1.nodes
+        .filter((candidate) => candidate.row === 1)
+        .map((candidate) => candidate.id),
     );
   }
 
+  const completed = new Set(completedNodeIds);
+  const completedAct1Nodes = act1.nodes.filter((candidate) =>
+    completed.has(candidate.id),
+  );
+  if (completedAct1Nodes.length === 0) return new Set();
+
+  const maxCompletedRow = Math.max(
+    ...completedAct1Nodes.map((candidate) => candidate.row),
+  );
   const reachable = new Set<string>();
-  for (const act of map.acts) {
-    const maxRow = maxCompletedRowByAct.get(act.act);
-    if (maxRow === undefined) continue;
-    for (const candidate of act.nodes) {
-      if (candidate.row !== maxRow) continue;
-      for (const link of candidate.links) {
-        reachable.add(link);
-      }
+
+  for (const candidate of completedAct1Nodes) {
+    if (candidate.row !== maxCompletedRow) continue;
+    for (const link of candidate.links) {
+      reachable.add(link);
     }
   }
   return reachable;

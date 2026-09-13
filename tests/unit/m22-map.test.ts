@@ -129,7 +129,9 @@ describe("M22 deterministic map graph", () => {
     );
     for (const [id, links] of allEdges) {
       expect(node(map, id).links).toStrictEqual(links);
-      expect(forwardLinks(map, id)).toStrictEqual(links);
+      if (id.startsWith("act-1-")) {
+        expect(forwardLinks(map, id)).toStrictEqual(links);
+      }
     }
   });
 
@@ -191,7 +193,7 @@ describe("M22 deterministic map graph", () => {
   it("exposes only next-row links as reachable", () => {
     const map = createRunMap(1900);
     expect(reachableNodeIds(map, [])).toStrictEqual(
-      new Set(["act-1-row-1-col-0", "act-2-row-1-col-0"]),
+      new Set(["act-1-row-1-col-0"]),
     );
     expect(reachableNodeIds(map, ["act-1-row-1-col-0"])).toStrictEqual(
       new Set(["act-1-row-2-col-0", "act-1-row-2-col-1", "act-1-row-2-col-2"]),
@@ -200,6 +202,27 @@ describe("M22 deterministic map graph", () => {
       new Set(["act-1-row-3-col-0", "act-1-row-3-col-1"]),
     );
     expect(reachableNodeIds(map, ["unknown-node"])).toStrictEqual(new Set());
+  });
+
+  it("derives forward links from completed nodes, not every node in the latest row", () => {
+    const map = createRunMap(1900);
+    expect(
+      reachableNodeIds(map, ["act-1-row-1-col-0", "act-1-row-2-col-0"]),
+    ).toStrictEqual(new Set(["act-1-row-3-col-0"]));
+  });
+
+  it("keeps Act 2 reserved and never reachable", () => {
+    const map = createRunMap(1900);
+    expect(reachableNodeIds(map, [])).toStrictEqual(
+      new Set(["act-1-row-1-col-0"]),
+    );
+    expect(
+      reachableNodeIds(map, ["act-2-row-1-col-0"]),
+    ).toStrictEqual(new Set());
+    expect(
+      reachableNodeIds(map, ["act-1-row-7-col-0"]),
+    ).toStrictEqual(new Set());
+    expect(forwardLinks(map, "act-2-row-1-col-0")).toStrictEqual([]);
   });
 });
 

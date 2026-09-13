@@ -14,7 +14,9 @@ import {
   createM10Fight,
   createM10RewardFixture,
   createM19Run,
+  createM22Run,
   currentRunNode,
+  currentReachableNodeIds,
   exportSave,
   getM10Hand,
   getM19Hand,
@@ -23,12 +25,15 @@ import {
   importSave,
   projectSelectedEnemyIntents,
   restRunCharacter,
+  selectRunMapNode,
   skipCardReward,
   completeRunCombat,
   type AuthoritativeState,
   type M10Command,
   type M19Command,
+  type RunMapNode,
 } from "../engine";
+import { isPlayableMapNodeKind } from "../engine/run";
 import { createContentBundle } from "../content/bundle";
 import { openIndexedDbSaveStore, type SaveStore } from "../platform";
 import "./App.css";
@@ -39,6 +44,33 @@ import "./App.css";
  * to render and play those cards.
  */
 const CONTENT = createContentBundle();
+
+/** Presentation state for one persisted map node. */
+type MapNodeVisualState =
+  | "completed"
+  | "current"
+  | "reachable"
+  | "unavailable"
+  | "reserved";
+
+const MAP_KIND_LABELS: Readonly<Record<RunMapNode["kind"], string>> = {
+  combat: "Combat",
+  event: "Event",
+  shop: "Shop",
+  workshop: "Workshop",
+  elite: "Elite",
+  treasure: "Treasure",
+  rest: "Rest",
+  boss: "Boss",
+};
+
+const MAP_NODE_STATE_LABELS: Readonly<Record<MapNodeVisualState, string>> = {
+  completed: "Completed",
+  current: "Current",
+  reachable: "Reachable",
+  unavailable: "Unavailable",
+  reserved: "Reserved",
+};
 
 function actorLabel(actorId: string): string {
   if (actorId === M10_MORROW_ID) return "Morrow";
@@ -67,6 +99,7 @@ export function App() {
   );
   if (fixture === "m20") return <M19TestAct showSavePanel />;
   if (fixture === "m21") return <M19TestAct showStorePanel />;
+  if (fixture === "m22") return <M19TestAct mapFixture />;
   return fixture === "m19" ? <M19TestAct /> : <M10Checkpoint />;
 }
 
@@ -358,11 +391,19 @@ function M10Checkpoint() {
 function M19TestAct({
   showSavePanel = false,
   showStorePanel = false,
-}: { showSavePanel?: boolean; showStorePanel?: boolean } = {}) {
-  const [state, setState] = useState<AuthoritativeState>(() => createM19Run());
+  mapFixture = false,
+}: {
+  showSavePanel?: boolean;
+  showStorePanel?: boolean;
+  mapFixture?: boolean;
+} = {}) {
+  const [state, setState] = useState<AuthoritativeState>(() =>
+    mapFixture ? createM22Run() : createM19Run(),
+  );
   const [commands, setCommands] = useState<readonly M19Command[]>([]);
   const [selectedTarget, setSelectedTarget] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [chosenMapNodeId, setChosenMapNodeId] = useState<string | null>(null);
   const [saveText, setSaveText] = useState("");
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const [store, setStore] = useState<SaveStore | null>(null);
@@ -370,12 +411,12 @@ function M19TestAct({
   const [storeGeneration, setStoreGeneration] = useState<number | null>(null);
 
   const runningContent = useMemo(() => {
-    const fresh = createM19Run();
+    const fresh = mapFixture ? createM22Run() : createM19Run();
     return {
       contentVersion: fresh.contentVersion,
       contentHash: fresh.contentHash,
     };
-  }, []);
+  }, [mapFixture]);
 
   useEffect(() => {
     if (!showStorePanel) return;
@@ -430,10 +471,17 @@ function M19TestAct({
   if (run === null) {
     return <main className="combat-shell">M19 test act state unavailable.</main>;
   }
+  // Nested handlers below are not covered by the null guard's narrowing.
+  const activeRun = run;
 
   const node = currentRunNode(state);
   const combat = state.combat;
   const pending = state.rewards.pending;
+  const runMap = run.map;
+  // Only map runs expose navigation; reading reachability for an M19
+  // fixed-route run would throw because it has no persisted graph.
+  const mapReachable =
+    runMap === null ? new Set<string>() : currentReachableNodeIds(state);
   const active = combat !== null && combat.outcome === "active";
   const livingEnemyIds =
     combat === null
@@ -447,6 +495,39 @@ function M19TestAct({
   const morrow = run.characters[0];
   const switchActor = run.characters[1];
   const nodeComplete = node.isCompleted;
+
+  function mapNodeVisualState(candidate: RunMapNode): MapNodeVisualState {
+    if (candidate.act === 2) return "reserved";
+    if (activeRun.completedMapNodeIds.includes(candidate.id)) return "completed";
+    if (activeRun.mapNodeId === candidate.id) return "current";
+    if (mapReachable.has(candidate.id)) return "reachable";
+    return "unavailable";
+  }
+
+  /**
+   * Only a legal Act 1 selection is dispatched. Engine reachability already
+   * excludes reserved Act 2 nodes and kinds M22 has no handler for, so the
+   * button stays disabled instead of asking the engine to reject it.
+   */
+  function mapNodeSelectable(candidate: RunMapNode): boolean {
+    if (candidate.act !== 1) return false;
+    if (!isPlayableMapNodeKind(candidate.kind)) return false;
+    if (activeRun.completedMapNodeIds.includes(candidate.id)) return false;
+    // The engine rejects navigation while a reward is unresolved, so the map
+    // waits instead of dispatching an illegal selection.
+    if (pending !== null) return false;
+    return mapReachable.has(candidate.id);
+  }
+
+  function chooseMapNode(nodeId: string): void {
+    try {
+      setState(selectRunMapNode(state, nodeId));
+      setChosenMapNodeId(nodeId);
+      setError(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : String(caught));
+    }
+  }
 
   function mutate(apply: () => AuthoritativeState): void {
     try {
@@ -469,27 +550,37 @@ function M19TestAct({
   }
 
   function restart(): void {
-    setState(createM19Run());
+    setState(mapFixture ? createM22Run() : createM19Run());
     setCommands([]);
     setSelectedTarget(null);
+    setChosenMapNodeId(null);
     setError(null);
   }
 
+  // A map run only begins a node the player has chosen from the reachable
+  // set, so the entrance is not auto-started before it is picked.
+  const mapNodeChosen = runMap === null || chosenMapNodeId === run.mapNodeId;
   const canBegin =
     run.outcome === "active" &&
     !nodeComplete &&
     node.kind !== "rest" &&
     combat === null &&
-    pending === null;
+    pending === null &&
+    mapNodeChosen;
   const canRest = run.outcome === "active" && !nodeComplete && node.kind === "rest";
   const canAdvance =
-    run.outcome === "active" && nodeComplete && pending === null;
+    runMap === null && run.outcome === "active" && nodeComplete && pending === null;
   const canResolveCombat =
     run.outcome === "active" &&
     !nodeComplete &&
     combat !== null &&
     combat.outcome === "victory" &&
     pending === null;
+  // A map run visits one node per row; the fixed route visits every node.
+  const travelTarget =
+    runMap === null
+      ? M19_NODE_IDS.length
+      : (runMap.acts.find((act) => act.act === 1)?.rows ?? M19_NODE_IDS.length);
 
   function exportState(): void {
     setSaveText(exportSave(state));
@@ -582,6 +673,63 @@ function M19TestAct({
         </div>
       </header>
 
+      {runMap !== null && (
+        <section className="map-panel" aria-label="Run map">
+          {runMap.acts.map((act) => {
+            const reserved = act.act === 2;
+            return (
+              <section
+                className="map-act"
+                key={act.act}
+                data-testid={`map-act-${act.act}`}
+                aria-label={
+                  reserved ? `Act ${act.act} map (reserved)` : `Act ${act.act} map`
+                }
+              >
+                <div className="map-act-heading">
+                  <h2>Act {act.act}</h2>
+                  {reserved && <span className="map-reserved">Reserved</span>}
+                </div>
+                {Array.from({ length: act.rows }, (_, index) => index + 1).map((row) => (
+                  <div className="map-row" key={row} data-map-row={row}>
+                    {act.nodes
+                      .filter((candidate) => candidate.row === row)
+                      .map((candidate) => {
+                        const visualState = mapNodeVisualState(candidate);
+                        const selectable = mapNodeSelectable(candidate);
+                        return (
+                          <button
+                            className="map-node"
+                            data-playable={
+                              isPlayableMapNodeKind(candidate.kind) ? "true" : "false"
+                            }
+                            data-state={visualState}
+                            data-testid={`map-node-${candidate.id}`}
+                            disabled={!selectable}
+                            key={candidate.id}
+                            type="button"
+                            aria-label={`${MAP_KIND_LABELS[candidate.kind]} ${candidate.id} (${visualState}${
+                              selectable ? ", selectable" : ""
+                            })`}
+                            onClick={() => chooseMapNode(candidate.id)}
+                          >
+                            <span className="map-node-kind">
+                              {MAP_KIND_LABELS[candidate.kind]}
+                            </span>
+                            <span className="map-node-state">
+                              {MAP_NODE_STATE_LABELS[visualState]}
+                            </span>
+                          </button>
+                        );
+                      })}
+                  </div>
+                ))}
+              </section>
+            );
+          })}
+        </section>
+      )}
+
       {showSavePanel && (
         <section className="save-panel" aria-label="M20 save">
           <div className="save-controls">
@@ -666,7 +814,7 @@ function M19TestAct({
           <div>
             <span>Completed</span>
             <strong data-testid="run-completed">
-              {run.completedNodeIds.length}/{M19_NODE_IDS.length}
+              {run.completedNodeIds.length}/{travelTarget}
             </strong>
           </div>
           <div>
@@ -708,15 +856,17 @@ function M19TestAct({
             Rest Morrow
             <small>+18 HP, capped</small>
           </button>
-          <button
-            type="button"
-            className="end-turn-button"
-            data-testid="run-advance"
-            disabled={!canAdvance}
-            onClick={() => mutate(() => advanceRunNode(state))}
-          >
-            Advance
-          </button>
+          {runMap === null && (
+            <button
+              type="button"
+              className="end-turn-button"
+              data-testid="run-advance"
+              disabled={!canAdvance}
+              onClick={() => mutate(() => advanceRunNode(state))}
+            >
+              Advance
+            </button>
+          )}
         </div>
       </section>
 

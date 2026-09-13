@@ -40,6 +40,7 @@
     "test:m19": "vitest run tests/unit/m19-run.test.ts tests/replay/m19-act.test.ts",
     "test:m20": "vitest run tests/unit/save.test.ts tests/replay/save-roundtrip.test.ts",
     "test:m21": "vitest run tests/unit/save-store.test.ts",
+    "test:m22": "vitest run tests/unit/m22-map.test.ts tests/unit/m22-run.test.ts tests/unit/save.test.ts tests/replay/save-roundtrip.test.ts",
     "simulate": "node tools/not-implemented.mjs M33 \"simulation\"",
     "assets:audit": "node tools/not-implemented.mjs M35 \"asset audit\"",
     "build": "vite build"

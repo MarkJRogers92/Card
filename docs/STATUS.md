@@ -2,6 +2,25 @@
 
 ## Current milestone
 
+**M22 — branching two-act map template — Task 3 local implementation checkpoint**
+
+M22 replaces the fixed M19 route with a persisted two-act map. `?fixture=m22`
+renders both acts from the run state in persisted row/column order: Act 1 is
+playable through `selectRunMapNode`, and Act 2 is visible but labelled
+**Reserved** with every node disabled. Each node button exposes
+`data-testid="map-node-<id>"` plus a `data-state` of `completed`, `current`,
+`reachable`, `unavailable`, or `reserved` and a matching accessible label.
+Only reachable Act 1 nodes whose kind has an M22 handler are enabled, so
+unsupported service nodes (event, shop, workshop, treasure) stay unavailable
+and no illegal selection is dispatched. The entrance must be chosen before
+**Begin node** unlocks. This checkpoint covers Task 3 only: the pure graph
+(Task 1) and map-bearing run state, navigation, and migration (Task 2) landed
+first at `96e2dc5` and `2708f92`. Act 2 content, event/shop/workshop/treasure
+behavior, purchases, and the final gate and handoff (Task 4) remain out of
+scope. See `docs/milestones/M22_MAP_TEMPLATE.md`.
+
+## Previous checkpoint
+
 **M21 — browser persistence — local implementation checkpoint**
 
 M21 adds the browser persistence adapter in `src/platform/`: one IndexedDB

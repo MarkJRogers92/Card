@@ -14,6 +14,14 @@ Base: `34b31a4` (`codex/m21-persistence`)
 
 ## Status and publication boundary
 
+### Publication update — 2026-09-12
+
+M22 was merged into `main` and pushed to GitHub at
+`144482b63116f8317bf2422c251fe69b8e6bed6e` (`merge: accept M22 map template`).
+The reviewed feature branch remains available at
+`origin/codex/m22-map-template` (`bb8c799`) for recovery. No tag or separate
+hosted release was created.
+
 ### Final local acceptance update — 2026-09-12
 
 The temporary incomplete `node_modules` symlink was replaced with a clean
@@ -35,13 +43,8 @@ updated the SDD ledger, but the task instruction explicitly prohibited
 committing. Those two documentation files are therefore working-tree changes
 on top of `dd4040f`; the branch head itself remains `dd4040f`.
 
-M22 is local and separate from `main`. No remote branch contains `dd4040f`,
-and nothing from M22 has been pushed, merged, tagged, released, or published.
-Push, pull request, merge, and publication all require explicit user
-authorization. If publication is later authorized, push only
-`codex/m22-map-template`, run the milestone acceptance workflow on the exact
-final head, and keep M22 off `main` until the user approves the acceptance
-result.
+M22 was integrated under explicit user authorization after the final local
+acceptance gate. Future release/tag work remains separately authorized.
 
 ## Commit sequence
 

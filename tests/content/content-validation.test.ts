@@ -185,6 +185,12 @@ describe("M01 content registry", () => {
       "/triggers/0/filter",
     ],
     [
+      "owner and ingredient mismatch",
+      ["invalid", "cards", "owner-ingredient-mismatch.json"],
+      "owner_ingredient_mismatch",
+      "/ingredient/kind",
+    ],
+    [
       "invalid event predicate",
       ["invalid", "events", "invalid-predicate.json"],
       "unknown_field",

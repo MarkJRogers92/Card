@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "shaper.nail_driver",
+  "name": "Nail Driver",
+  "owner": "shaper",
+  "category": "attack",
+  "rarity": "common",
+  "parameters": {
+    "damage": { "base": 7, "upgraded": 10 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "form",
+    "id": "needle",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.nail_driver"
+}

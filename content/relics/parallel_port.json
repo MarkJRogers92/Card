@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.parallel_port",
+  "name": "Parallel Port",
+  "rarity": "rare",
+  "family": "circuit",
+  "modifiers": [],
+  "triggers": [{
+    "event": "after_primary_reaction",
+    "filter": { "event": "after_primary_reaction" },
+    "effects": [{ "op": "repeat_reaction_packet", "multiplierBps": 5000 }],
+    "limit": { "scope": "turn", "count": 1, "keying": "relic_instance" },
+    "priority": 100
+  }],
+  "unlockId": null,
+  "artId": "relic.parallel_port"
+}

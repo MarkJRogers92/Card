@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "source.open_wound",
+  "name": "Open Wound",
+  "owner": "source",
+  "category": "attack",
+  "rarity": "common",
+  "parameters": {
+    "damage": { "base": 7, "upgraded": 10 },
+    "bleed": { "base": 2, "upgraded": 3 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "material",
+    "id": "gore",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    },
+    {
+      "op": "apply_status",
+      "target": "selected_enemy",
+      "status": "bleed",
+      "amount": { "param": "bleed" }
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.open_wound"
+}

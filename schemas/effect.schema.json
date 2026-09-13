@@ -20,6 +20,9 @@
         { "$ref": "#/$defs/InstallProtocolEffect" },
         { "$ref": "#/$defs/SchedulePacketEffect" },
         { "$ref": "#/$defs/RepeatPacketEffect" },
+        { "$ref": "#/$defs/RepeatReactionPacketEffect" },
+        { "$ref": "#/$defs/ReduceCardCostEffect" },
+        { "$ref": "#/$defs/RepeatScheduledPacketEffect" },
         { "$ref": "#/$defs/GainScrapEffect" },
         { "$ref": "#/$defs/GainEvidenceEffect" },
         { "$ref": "#/$defs/ChangeStandingEffect" },
@@ -186,6 +189,33 @@
         "timing": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/EffectTiming" }
       },
       "required": ["op", "packetRef", "multiplier", "timing"]
+    },
+    "RepeatReactionPacketEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "repeat_reaction_packet" },
+        "multiplierBps": { "type": "integer", "minimum": 0, "maximum": 1000000 }
+      },
+      "required": ["op", "multiplierBps"]
+    },
+    "ReduceCardCostEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "reduce_card_cost" },
+        "amount": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/ValueExpr" }
+      },
+      "required": ["op", "amount"]
+    },
+    "RepeatScheduledPacketEffect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "op": { "const": "repeat_scheduled_packet" },
+        "multiplierBps": { "type": "integer", "minimum": 0, "maximum": 1000000 }
+      },
+      "required": ["op", "multiplierBps"]
     },
     "GainScrapEffect": {
       "type": "object",

@@ -45,6 +45,12 @@
       "uniqueItems": true,
       "maxItems": 5
     },
+    "tags": {
+      "type": "array",
+      "items": { "$ref": "https://joint-liability.local/schemas/common.schema.json#/$defs/CardTag" },
+      "uniqueItems": true,
+      "maxItems": 5
+    },
     "effects": {
       "type": "array",
       "items": { "$ref": "https://joint-liability.local/schemas/effect.schema.json#/$defs/Effect" },

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.shared_warranty",
+  "name": "Shared Warranty",
+  "rarity": "starter",
+  "family": "none",
+  "modifiers": [],
+  "triggers": [{
+    "event": "after_swap",
+    "filter": { "event": "after_swap" },
+    "effects": [{ "op": "block", "target": "front", "amount": { "const": 3 } }],
+    "limit": { "scope": "turn", "count": 1, "keying": "relic_instance" },
+    "priority": 100
+  }],
+  "unlockId": null,
+  "artId": "relic.shared_warranty"
+}

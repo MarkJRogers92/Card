@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "shaper.friendly_leech",
+  "name": "Friendly Leech",
+  "owner": "shaper",
+  "category": "attack",
+  "rarity": "uncommon",
+  "parameters": {
+    "damage": { "base": 4, "upgraded": 6 },
+    "block": { "base": 4, "upgraded": 6 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "form",
+    "id": "siphon",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    },
+    {
+      "op": "block",
+      "target": "owner",
+      "amount": { "param": "block" }
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.friendly_leech"
+}

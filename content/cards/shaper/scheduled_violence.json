@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "shaper.scheduled_violence",
+  "name": "Scheduled Violence",
+  "owner": "shaper",
+  "category": "attack",
+  "rarity": "uncommon",
+  "parameters": {
+    "damage": { "base": 6, "upgraded": 9 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "form",
+    "id": "loop",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.scheduled_violence"
+}

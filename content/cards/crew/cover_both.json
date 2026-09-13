@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "crew.cover_both",
+  "name": "Cover Both",
+  "owner": "crew",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {
+    "block": { "base": 5, "upgraded": 7 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "both",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    {
+      "op": "block",
+      "target": "both",
+      "amount": { "param": "block" }
+    }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.cover_both"
+}

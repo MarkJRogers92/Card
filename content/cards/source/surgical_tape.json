@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "source.surgical_tape",
+  "name": "Surgical Tape",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "common",
+  "parameters": {
+    "block": { "base": 8, "upgraded": 11 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": ["retain"],
+  "effects": [
+    {
+      "op": "block",
+      "target": "owner",
+      "amount": { "param": "block" }
+    }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.surgical_tape"
+}

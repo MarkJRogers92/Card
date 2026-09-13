@@ -4,11 +4,25 @@ This repository contains the browser-first foundation for *Joint Liability*, a
 single-player roguelike deckbuilder about two medically inseparable fugitives.
 The complete design snapshot is preserved in [docs/DESIGN.md](docs/DESIGN.md).
 
-M00 and M01 are complete. The project now includes the strict TypeScript/Vite
-foundation, rendering-independent engine boundary, authoritative Draft 2020-12
-content schemas, generated types, Ajv structural and semantic validation,
-deterministic validation/report commands, and focused fixtures. It is
-intentionally not playable yet; combat state begins in M02.
+M00 through M17 are accepted. M18 through M21 are implemented checkpoints on
+milestone branches whose focused GitHub Actions acceptance runs pass; none of
+them has been merged into `main`. The repository currently contains the strict
+TypeScript/Vite foundation, a rendering-independent authoritative combat engine
+(deck/turn, HP/Block/damage, enemy intents, statuses, the duo Lead/Support swap
+system, all 16 Reactions, delayed packets, keywords, and bounded
+trigger/modifier dispatch), validated production content for the Source,
+Shaper, Crew, and junk pools, all ten Section 3.10 relics, the initial enemies
+and encounters, Scrap and reward transactions, a deterministic seven-node test
+act, versioned save serialization, and a browser persistence layer with one
+active save and two rotating backups. The M10 browser combat screen matches a
+headless replay hash, and `?fixture=m21` persists and recovers a run in real
+IndexedDB.
+
+The authoritative list of what is accepted, what is in flight, and what is
+next lives in [docs/STATUS.md](docs/STATUS.md). If you are continuing this work
+from a chat rather than a local checkout, start with
+[docs/PUBLISH_HANDOFF_M14_M15.md](docs/PUBLISH_HANDOFF_M14_M15.md): it records
+the branches that have not been pushed yet.
 
 ## Requirements
 
@@ -23,6 +37,9 @@ npm ci
 npm run check
 npm run test:engine
 npm run test:content
+npm run content:validate
+npm run test:m15
+npm run test:browser
 npm run build
 ~~~
 

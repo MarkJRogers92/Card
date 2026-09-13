@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.blank_badge",
+  "name": "Blank Badge",
+  "rarity": "common",
+  "family": "forgery",
+  "modifiers": [{
+    "channel": "reward.card_options",
+    "condition": null,
+    "operation": "set",
+    "value": 4,
+    "priority": 100
+  }],
+  "triggers": [],
+  "unlockId": null,
+  "artId": "relic.blank_badge"
+}

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "source.blood_bank",
+  "name": "Blood Bank",
+  "owner": "source",
+  "category": "skill",
+  "rarity": "rare",
+  "parameters": {
+    "hpCost": { "base": 3, "upgraded": 2 },
+    "energyGain": { "base": 1, "upgraded": 1 }
+  },
+  "energyCost": { "const": 0 },
+  "additionalCosts": [
+    {
+      "resource": "owner_hp",
+      "amount": { "param": "hpCost" },
+      "minimumRemaining": 1
+    }
+  ],
+  "target": "none",
+  "ingredient": null,
+  "keywords": ["exhaust"],
+  "effects": [
+    {
+      "op": "gain_energy",
+      "amount": { "param": "energyGain" }
+    }
+  ],
+  "graftEligible": false,
+  "unlockId": "unlock.unsafe_practice",
+  "artId": "card.blood_bank"
+}

@@ -32,6 +32,7 @@
             "after_primary_reaction",
             "after_swap",
             "card_played",
+            "card_play_cost",
             "player_turn_start",
             "enemy_phase_start"
           ]

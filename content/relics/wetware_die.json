@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "relic.wetware_die",
+  "name": "Wetware Die",
+  "rarity": "rare",
+  "family": "anatomy",
+  "modifiers": [{
+    "channel": "reaction.direct.multiplier",
+    "condition": { "target_has_status": "bleed" },
+    "operation": "multiply",
+    "value": 15000,
+    "priority": 100
+  }],
+  "triggers": [],
+  "unlockId": null,
+  "artId": "relic.wetware_die"
+}

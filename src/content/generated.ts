@@ -92,7 +92,7 @@ export namespace CommonSchema {
    * This interface was referenced by `JointLiabilityCommonContentPrimitives`'s JSON-Schema
    * via the `definition` "Keyword".
    */
-  export type Keyword = "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol";
+  export type Keyword = "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability";
   /**
    * This interface was referenced by `JointLiabilityCommonContentPrimitives`'s JSON-Schema
    * via the `definition` "Destination".
@@ -288,6 +288,9 @@ export namespace EffectSchema {
     | InstallProtocolEffect
     | SchedulePacketEffect
     | RepeatPacketEffect
+    | RepeatReactionPacketEffect
+    | ReduceCardCostEffect
+    | RepeatScheduledPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -465,6 +468,18 @@ export namespace EffectSchema {
     multiplier: number;
     timing: "next_player_turn_start" | "next_enemy_phase_start";
   }
+  export interface RepeatReactionPacketEffect {
+    op: "repeat_reaction_packet";
+    multiplierBps: number;
+  }
+  export interface ReduceCardCostEffect {
+    op: "reduce_card_cost";
+    amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
+  }
+  export interface RepeatScheduledPacketEffect {
+    op: "repeat_scheduled_packet";
+    multiplierBps: number;
+  }
   export interface GainScrapEffect {
     op: "gain_scrap";
     amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
@@ -512,6 +527,9 @@ export namespace CardSchema {
     | InstallProtocolEffect
     | SchedulePacketEffect
     | RepeatPacketEffect
+    | RepeatReactionPacketEffect
+    | ReduceCardCostEffect
+    | RepeatScheduledPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -557,28 +575,53 @@ export namespace CardSchema {
      */
     keywords:
       | []
-      | ["exhaust" | "retain" | "fleeting" | "unplayable" | "protocol"]
+      | ["exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability"]
       | [
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol"
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability"
         ]
       | [
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol"
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability"
         ]
       | [
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol"
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability"
         ]
       | [
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol",
-          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol"
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability",
+          "exhaust" | "retain" | "fleeting" | "unplayable" | "protocol" | "liability"
+        ];
+    /**
+     * @maxItems 5
+     */
+    tags?:
+      | []
+      | ["attack" | "skill" | "protocol" | "status" | "grafted"]
+      | ["attack" | "skill" | "protocol" | "status" | "grafted", "attack" | "skill" | "protocol" | "status" | "grafted"]
+      | [
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted"
+        ]
+      | [
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted"
+        ]
+      | [
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted",
+          "attack" | "skill" | "protocol" | "status" | "grafted"
         ];
     /**
      * @minItems 1
@@ -769,6 +812,18 @@ export namespace CardSchema {
     multiplier: number;
     timing: "next_player_turn_start" | "next_enemy_phase_start";
   }
+  export interface RepeatReactionPacketEffect {
+    op: "repeat_reaction_packet";
+    multiplierBps: number;
+  }
+  export interface ReduceCardCostEffect {
+    op: "reduce_card_cost";
+    amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
+  }
+  export interface RepeatScheduledPacketEffect {
+    op: "repeat_scheduled_packet";
+    multiplierBps: number;
+  }
   export interface GainScrapEffect {
     op: "gain_scrap";
     amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
@@ -816,6 +871,9 @@ export namespace RelicSchema {
     | InstallProtocolEffect
     | SchedulePacketEffect
     | RepeatPacketEffect
+    | RepeatReactionPacketEffect
+    | ReduceCardCostEffect
+    | RepeatScheduledPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -1043,6 +1101,7 @@ export namespace RelicSchema {
       | "after_primary_reaction"
       | "after_swap"
       | "card_played"
+      | "card_play_cost"
       | "player_turn_start"
       | "enemy_phase_start";
     filter: Condition;
@@ -1213,6 +1272,18 @@ export namespace RelicSchema {
     multiplier: number;
     timing: "next_player_turn_start" | "next_enemy_phase_start";
   }
+  export interface RepeatReactionPacketEffect {
+    op: "repeat_reaction_packet";
+    multiplierBps: number;
+  }
+  export interface ReduceCardCostEffect {
+    op: "reduce_card_cost";
+    amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
+  }
+  export interface RepeatScheduledPacketEffect {
+    op: "repeat_scheduled_packet";
+    multiplierBps: number;
+  }
   export interface GainScrapEffect {
     op: "gain_scrap";
     amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
@@ -1270,6 +1341,9 @@ export namespace EnemySchema {
     | InstallProtocolEffect
     | SchedulePacketEffect
     | RepeatPacketEffect
+    | RepeatReactionPacketEffect
+    | ReduceCardCostEffect
+    | RepeatScheduledPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -1542,6 +1616,18 @@ export namespace EnemySchema {
     multiplier: number;
     timing: "next_player_turn_start" | "next_enemy_phase_start";
   }
+  export interface RepeatReactionPacketEffect {
+    op: "repeat_reaction_packet";
+    multiplierBps: number;
+  }
+  export interface ReduceCardCostEffect {
+    op: "reduce_card_cost";
+    amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
+  }
+  export interface RepeatScheduledPacketEffect {
+    op: "repeat_scheduled_packet";
+    multiplierBps: number;
+  }
   export interface GainScrapEffect {
     op: "gain_scrap";
     amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
@@ -1629,6 +1715,9 @@ export namespace EventSchema {
     | InstallProtocolEffect
     | SchedulePacketEffect
     | RepeatPacketEffect
+    | RepeatReactionPacketEffect
+    | ReduceCardCostEffect
+    | RepeatScheduledPacketEffect
     | GainScrapEffect
     | GainEvidenceEffect
     | ChangeStandingEffect
@@ -1918,6 +2007,18 @@ export namespace EventSchema {
     packetRef: string;
     multiplier: number;
     timing: "next_player_turn_start" | "next_enemy_phase_start";
+  }
+  export interface RepeatReactionPacketEffect {
+    op: "repeat_reaction_packet";
+    multiplierBps: number;
+  }
+  export interface ReduceCardCostEffect {
+    op: "reduce_card_cost";
+    amount: ConstExpr | ParamExpr | StatExpr | AddExpr | MultiplyExpr;
+  }
+  export interface RepeatScheduledPacketEffect {
+    op: "repeat_scheduled_packet";
+    multiplierBps: number;
   }
   export interface GainScrapEffect {
     op: "gain_scrap";

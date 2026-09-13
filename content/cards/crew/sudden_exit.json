@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "id": "crew.sudden_exit",
+  "name": "Sudden Exit",
+  "owner": "crew",
+  "category": "skill",
+  "rarity": "uncommon",
+  "parameters": {
+    "block": { "base": 8, "upgraded": 11 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": [],
+  "effects": [
+    { "op": "swap", "mode": "free" },
+    {
+      "op": "block",
+      "target": "front",
+      "amount": { "param": "block" }
+    }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.sudden_exit"
+}

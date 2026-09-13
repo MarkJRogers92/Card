@@ -3,6 +3,7 @@
 AGENTS.md
 # codex-workflow-managed-end
 
+.worktrees/
 node_modules/
 dist/
 coverage/

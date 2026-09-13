@@ -1,0 +1,70 @@
+name: M14 Acceptance
+
+on:
+  push:
+    branches:
+      - claude/m14-first-relics
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "content/**"
+      - "schemas/**"
+      - "tests/**"
+      - "package.json"
+      - "package-lock.json"
+      - "tsconfig.json"
+      - "vite.config.ts"
+      - "playwright.config.ts"
+      - ".github/workflows/m14-ci.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.20.0
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Type and generated-content checks
+        run: npm run check
+      - name: Engine tests
+        run: npm run test:engine
+      - name: Content tests
+        run: npm run test:content
+      - name: Production content validation
+        run: npm run content:validate
+      - name: Replay determinism tests
+        run: npm run test:replay
+      - name: Engine property tests
+        run: npm run test:properties
+      - name: Focused M03-M14 tests
+        run: |
+          npm run test:m03
+          npm run test:m04
+          npm run test:m05
+          npm run test:m06
+          npm run test:m07
+          npm run test:m08
+          npm run test:m09
+          npm run test:m10
+          npm run test:m11
+          npm run test:m12
+          npm run test:m13
+          npm run test:m14
+      - name: Production build
+        run: npm run build
+      - name: Install Chromium for browser regression
+        run: npx playwright install --with-deps chromium
+      - name: M10 browser replay regression
+        run: npm run test:browser

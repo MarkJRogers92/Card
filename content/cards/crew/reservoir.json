@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "crew.reservoir",
+  "name": "Reservoir",
+  "owner": "crew",
+  "category": "skill",
+  "rarity": "uncommon",
+  "parameters": {
+    "potency": { "base": 1, "upgraded": 2 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": ["retain"],
+  "effects": [
+    { "op": "boost_imprint", "amount": { "param": "potency" } }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.reservoir"
+}

@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "source.unlicensed_procedure",
+  "name": "Unlicensed Procedure",
+  "owner": "source",
+  "category": "attack",
+  "rarity": "rare",
+  "parameters": {
+    "damage": { "base": 16, "upgraded": 21 },
+    "hpCost": { "base": 3, "upgraded": 3 }
+  },
+  "energyCost": { "const": 2 },
+  "additionalCosts": [
+    {
+      "resource": "owner_hp",
+      "amount": { "param": "hpCost" },
+      "minimumRemaining": 1
+    }
+  ],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "material",
+    "id": "gore",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": "unlock.unsafe_practice",
+  "artId": "card.unlicensed_procedure"
+}

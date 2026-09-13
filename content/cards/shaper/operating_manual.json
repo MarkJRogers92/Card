@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "shaper.operating_manual",
+  "name": "Operating Manual",
+  "owner": "shaper",
+  "category": "protocol",
+  "rarity": "rare",
+  "parameters": {
+    "block": { "base": 3, "upgraded": 5 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": ["protocol"],
+  "effects": [
+    {
+      "op": "install_protocol",
+      "trigger": {
+        "event": "after_primary_reaction",
+        "filter": { "event": "after_primary_reaction" },
+        "effects": [
+          {
+            "op": "block",
+            "target": "front",
+            "amount": { "param": "block" }
+          }
+        ],
+        "limit": { "scope": "turn", "count": 1, "keying": "source" },
+        "priority": 100
+      }
+    }
+  ],
+  "graftEligible": false,
+  "unlockId": "unlock.office_equipment",
+  "artId": "card.operating_manual"
+}

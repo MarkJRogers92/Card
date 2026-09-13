@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "id": "source.thick_skin",
+  "name": "Thick Skin",
+  "owner": "source",
+  "category": "protocol",
+  "rarity": "uncommon",
+  "parameters": {
+    "block": { "base": 3, "upgraded": 5 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "none",
+  "ingredient": null,
+  "keywords": ["protocol"],
+  "effects": [
+    {
+      "op": "install_protocol",
+      "trigger": {
+        "event": "after_source_lead",
+        "filter": { "source_owner": "source" },
+        "effects": [
+          {
+            "op": "block",
+            "target": "owner",
+            "amount": { "param": "block" }
+          }
+        ],
+        "limit": { "scope": "turn", "count": 1, "keying": "source" },
+        "priority": 100
+      }
+    }
+  ],
+  "graftEligible": false,
+  "unlockId": null,
+  "artId": "card.thick_skin"
+}

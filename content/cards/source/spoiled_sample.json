@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "source.spoiled_sample",
+  "name": "Spoiled Sample",
+  "owner": "source",
+  "category": "attack",
+  "rarity": "common",
+  "parameters": {
+    "damage": { "base": 4, "upgraded": 6 },
+    "poison": { "base": 3, "upgraded": 4 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "material",
+    "id": "rot",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    },
+    {
+      "op": "apply_status",
+      "target": "selected_enemy",
+      "status": "poison",
+      "amount": { "param": "poison" }
+    }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.spoiled_sample"
+}

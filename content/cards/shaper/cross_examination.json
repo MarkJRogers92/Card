@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "shaper.cross_examination",
+  "name": "Cross Examination",
+  "owner": "shaper",
+  "category": "attack",
+  "rarity": "uncommon",
+  "parameters": {
+    "damage": { "base": 5, "upgraded": 8 },
+    "drawAmount": { "base": 1, "upgraded": 1 }
+  },
+  "energyCost": { "const": 1 },
+  "additionalCosts": [],
+  "target": "enemy",
+  "ingredient": {
+    "kind": "form",
+    "id": "needle",
+    "prime": { "const": 1 }
+  },
+  "keywords": [],
+  "effects": [
+    {
+      "op": "damage",
+      "target": "selected_enemy",
+      "amount": { "param": "damage" },
+      "hits": 1,
+      "category": "attack"
+    },
+    { "op": "draw", "amount": { "param": "drawAmount" } }
+  ],
+  "graftEligible": true,
+  "unlockId": null,
+  "artId": "card.cross_examination"
+}

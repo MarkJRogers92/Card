@@ -85,3 +85,20 @@ rejected with an unresolved-cost diagnostic because runtime state is not
 available at load time. Runtime discounts and other changes belong in validated
 modifier channels. Overflow and non-safe-integer results are rejected rather
 than rounded or accepted.
+
+## D-010 — Persistence lives outside the engine behind a backend seam
+
+`src/engine` stays free of storage and platform dependencies, so M21 keeps the
+generation protocol in `src/platform/save-store.ts` and the IndexedDB
+implementation in `src/platform/indexeddb.ts`. The protocol depends on a small
+`SaveBackend` (`read`, `commit`, `close`) whose `commit` is atomic over a set of
+writes; IndexedDB satisfies that with one `readwrite` transaction, and tests
+satisfy it with fault-injecting substitutes. The seam is the reason crash
+behaviour is testable rather than assumed, and it is where the later Electron
+and Capacitor storage adapters will plug in.
+
+`fake-indexeddb@6.2.5` is pinned in devDependencies for one reason: the
+fault-injection suite must abort a real IndexedDB transaction at each write
+boundary inside Node, and an in-repo mock would test the mock instead of the
+IndexedDB transaction semantics the store relies on. The IndexedDB backend
+exposes an optional `beforeWrite` observer used only by that suite.

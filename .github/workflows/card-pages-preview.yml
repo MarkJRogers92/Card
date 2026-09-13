@@ -1,0 +1,63 @@
+name: Card visual Pages preview
+
+on:
+  push:
+    branches:
+      - codex/card-pages-preview
+
+permissions:
+  contents: write
+
+concurrency:
+  group: card-pages-preview
+  cancel-in-progress: true
+
+jobs:
+  build-test-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out preview branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.20.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type and generated-content checks
+        run: npm run check
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify card visuals and explanations
+        run: npx playwright test tests/browser/card-visuals.spec.ts tests/browser/card-explanations.spec.ts --project=chromium
+
+      - name: Build GitHub Pages bundle
+        run: npm run build -- --base=/Card/
+
+      - name: Publish dist to gh-pages
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          rm -rf /tmp/card-gh-pages
+          git worktree add /tmp/card-gh-pages origin/gh-pages
+          find /tmp/card-gh-pages -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R dist/. /tmp/card-gh-pages/
+          touch /tmp/card-gh-pages/.nojekyll
+          printf '%s\n' "$SOURCE_SHA" > /tmp/card-gh-pages/PREVIEW_SOURCE_SHA.txt
+          cd /tmp/card-gh-pages
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Pages output is unchanged."
+            exit 0
+          fi
+          git commit -m "preview: card visuals build from ${SOURCE_SHA}"
+          git push origin HEAD:gh-pages

@@ -1,8 +1,9 @@
-name: M21 Acceptance
+name: M22 Acceptance
 
 on:
   push:
     branches:
+      - main
       - codex/m16-family-transformations
       - codex/m20-serialization
       - codex/m21-persistence
@@ -41,7 +42,7 @@ jobs:
       - run: npm run content:validate
       - run: npm run test:replay
       - run: npm run test:properties
-      - name: Focused M03-M21 tests
+      - name: Focused M03-M22 tests
         run: |
           npm run test:m03
           npm run test:m04
@@ -62,6 +63,7 @@ jobs:
           npm run test:m19
           npm run test:m20
           npm run test:m21
+          npm run test:m22
       - run: npm run build
       - name: Install Chromium for browser regression
         run: npx playwright install --with-deps chromium

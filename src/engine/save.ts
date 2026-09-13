@@ -8,6 +8,12 @@ import {
 } from "./combat";
 import { REWARD_STATE_VERSION } from "./rewards";
 import {
+  createRunMap,
+  validateRunMap,
+  type MapNodeKind,
+  type RunMap,
+} from "./map";
+import {
   GAMEPLAY_RNG_STREAMS,
   RNG_ALGORITHM_VERSION,
   RNG_STATE_VERSION,
@@ -16,6 +22,9 @@ import {
   M19_NODE_IDS,
   M19_RUN_VERSION,
   M19_STARTING_RELIC_IDS,
+  M19_TO_M22_ACT_1_ROUTE,
+  M22_RUN_VERSION,
+  isPlayableMapNodeKind,
   type M19RunOutcome,
 } from "./run";
 import {
@@ -31,7 +40,7 @@ import {
  * the active save, rotating backups, and atomic commits.
  */
 
-export const SAVE_SCHEMA_VERSION = 2 as const;
+export const SAVE_SCHEMA_VERSION = 3 as const;
 
 export const SAVE_ENVELOPE_KEYS = [
   "saveVersion",
@@ -92,9 +101,85 @@ export const SAVE_MIGRATIONS: SaveMigrationTable = [
       return {
         ...record,
         stateVersion: AUTHORITATIVE_STATE_VERSION,
+        // Internal marker: save version 1 predates map navigation, so the
+        // next rung keeps this run on the M19 fixed route instead of placing
+        // it on the M22 map. Removed before validation.
+        fixedRouteOnly: true,
         ...(run === null
           ? {}
           : { run: { ...run, relicIds: [...M19_STARTING_RELIC_IDS] } }),
+      };
+    },
+  },
+  {
+    from: 2,
+    to: 3,
+    /**
+     * Version 2 persists the M19 fixed route. Version 3 adds the M22 map and
+     * navigation. Regenerate the two-act graph from the run seed and map the
+     * M19 fixed sequence onto one Act 1 node per row.
+     *
+     * The M19 kinds do not line up row-for-row with the template (rows 3 and 5
+     * are service rows), so this mapping preserves the authored M19 sequence
+     * and its persisted state instead of reassigning node kinds. Combat,
+     * reward, rest, deck, relic, and character behavior therefore survive
+     * selection after the migration.
+     *
+     * A fixed route that cannot be placed onto the template is refused rather
+     * than guessed at, which is why this throws instead of returning a
+     * half-migrated run.
+     */
+    migrate: (snapshot: unknown) => {
+      const record = isPlainObject(snapshot) ? snapshot : {};
+      const run = isPlainObject(record.run) ? record.run : null;
+      if (run === null) return record;
+
+      const { fixedRouteOnly, ...rest } = record;
+      if (fixedRouteOnly === true) {
+        // Save version 1 predates map navigation; keep the M19 fixed route.
+        return { ...rest, stateVersion: AUTHORITATIVE_STATE_VERSION };
+      }
+      if (isPlainObject(run.map)) {
+        return { ...rest, stateVersion: AUTHORITATIVE_STATE_VERSION };
+      }
+
+      const seed = run.seed;
+      if (!isNonNegativeInteger(seed)) {
+        throw new Error("Cannot migrate a run without a nonnegative seed.");
+      }
+      const rawCurrentNodeId = run.currentNodeId;
+      const currentNodeId: keyof typeof M19_TO_M22_ACT_1_ROUTE | null =
+        typeof rawCurrentNodeId === "string" &&
+        M19_NODE_IDS.includes(rawCurrentNodeId as (typeof M19_NODE_IDS)[number])
+          ? (rawCurrentNodeId as keyof typeof M19_TO_M22_ACT_1_ROUTE)
+          : null;
+      if (currentNodeId === null) {
+        throw new Error(
+          `Cannot map M19 node ${String(rawCurrentNodeId)} onto the Act 1 template.`,
+        );
+      }
+      const completedNodeIds = Array.isArray(run.completedNodeIds)
+        ? run.completedNodeIds
+        : [];
+      const mapNodeId = M19_TO_M22_ACT_1_ROUTE[currentNodeId];
+      const completedMapNodeIds = completedNodeIds
+        .filter(
+          (nodeId): nodeId is keyof typeof M19_TO_M22_ACT_1_ROUTE =>
+            typeof nodeId === "string" &&
+            M19_NODE_IDS.includes(nodeId as (typeof M19_NODE_IDS)[number]),
+        )
+        .map((nodeId) => M19_TO_M22_ACT_1_ROUTE[nodeId]);
+
+      return {
+        ...rest,
+        stateVersion: AUTHORITATIVE_STATE_VERSION,
+        run: {
+          ...run,
+          runVersion: M22_RUN_VERSION,
+          map: createRunMap(seed),
+          mapNodeId,
+          completedMapNodeIds,
+        },
       };
     },
   },
@@ -324,7 +409,16 @@ export function applySaveMigrations(
         message: `Save migration ${step.from} advances to ${step.to}, which is not forward progress.`,
       };
     }
-    current = step.migrate(current);
+    try {
+      current = step.migrate(current);
+    } catch (error) {
+      return {
+        ok: false,
+        message: `Save migration ${step.from} to ${step.to} failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      };
+    }
     version = step.to;
     steps += 1;
     if (steps > table.length) {
@@ -493,6 +587,234 @@ function validateRewards(rewards: unknown): ValidationFailure | null {
   return null;
 }
 
+interface PersistedMapNode {
+  readonly id: string;
+  readonly act: number;
+  readonly row: number;
+  readonly kind: MapNodeKind;
+  readonly links: readonly string[];
+}
+
+function indexPersistedMap(
+  map: RunMap,
+): ReadonlyMap<string, PersistedMapNode> {
+  const index = new Map<string, PersistedMapNode>();
+  for (const act of map.acts) {
+    for (const node of act.nodes) {
+      index.set(node.id, {
+        id: node.id,
+        act: node.act,
+        row: node.row,
+        kind: node.kind,
+        links: node.links,
+      });
+    }
+  }
+  return index;
+}
+
+/**
+ * Playable Act 1 nodes a legal walk may stand on next. Unsupported node kinds
+ * (event, shop, workshop, treasure) are traversed but never offered, mirroring
+ * `currentReachableNodeIds`, so a run is never persisted on a node M22 cannot
+ * begin.
+ */
+function playablePersistedReachableNodeIds(
+  nodes: ReadonlyMap<string, PersistedMapNode>,
+  completedMapNodeIds: readonly string[],
+): ReadonlySet<string> {
+  const act1Nodes = [...nodes.values()].filter((node) => node.act === 1);
+  if (act1Nodes.length === 0) return new Set();
+  const startIds =
+    completedMapNodeIds.length === 0
+      ? act1Nodes.filter((node) => node.row === 1).map((node) => node.id)
+      : (() => {
+          const completedNodes = act1Nodes.filter((node) =>
+            completedMapNodeIds.includes(node.id),
+          );
+          if (completedNodes.length === 0) return [] as string[];
+          const maxCompletedRow = Math.max(
+            ...completedNodes.map((node) => node.row),
+          );
+          return completedNodes
+            .filter((node) => node.row === maxCompletedRow)
+            .flatMap((node) => [...node.links]);
+        })();
+  return playablePersistedReachableFrom(nodes, startIds, completedMapNodeIds);
+}
+
+/** Nearest playable nodes reachable from a frontier, walking through unsupported nodes. */
+function playablePersistedReachableFrom(
+  nodes: ReadonlyMap<string, PersistedMapNode>,
+  startIds: readonly string[],
+  completedMapNodeIds: readonly string[],
+): ReadonlySet<string> {
+  const completed = new Set(completedMapNodeIds);
+  const visited = new Set<string>();
+  const distanceByNode = new Map<string, number>();
+  const frontier = startIds.map((id) => ({ id, distance: 0 }));
+  while (frontier.length > 0) {
+    const entry = frontier.shift();
+    if (entry === undefined || visited.has(entry.id)) {
+      continue;
+    }
+    visited.add(entry.id);
+    if (completed.has(entry.id)) continue;
+    const node = nodes.get(entry.id);
+    if (node === undefined || node.act !== 1) continue;
+    if (isPlayableMapNodeKind(node.kind)) {
+      // A playable node is a stop: the walk does not continue past it.
+      const existing = distanceByNode.get(node.id);
+      if (existing === undefined || entry.distance < existing) {
+        distanceByNode.set(node.id, entry.distance);
+      }
+      continue;
+    }
+    for (const link of node.links) {
+      frontier.push({ id: link, distance: entry.distance + 1 });
+    }
+  }
+  if (distanceByNode.size === 0) return new Set();
+  const minDistance = Math.min(...distanceByNode.values());
+  return new Set(
+    [...distanceByNode]
+      .filter(([, distance]) => distance === minDistance)
+      .map(([id]) => id),
+  );
+}
+
+/**
+ * Whether any forward-linked walk from `startIds` reaches `target`. This is the
+ * chain predicate for consecutive completed nodes: a completed service node is
+ * a legal step even though M22 never lets the player stop on it.
+ */
+function mapWalkReaches(
+  nodes: ReadonlyMap<string, PersistedMapNode>,
+  startIds: readonly string[],
+  target: string,
+): boolean {
+  const visited = new Set<string>();
+  const frontier = [...startIds];
+  while (frontier.length > 0) {
+    const nodeId = frontier.pop();
+    if (nodeId === undefined || visited.has(nodeId)) continue;
+    visited.add(nodeId);
+    const node = nodes.get(nodeId);
+    if (node === undefined || node.act !== 1) continue;
+    if (node.id === target) return true;
+    for (const link of node.links) frontier.push(link);
+  }
+  return false;
+}
+
+/**
+ * Reject a persisted M22 navigation state that could not have been reached by
+ * the engine: completed map nodes must form one ordered, forward-linked Act 1
+ * path with no duplicates, `mapNodeId` must be that path's terminal node or a
+ * legal next playable node, and Act 2 can never be completed or current. A
+ * migrated M19 run keeps its authored `currentNodeId`; its `mapNodeId` is the
+ * navigation equivalent and must match the same walk.
+ */
+function invalidMapNavigation(
+  map: RunMap,
+  run: Record<string, unknown>,
+  currentNodeId: string,
+): ValidationFailure | null {
+  const nodes = indexPersistedMap(map);
+  const mapNodeId = run.mapNodeId;
+  if (typeof mapNodeId !== "string" || !nodes.has(mapNodeId)) {
+    return invalid("run.mapNodeId must name a node on the persisted map.");
+  }
+  const completedMapNodeIds = run.completedMapNodeIds;
+  if (
+    !Array.isArray(completedMapNodeIds) ||
+    !completedMapNodeIds.every(
+      (nodeId) => typeof nodeId === "string" && nodes.has(nodeId),
+    )
+  ) {
+    return invalid("run.completedMapNodeIds must list nodes on the persisted map.");
+  }
+
+  // A node the run may hold as "current" after a legal walk. Unsupported
+  // kinds are only acceptable as a migrated M19 equivalent, handled below.
+  const selectable = playablePersistedReachableNodeIds(nodes, completedMapNodeIds);
+
+  const orderedCompleted: PersistedMapNode[] = [];
+  const seen = new Set<string>();
+  for (const nodeId of completedMapNodeIds) {
+    if (seen.has(nodeId)) {
+      return invalid(
+        `run.completedMapNodeIds repeats map node ${nodeId}.`,
+      );
+    }
+    seen.add(nodeId);
+    const node = nodes.get(nodeId) as PersistedMapNode;
+    if (node.act !== 1) {
+      return invalid(
+        `run.completedMapNodeIds cannot contain Act 2 node ${nodeId}.`,
+      );
+    }
+    orderedCompleted.push(node);
+  }
+  // The first completed node must be a stop a legal walk could reach from the
+  // empty completion set, mirroring `reachableNodeIds`/selection semantics.
+  // Pairwise links alone would accept a later Act 1 node as a run's very first
+  // completed node, which no entrance walk could produce.
+  const firstCompleted = orderedCompleted[0];
+  if (
+    firstCompleted !== undefined &&
+    !playablePersistedReachableNodeIds(nodes, []).has(firstCompleted.id)
+  ) {
+    return invalid(
+      `run.completedMapNodeIds must start at an Act 1 entrance reachable from an empty completion: ${firstCompleted.id} is not.`,
+    );
+  }
+  for (let index = 1; index < orderedCompleted.length; index += 1) {
+    const previous = orderedCompleted[index - 1] as PersistedMapNode;
+    const current = orderedCompleted[index] as PersistedMapNode;
+    // Each step must be reachable from the previous completed node, passing
+    // only through unsupported service nodes. This accepts the authored M19
+    // route, whose rows map straight to the same column, while still rejecting
+    // jumps that no walk could make.
+    if (!mapWalkReaches(nodes, previous.links, current.id)) {
+      return invalid(
+        `run.completedMapNodeIds is not a forward-linked Act 1 path: ${previous.id} does not reach ${current.id}.`,
+      );
+    }
+  }
+
+  const mapNode = nodes.get(mapNodeId) as PersistedMapNode;
+  if (mapNode.act !== 1) {
+    return invalid(
+      `run.mapNodeId cannot point at reserved Act 2 node ${mapNodeId}.`,
+    );
+  }
+  const migratedM19NodeId =
+    M19_NODE_IDS.find(
+      (candidate) => M19_TO_M22_ACT_1_ROUTE[candidate] === mapNodeId,
+    ) ?? null;
+  // A migrated M19 run keeps the authored node; a pure M22 run keeps the map
+  // node. Both must still sit on the walk's legal stopping point.
+  const isMigratedM19Current =
+    migratedM19NodeId !== null && currentNodeId === migratedM19NodeId;
+  if (
+    !isMigratedM19Current &&
+    currentNodeId !== mapNodeId
+  ) {
+    return invalid(
+      "run.currentNodeId must name the current map node or its authored M19 counterpart.",
+    );
+  }
+  const terminal = orderedCompleted[orderedCompleted.length - 1];
+  const isTerminal = terminal !== undefined && terminal.id === mapNodeId;
+  if (!isTerminal && !selectable.has(mapNodeId)) {
+    return invalid(
+      `run.mapNodeId ${mapNodeId} is not the current or next reachable map node.`,
+    );
+  }
+  return null;
+}
+
 function validateRun(run: unknown): ValidationFailure | null {
   if (run === null) {
     return null;
@@ -500,24 +822,89 @@ function validateRun(run: unknown): ValidationFailure | null {
   if (!isPlainObject(run)) {
     return invalid("run must be null or an object.");
   }
-  const version = requireVersion("run.runVersion", run.runVersion, M19_RUN_VERSION);
-  if (version !== null) {
-    return version;
+  const runVersion: unknown = run.runVersion;
+  if (runVersion !== M19_RUN_VERSION && runVersion !== M22_RUN_VERSION) {
+    return incompatible(
+      `run.runVersion ${String(runVersion)} is not supported; this engine reads ${M19_RUN_VERSION} or ${M22_RUN_VERSION}.`,
+    );
   }
   if (!isNonNegativeInteger(run.seed)) {
     return invalid("run.seed must be a nonnegative integer.");
   }
-  if (!M19_NODE_IDS.includes(run.currentNodeId as (typeof M19_NODE_IDS)[number])) {
-    return invalid("run.currentNodeId is not an authored M19 node.");
+
+  const map = run.map;
+  if (map !== null && map !== undefined && !isPlainObject(map)) {
+    return invalid("run.map must be null or an object.");
+  }
+  const mapNodeIds = new Set<string>();
+  if (isPlainObject(map)) {
+    const mapResult = validateRunMap(map as unknown as RunMap);
+    if (!mapResult.ok) {
+      return invalid(`run.map is invalid: ${mapResult.errors.join(" ")}`);
+    }
+    for (const act of (map as unknown as RunMap).acts) {
+      for (const node of act.nodes) {
+        mapNodeIds.add(node.id);
+      }
+    }
+  }
+
+  const currentNodeId = run.currentNodeId;
+  if (typeof currentNodeId !== "string") {
+    return invalid("run.currentNodeId must be a string.");
+  }
+  const isM19Node = M19_NODE_IDS.includes(
+    currentNodeId as (typeof M19_NODE_IDS)[number],
+  );
+  if (!isM19Node && !mapNodeIds.has(currentNodeId)) {
+    return invalid(
+      "run.currentNodeId is not an authored M19 node or a persisted map node.",
+    );
+  }
+
+  if (!Array.isArray(run.completedNodeIds)) {
+    return invalid("run.completedNodeIds must be an array of node ids.");
   }
   if (
-    !Array.isArray(run.completedNodeIds) ||
-    !run.completedNodeIds.every((nodeId) =>
-      M19_NODE_IDS.includes(nodeId as (typeof M19_NODE_IDS)[number]),
+    !run.completedNodeIds.every(
+      (nodeId) =>
+        typeof nodeId === "string" &&
+        (M19_NODE_IDS.includes(nodeId as (typeof M19_NODE_IDS)[number]) ||
+          mapNodeIds.has(nodeId)),
     )
   ) {
-    return invalid("run.completedNodeIds must list authored M19 nodes.");
+    return invalid(
+      "run.completedNodeIds must list authored M19 nodes or persisted map nodes.",
+    );
   }
+
+  if (map === null || map === undefined) {
+    if ((runVersion as number) === M22_RUN_VERSION) {
+      return invalid("A version 2 run must persist its M22 map.");
+    }
+    if (run.mapNodeId !== null && run.mapNodeId !== undefined) {
+      return invalid("A run without a map cannot name a map node.");
+    }
+    if (
+      run.completedMapNodeIds !== undefined &&
+      (!Array.isArray(run.completedMapNodeIds) ||
+        run.completedMapNodeIds.length > 0)
+    ) {
+      return invalid("A run without a map cannot list completed map nodes.");
+    }
+  } else {
+    // A pure M22 run keeps currentNodeId on the map node. A migrated M19 run
+    // keeps its authored M19 id while mapNodeId names the equivalent Act 1
+    // node, so the two may differ while both resolving. Either way the
+    // persisted walk must be one the engine could have produced.
+    const navigationFailure = invalidMapNavigation(
+      map as unknown as RunMap,
+      run,
+      currentNodeId,
+    );
+    if (navigationFailure !== null) return navigationFailure;
+  }
+
   if (!RUN_OUTCOMES.includes(run.outcome as M19RunOutcome)) {
     return invalid("run.outcome is not a known outcome.");
   }

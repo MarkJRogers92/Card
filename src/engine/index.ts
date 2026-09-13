@@ -77,6 +77,26 @@ export type {
   CardOrigin,
 } from "./cards";
 export {
+  MAP_NODE_KINDS,
+  MAP_VERSION,
+  createRunMap,
+  reachableNodeIds,
+  validateRunMap,
+} from "./map";
+export type {
+  Act1OrdinaryEncounterPayload,
+  MapActNumber,
+  MapNodeKind,
+  ReservedRunMapPayload,
+  RunMap,
+  RunMapAct,
+  RunMapNode,
+  RunMapNodePayload,
+  RunMapValidationFailure,
+  RunMapValidationResult,
+  RunMapValidationSuccess,
+} from "./map";
+export {
   CARD_KEYWORDS,
   CARD_LIFECYCLE_VERSION,
   appendProtocolTriggerBindings,
@@ -379,16 +399,24 @@ export {
   M19_SELECTED_REWARD_ROLES,
   M19_SWITCH_ID,
   M19_TEST_ACT_REWARD_CATALOG,
+  M19_TO_M22_ACT_1_ROUTE,
+  M22_CONTENT_HASH,
+  M22_CONTENT_VERSION,
+  M22_RUN_VERSION,
+  RUN_VERSION,
   advanceRunNode,
   applyM19Command,
   beginRunNode,
   claimRunReward,
   completeRunCombat,
   createM19Run,
+  createM22Run,
+  currentReachableNodeIds,
   currentRunNode,
   getM19Hand,
   m19NodeKind,
   restRunCharacter,
+  selectRunMapNode,
 } from "./run";
 export type {
   M19CardView,

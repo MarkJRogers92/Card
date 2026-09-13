@@ -30,6 +30,14 @@ import {
   type InitialEncounterFormation,
 } from "./initial-enemies";
 import {
+  createRunMap,
+  reachableNodeIds,
+  validateRunMap,
+  type Act1OrdinaryEncounterPayload,
+  type RunMap,
+  type RunMapNode,
+} from "./map";
+import {
   M10_STARTER_CARDS,
   createAct1Combat,
   endCombatTurn,
@@ -49,11 +57,17 @@ import {
 } from "./rewards";
 import { createAuthoritativeState, type AuthoritativeState } from "./state";
 
+/** Version 1 is the M19 fixed linear route; version 2 adds map navigation. */
 export const M19_RUN_VERSION = 1 as const;
+export const M22_RUN_VERSION = 2 as const;
+export const RUN_VERSION = M22_RUN_VERSION;
 
 export const M19_DEFAULT_SEED = 1900 as const;
 
 export const M19_REST_HEAL_AMOUNT = 18 as const;
+
+export const M22_CONTENT_VERSION = "m22.map_template" as const;
+export const M22_CONTENT_HASH = "joint-liability-m22-map-template-v1" as const;
 
 /** The M19 test act is a fixed, linear seven-node route. M22 owns map generation. */
 export const M19_NODE_IDS = [
@@ -84,10 +98,24 @@ export interface RunCharacterState {
 }
 
 export interface RunState {
-  readonly runVersion: typeof M19_RUN_VERSION;
+  readonly runVersion: typeof M19_RUN_VERSION | typeof M22_RUN_VERSION;
   readonly seed: number;
-  readonly currentNodeId: M19NodeId;
-  readonly completedNodeIds: readonly M19NodeId[];
+  /**
+   * The node the run is currently on. M19 runs hold an `M19NodeId`; M22 runs
+   * hold a canonical map node id. Gameplay helpers resolve the kind through
+   * `currentRunNode`, so the two id spaces stay mutually exclusive per run.
+   */
+  readonly currentNodeId: string;
+  readonly completedNodeIds: readonly string[];
+  /**
+   * The persisted two-act graph. M19 fixed-route runs carry `null`; M22 runs
+   * carry the deterministic map built from `seed`.
+   */
+  readonly map: RunMap | null;
+  /** Canonical map node the run is on. `null` for M19 fixed-route runs. */
+  readonly mapNodeId: string | null;
+  /** Map nodes completed in visit order, used for legal navigation. */
+  readonly completedMapNodeIds: readonly string[];
   readonly outcome: M19RunOutcome;
   readonly characters: readonly RunCharacterState[];
   /**
@@ -100,8 +128,8 @@ export interface RunState {
 }
 
 export interface M19RunNodeView {
-  readonly nodeId: M19NodeId;
-  readonly kind: M19NodeKind;
+  readonly nodeId: string;
+  readonly kind: M19NodeKind | RunMapNode["kind"];
   readonly label: string;
   readonly index: number;
   readonly isCompleted: boolean;
@@ -168,6 +196,35 @@ const M19_NODE_LABELS: Readonly<Record<M19NodeId, string>> = {
   ordinary_3: "Ordinary Combat 3",
   boss: "Boss - Head of Recovery",
 };
+
+const M22_NODE_LABELS: Readonly<Record<RunMapNode["kind"], string>> = {
+  combat: "Combat",
+  event: "Event",
+  shop: "Shop",
+  workshop: "Workshop",
+  elite: "Elite - Repo Foreman",
+  treasure: "Treasure",
+  rest: "Rest",
+  boss: "Boss - Head of Recovery",
+};
+
+/**
+ * The M19 fixed route maps one-to-one onto the Act 1 rows: row 1 is the
+ * entrance and every following node advances exactly one row. The M19 node
+ * kinds do not line up row-for-row with the M22 template (rows 3 and 5 are
+ * service rows), but each M19 node keeps its authored kind and behavior so the
+ * persisted combat, reward, rest, deck, relic, and character state is retained
+ * after selection.
+ */
+export const M19_TO_M22_ACT_1_ROUTE: Readonly<Record<M19NodeId, string>> = Object.freeze({
+  ordinary_1: "act-1-row-1-col-0",
+  rest_1: "act-1-row-2-col-0",
+  ordinary_2: "act-1-row-3-col-0",
+  elite: "act-1-row-4-col-0",
+  rest_2: "act-1-row-5-col-0",
+  ordinary_3: "act-1-row-6-col-0",
+  boss: "act-1-row-7-col-0",
+});
 
 const M19_ENCOUNTER_KINDS: Readonly<Record<M19NodeKind, RewardEncounterKind | null>> = {
   combat: "ordinary",
@@ -237,12 +294,72 @@ function assertNonnegativeInteger(label: string, value: number): void {
   }
 }
 
+function isM19NodeId(nodeId: string): nodeId is M19NodeId {
+  return M19_NODE_IDS.includes(nodeId as M19NodeId);
+}
+
+function requireM19NodeId(nodeId: string): M19NodeId {
+  if (!isM19NodeId(nodeId)) {
+    throw new Error(
+      `Node ${nodeId} is a map node; M19 fixed-route helpers do not accept it.`,
+    );
+  }
+  return nodeId;
+}
+
 function requireRun(state: AuthoritativeState): RunState {
   const run = state.run;
   if (run === null) {
     throw new Error("No M19 test act is active.");
   }
   return run;
+}
+
+function findRunMapNode(map: RunMap, nodeId: string): RunMapNode | null {
+  for (const act of map.acts) {
+    for (const node of act.nodes) {
+      if (node.id === nodeId) return node;
+    }
+  }
+  return null;
+}
+
+function requireMapNode(run: RunState, nodeId: string): RunMapNode {
+  const map = run.map;
+  if (map === null) {
+    throw new Error("This run does not carry an M22 map.");
+  }
+  const node = findRunMapNode(map, nodeId);
+  if (node === null) {
+    throw new Error(`Run map does not contain node ${nodeId}.`);
+  }
+  return node;
+}
+
+function mapNodeView(node: RunMapNode, isCompleted: boolean): M19RunNodeView {
+  return {
+    nodeId: node.id,
+    kind: node.kind,
+    label: M22_NODE_LABELS[node.kind],
+    index: node.row - 1,
+    isCompleted,
+  };
+}
+
+/**
+ * M22 ships handlers for these map kinds only. Event, shop, workshop, and
+ * treasure are authored in the template and rendered, but they have no M22
+ * behavior, so navigation never offers or accepts them.
+ */
+export const M22_PLAYABLE_NODE_KINDS: ReadonlySet<RunMapNode["kind"]> = new Set([
+  "combat",
+  "elite",
+  "boss",
+  "rest",
+]);
+
+export function isPlayableMapNodeKind(kind: RunMapNode["kind"]): boolean {
+  return M22_PLAYABLE_NODE_KINDS.has(kind);
 }
 
 function requireRunNode(state: AuthoritativeState): M19RunNodeView {
@@ -261,6 +378,31 @@ function replaceRun(state: AuthoritativeState, run: RunState): AuthoritativeStat
   return { ...state, run };
 }
 
+/**
+ * Record one map node as completed for an M22 run. M19 fixed-route runs keep
+ * their authored revision list only.
+ */
+function completedMapNodeIdsWith(run: RunState, nodeId: string): readonly string[] {
+  if (run.map === null || run.mapNodeId !== nodeId) {
+    return run.completedMapNodeIds;
+  }
+  return [...run.completedMapNodeIds, nodeId];
+}
+
+/** The canonical map node the run currently occupies, if it carries a map. */
+function canonicalMapNodeId(run: RunState): string | null {
+  if (run.map === null) return null;
+  return run.mapNodeId ?? (isM19NodeId(run.currentNodeId) ? null : run.currentNodeId);
+}
+
+/** Whether a resolved run node view is already completed. */
+function isRunNodeCompleted(run: RunState, node: M19RunNodeView): boolean {
+  if (run.map !== null && run.mapNodeId !== null) {
+    return run.completedMapNodeIds.includes(run.mapNodeId);
+  }
+  return run.completedNodeIds.includes(node.nodeId);
+}
+
 function persistDeckInstances(
   deck: { readonly instances: Readonly<Record<string, CardInstance>> },
 ): readonly CardInstance[] {
@@ -270,6 +412,10 @@ function persistDeckInstances(
 }
 
 function formationForNode(state: AuthoritativeState, node: M19RunNodeView): InitialEncounterFormation {
+  const run = requireRun(state);
+  // The authored kind on the resolved view wins. For a migrated M19 run this
+  // is the M19 kind, so the authored elite and boss encounters still resolve
+  // even though the navigation-equivalent map payload is ordinary combat.
   if (node.kind === "elite") {
     const elite = ACT_1_ELITE_ENCOUNTERS[0];
     if (elite === undefined) throw new Error("No Act 1 elite encounter is authored.");
@@ -278,7 +424,26 @@ function formationForNode(state: AuthoritativeState, node: M19RunNodeView): Init
   if (node.kind === "boss") {
     return ACT_1_BOSS_ENCOUNTER;
   }
-  const run = requireRun(state);
+  if (run.map !== null && run.mapNodeId === node.nodeId) {
+    const mapNode = requireMapNode(run, node.nodeId);
+    if (mapNode.kind !== "combat") {
+      throw new Error(`Map node ${mapNode.id} is not a combat node.`);
+    }
+    const payload = mapNode.payload;
+    if (payload.kind === "act_1_ordinary_encounter") {
+      const ordinary: Act1OrdinaryEncounterPayload = payload;
+      const formation = ACT_1_ORDINARY_ENCOUNTERS.find(
+        (candidate) => candidate.id === ordinary.encounterId,
+      );
+      if (formation === undefined) {
+        throw new Error(
+          `No Act 1 ordinary encounter is authored for ${ordinary.encounterId}.`,
+        );
+      }
+      return formation;
+    }
+    throw new Error(`Map node ${mapNode.id} does not carry an Act 1 encounter.`);
+  }
   const index = (run.seed + node.index) % ACT_1_ORDINARY_ENCOUNTERS.length;
   const formation = ACT_1_ORDINARY_ENCOUNTERS[index];
   if (formation === undefined) throw new Error("No Act 1 ordinary encounter is authored.");
@@ -286,9 +451,17 @@ function formationForNode(state: AuthoritativeState, node: M19RunNodeView): Init
 }
 
 function requireCombatNode(node: M19RunNodeView): void {
-  if (M19_ENCOUNTER_KINDS[node.kind] === null) {
+  if (encounterKindForNode(node) === null) {
     throw new Error(`Node ${node.nodeId} is not a combat node.`);
   }
+}
+
+function isM19NodeKind(kind: string): kind is M19NodeKind {
+  return kind in M19_ENCOUNTER_KINDS;
+}
+
+function encounterKindForNode(node: M19RunNodeView): RewardEncounterKind | null {
+  return isM19NodeKind(node.kind) ? M19_ENCOUNTER_KINDS[node.kind] : null;
 }
 
 /**
@@ -323,6 +496,9 @@ export function createM19Run(seed: number = M19_DEFAULT_SEED): AuthoritativeStat
     seed,
     currentNodeId: M19_NODE_IDS[0],
     completedNodeIds: [],
+    map: null,
+    mapNodeId: null,
+    completedMapNodeIds: [],
     outcome: "active",
     characters: M19_DEFAULT_CHARACTERS.map((character) => ({ ...character })),
     deck: null,
@@ -336,13 +512,212 @@ export function m19NodeKind(nodeId: M19NodeId): M19NodeKind {
 
 export function currentRunNode(state: AuthoritativeState): M19RunNodeView {
   const run = requireRun(state);
+  // A migrated M19 run keeps its authored `currentNodeId` while `mapNodeId`
+  // names the navigation equivalent. The authored node wins: the map payload
+  // at that row is not the M19 encounter (for example row 4 is ordinary
+  // combat, while the migrated node is the elite). A pure M22 run sets the two
+  // ids to the same map node, and a user-selected node moves `currentNodeId`
+  // onto the map id, so both fall through to map behavior.
+  if (isM19NodeId(run.currentNodeId)) {
+    const currentNodeId = run.currentNodeId;
+    return {
+      nodeId: currentNodeId,
+      kind: M19_NODE_KINDS[currentNodeId],
+      label: M19_NODE_LABELS[currentNodeId],
+      index: M19_NODE_IDS.indexOf(currentNodeId),
+      isCompleted: run.completedNodeIds.includes(currentNodeId),
+    };
+  }
+  if (run.map !== null && run.mapNodeId !== null) {
+    const node = requireMapNode(run, run.mapNodeId);
+    return mapNodeView(node, run.completedMapNodeIds.includes(node.id));
+  }
+  const currentNodeId = requireM19NodeId(run.currentNodeId);
   return {
-    nodeId: run.currentNodeId,
-    kind: M19_NODE_KINDS[run.currentNodeId],
-    label: M19_NODE_LABELS[run.currentNodeId],
-    index: M19_NODE_IDS.indexOf(run.currentNodeId),
-    isCompleted: run.completedNodeIds.includes(run.currentNodeId),
+    nodeId: currentNodeId,
+    kind: M19_NODE_KINDS[currentNodeId],
+    label: M19_NODE_LABELS[currentNodeId],
+    index: M19_NODE_IDS.indexOf(currentNodeId),
+    isCompleted: run.completedNodeIds.includes(currentNodeId),
   };
+}
+
+export function createM22Run(seed: number = M19_DEFAULT_SEED): AuthoritativeState {
+  assertNonnegativeInteger("M22 seed", seed);
+  const map = createRunMap(seed);
+  const validation = validateRunMap(map);
+  if (!validation.ok) {
+    throw new Error(
+      `Seed ${seed} produced an invalid M22 map: ${validation.errors.join(" ")}`,
+    );
+  }
+
+  const startingNode = map.acts
+    .find((act) => act.act === 1)
+    ?.nodes.find((node) => node.row === 1);
+  if (startingNode === undefined) {
+    throw new Error("The Act 1 map has no row 1 entrance node.");
+  }
+
+  const state = createAuthoritativeState({
+    seed,
+    contentVersion: M22_CONTENT_VERSION,
+    contentHash: M22_CONTENT_HASH,
+  });
+  return replaceRun(state, {
+    runVersion: M22_RUN_VERSION,
+    seed,
+    currentNodeId: startingNode.id,
+    completedNodeIds: [],
+    map,
+    mapNodeId: startingNode.id,
+    completedMapNodeIds: [],
+    outcome: "active",
+    characters: M19_DEFAULT_CHARACTERS.map((character) => ({ ...character })),
+    deck: null,
+    relicIds: [...M19_STARTING_RELIC_IDS],
+  });
+}
+
+/** The Act 1 nodes the run may legally select next, in map order. */
+export function currentReachableNodeIds(
+  state: AuthoritativeState,
+): ReadonlySet<string> {
+  const run = requireRun(state);
+  const map = run.map;
+  if (map === null) {
+    throw new Error("currentReachableNodeIds requires an M22 map run.");
+  }
+  const forward = m22SelectableNodeIds(map, run.completedMapNodeIds);
+  if (run.mapNodeId !== null && forward.has(run.mapNodeId)) {
+    // The current node has been selected but not completed, so it is the only
+    // reachable node; forward links appear once it is completed.
+    return new Set([run.mapNodeId]);
+  }
+  return forward;
+}
+
+/**
+ * The playable nodes a legal map walk may select next. Unsupported kinds
+ * (event, shop, workshop, treasure) have no M22 handler, so they are passed
+ * through rather than selected: the walk follows their links and offers the
+ * nearest combat, elite, boss, or rest node beyond them. This keeps the
+ * authored topology reachable without dead-ending `beginRunNode` on a kind M22
+ * deliberately does not implement, and stopping at the nearest playable node
+ * prevents an authored encounter from being skipped via a service branch.
+ */
+function m22SelectableNodeIds(
+  map: RunMap,
+  completedMapNodeIds: readonly string[],
+): ReadonlySet<string> {
+  const act1 = map.acts.find((act) => act.act === 1);
+  if (act1 === undefined) return new Set();
+
+  const completed = new Set(completedMapNodeIds);
+  const entryIds =
+    completedMapNodeIds.length === 0
+      ? act1.nodes
+          .filter((candidate) => candidate.row === 1)
+          .map((candidate) => candidate.id)
+      : [...reachableNodeIds(map, completedMapNodeIds)];
+
+  const selectable = new Set<string>();
+  const visited = new Set<string>();
+  const distanceByNode = new Map<string, number>();
+  const frontier = entryIds.map((id) => ({ id, distance: 0 }));
+  while (frontier.length > 0) {
+    const entry = frontier.shift();
+    if (entry === undefined || visited.has(entry.id) || completed.has(entry.id)) {
+      continue;
+    }
+    visited.add(entry.id);
+    const node = findRunMapNode(map, entry.id);
+    if (node === null || node.act !== 1) continue;
+    if (isPlayableMapNodeKind(node.kind)) {
+      const existing = distanceByNode.get(node.id);
+      if (existing === undefined || entry.distance < existing) {
+        distanceByNode.set(node.id, entry.distance);
+      }
+      // A playable node is a stop: the walk does not continue past it, so an
+      // authored encounter cannot be skipped by branching around it.
+      continue;
+    }
+    // Unsupported node: walk through it without offering it.
+    for (const link of node.links) {
+      frontier.push({ id: link, distance: entry.distance + 1 });
+    }
+  }
+
+  if (distanceByNode.size === 0) return selectable;
+  const minDistance = Math.min(...distanceByNode.values());
+  for (const [nodeId, distance] of distanceByNode) {
+    if (distance === minDistance) selectable.add(nodeId);
+  }
+  return selectable;
+}
+
+function requireMapRun(state: AuthoritativeState): RunState & { readonly map: RunMap } {
+  const run = requireRun(state);
+  if (run.map === null) {
+    throw new Error("This run does not carry an M22 map.");
+  }
+  return run as RunState & { readonly map: RunMap };
+}
+
+/**
+ * Move the run onto a reachable Act 1 node. A reward must be resolved first,
+ * the node must be reachable from the completed walk, and the node cannot
+ * already be complete. Act 2 nodes stay reserved and are never reachable.
+ */
+export function selectRunMapNode(
+  state: AuthoritativeState,
+  nodeId: string,
+): AuthoritativeState {
+  const run = requireActiveRun(state);
+  const mapRun = requireMapRun(state);
+  const map = mapRun.map;
+
+  if (state.rewards.pending !== null) {
+    throw new Error("A reward is still pending for the previous node.");
+  }
+  const currentCombat = state.combat;
+  if (
+    currentCombat !== null &&
+    currentCombat.outcome === "active" &&
+    run.mapNodeId !== nodeId
+  ) {
+    throw new Error("A combat is already active.");
+  }
+  const node = findRunMapNode(map, nodeId);
+  if (node === null) {
+    throw new Error(`Run map does not contain node ${nodeId}.`);
+  }
+  if (node.act !== 1) {
+    throw new Error(`Act 2 is reserved and node ${nodeId} cannot be selected.`);
+  }
+  if (!isPlayableMapNodeKind(node.kind)) {
+    throw new Error(`Map node kind ${node.kind} is not supported in M22.`);
+  }
+  if (run.completedMapNodeIds.includes(nodeId)) {
+    throw new Error(`Node ${nodeId} is already complete.`);
+  }
+  if (!m22SelectableNodeIds(map, run.completedMapNodeIds).has(nodeId)) {
+    throw new Error(`Node ${nodeId} is not reachable.`);
+  }
+  if (run.mapNodeId === nodeId) {
+    // Selecting the node the run is already on is a no-op, which keeps the
+    // entrance selectable while its battle is unplayed.
+    return state;
+  }
+
+  return replaceRun(
+    { ...state, combat: null },
+    {
+      ...run,
+      mapNodeId: nodeId,
+      currentNodeId: nodeId,
+    },
+  );
 }
 
 export function beginRunNode(
@@ -352,7 +727,7 @@ export function beginRunNode(
   const run = requireActiveRun(state);
   const node = requireRunNode(state);
   requireCombatNode(node);
-  if (node.isCompleted) {
+  if (isRunNodeCompleted(run, node)) {
     throw new Error(`Node ${node.nodeId} is already complete.`);
   }
   if (state.rewards.pending !== null) {
@@ -376,7 +751,7 @@ export function completeRunCombat(
   const run = requireRun(state);
   const node = requireRunNode(state);
   requireCombatNode(node);
-  if (node.isCompleted) {
+  if (isRunNodeCompleted(run, node)) {
     return state;
   }
   const combat = state.combat;
@@ -390,7 +765,7 @@ export function completeRunCombat(
     return replaceRun(state, { ...run, outcome: "defeat" });
   }
 
-  const encounter = M19_ENCOUNTER_KINDS[node.kind];
+  const encounter = encounterKindForNode(node);
   if (encounter === null) {
     throw new Error(`Node ${node.nodeId} does not grant a combat reward.`);
   }
@@ -402,9 +777,15 @@ export function completeRunCombat(
     ownedRelicIds: run.relicIds,
   });
 
+  const mapNodeId = canonicalMapNodeId(run);
+  const completedMapNodeIds =
+    mapNodeId === null || run.completedMapNodeIds.includes(mapNodeId)
+      ? run.completedMapNodeIds
+      : [...run.completedMapNodeIds, mapNodeId];
   return replaceRun(withReward, {
     ...run,
     completedNodeIds: [...run.completedNodeIds, node.nodeId],
+    completedMapNodeIds,
     characters: run.characters.map((character) => {
       const actor = combat.actors[character.actorId];
       if (actor === undefined) {
@@ -425,7 +806,7 @@ export function restRunCharacter(
   if (node.kind !== "rest") {
     throw new Error(`Node ${node.nodeId} is not a rest node.`);
   }
-  if (node.isCompleted) {
+  if (isRunNodeCompleted(run, node)) {
     throw new Error(`Node ${node.nodeId} is already complete.`);
   }
   if (state.combat !== null) {
@@ -434,9 +815,15 @@ export function restRunCharacter(
   if (!run.characters.some((character) => character.actorId === actorId)) {
     throw new Error(`Unknown run character: ${actorId}.`);
   }
+  const mapNodeId = canonicalMapNodeId(run);
+  const completedMapNodeIds =
+    mapNodeId === null || run.completedMapNodeIds.includes(mapNodeId)
+      ? run.completedMapNodeIds
+      : [...run.completedMapNodeIds, mapNodeId];
   return replaceRun(state, {
     ...run,
     completedNodeIds: [...run.completedNodeIds, node.nodeId],
+    completedMapNodeIds,
     characters: run.characters.map((character) =>
       character.actorId === actorId
         ? {
@@ -664,5 +1051,15 @@ export function advanceRunNode(state: AuthoritativeState): AuthoritativeState {
   if (nextNodeId === undefined) {
     return replaceRun({ ...state, combat: null }, { ...run, outcome: "victory" });
   }
-  return replaceRun({ ...state, combat: null }, { ...run, currentNodeId: nextNodeId });
+  const mapNodeId = run.map === null ? undefined : M19_TO_M22_ACT_1_ROUTE[nextNodeId];
+  const advancedRun: RunState = { ...run, currentNodeId: nextNodeId };
+  const mappedRun: RunState =
+    mapNodeId === undefined
+      ? advancedRun
+      : {
+          ...advancedRun,
+          mapNodeId,
+          completedMapNodeIds: completedMapNodeIdsWith(advancedRun, mapNodeId),
+        };
+  return replaceRun({ ...state, combat: null }, mappedRun);
 }

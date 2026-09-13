@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   M19_TEST_ACT_REWARD_CATALOG,
+  SAVE_SCHEMA_VERSION,
   advanceRunNode,
   applyM19Command,
   beginRunNode,
@@ -12,8 +13,11 @@ import {
   exportSave,
   getM19Hand,
   hashAuthoritativeState,
+  hashCanonical,
   importSave,
   restRunCharacter,
+  selectRunMapNode,
+  createM22Run,
   type AuthoritativeState,
   type M19Command,
 } from "../../src/engine";
@@ -192,5 +196,71 @@ describe("M20 save and replay hash", () => {
       expected.rewards.completedTransactionIds,
     );
     expect(hashAuthoritativeState(claimed)).toBe(hashAuthoritativeState(expected));
+  });
+
+  it("migrates an M21 fixed-route snapshot into a playable map run", () => {
+    // An M21 snapshot: save schema 2, M19 fixed route stopped at the elite.
+    const m21Text = exportSave(createM19Run(ACT_SEED));
+    const envelope = JSON.parse(m21Text) as {
+      saveVersion: number;
+      engineVersion: string;
+      contentVersion: string;
+      contentHash: string;
+      snapshot: Record<string, unknown>;
+      checksum: string;
+    };
+    const snapshot = structuredClone(envelope.snapshot) as Record<string, unknown>;
+    const run = { ...(snapshot.run as Record<string, unknown>) };
+    run.currentNodeId = "elite";
+    run.completedNodeIds = ["ordinary_1", "rest_1", "ordinary_2"];
+    snapshot.run = run;
+    const m21Envelope = {
+      ...envelope,
+      saveVersion: 2,
+      snapshot,
+    };
+    const m21Save = JSON.stringify({
+      ...m21Envelope,
+      checksum: hashCanonical({
+        saveVersion: m21Envelope.saveVersion,
+        engineVersion: m21Envelope.engineVersion,
+        contentVersion: m21Envelope.contentVersion,
+        contentHash: m21Envelope.contentHash,
+        snapshot: m21Envelope.snapshot,
+      }),
+    });
+
+    const migrated = importSave(m21Save);
+    expect(migrated.ok).toBe(true);
+    if (!migrated.ok) return;
+    expect(migrated.migratedFrom).toBe(2);
+    expect(migrated.state.run?.map?.acts).toHaveLength(2);
+
+    // The migrated run is still the M19 fixed sequence at the elite. The
+    // authored node wins over the navigation-equivalent map payload, which is
+    // ordinary combat, so the encounter stays elite.
+    expect(migrated.state.run?.currentNodeId).toBe("elite");
+    expect(currentRunNode(migrated.state)).toMatchObject({
+      nodeId: "elite",
+      kind: "elite",
+      isCompleted: false,
+    });
+
+    const reloaded = importSave(exportSave(migrated.state));
+    expect(reloaded.ok).toBe(true);
+    if (!reloaded.ok) return;
+    expect(hashAuthoritativeState(reloaded.state)).toBe(
+      hashAuthoritativeState(migrated.state),
+    );
+  });
+
+  it("round trips an M22 map run at a committed navigation boundary", () => {
+    const mapped = selectRunMapNode(createM22Run(ACT_SEED), "act-1-row-1-col-0");
+    const loaded = importSave(exportSave(mapped));
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(hashAuthoritativeState(loaded.state)).toBe(hashAuthoritativeState(mapped));
+    expect(loaded.state.run?.map?.acts).toHaveLength(2);
+    expect(SAVE_SCHEMA_VERSION).toBe(3);
   });
 });

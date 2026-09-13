@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AUTHORITATIVE_STATE_VERSION,
   COMBAT_STATE_VERSION,
+  M19_RUN_VERSION,
   SCHEDULED_PACKET_TIMING,
   SCHEDULED_PACKET_VERSION,
   SAVE_SCHEMA_VERSION,
@@ -11,6 +12,7 @@ import {
   createAuthoritativeState,
   createM10Fight,
   createM19Run,
+  createM22Run,
   exportSave,
   getM19Hand,
   hashAuthoritativeState,
@@ -406,6 +408,8 @@ describe("M20 save migration contract", () => {
     expect(result.migratedFrom).toBe(1);
     expect(result.state.stateVersion).toBe(AUTHORITATIVE_STATE_VERSION);
     expect(result.state.run?.relicIds).toStrictEqual(["relic.shared_warranty"]);
+    // Save version 1 predates map navigation, so it keeps the M19 fixed route.
+    expect(result.state.run?.map).toBeNull();
     expect(exportSave(result.state)).toBe(exportSave(createM19Run(1900)));
   });
 
@@ -423,5 +427,95 @@ describe("M20 save migration contract", () => {
 
     expect(result.ok).toBe(false);
     expect(result).toMatchObject({ code: "invalid_snapshot" });
+  });
+
+  it("migrates a version 2 save to a map-bearing version 3 run", () => {
+    // The M21 snapshot stores the M19 fixed route: a runVersion 1 run whose
+    // completed list names the first three authored nodes.
+    const current = exportSave(createM19Run(1900));
+    const snapshot = structuredClone(envelopeOf(current).snapshot) as Record<
+      string,
+      unknown
+    >;
+    const run = { ...(snapshot.run as Record<string, unknown>) };
+    run.runVersion = M19_RUN_VERSION;
+    run.currentNodeId = "elite";
+    run.completedNodeIds = ["ordinary_1", "rest_1", "ordinary_2"];
+    snapshot.run = run;
+
+    const legacy = reseal(current, { saveVersion: 2, snapshot });
+    const result = importSave(legacy);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.saveVersion).toBe(2);
+    expect(result.migratedFrom).toBe(2);
+
+    const migratedRun = result.state.run;
+    expect(migratedRun?.runVersion).toBe(2);
+    expect(migratedRun?.map?.acts).toHaveLength(2);
+    expect(migratedRun?.map?.seed).toBe(1900);
+    // Index-preserving Act 1 route: one node per row, left column first.
+    expect(migratedRun?.completedMapNodeIds).toStrictEqual([
+      "act-1-row-1-col-0",
+      "act-1-row-2-col-0",
+      "act-1-row-3-col-0",
+    ]);
+    expect(migratedRun?.mapNodeId).toBe("act-1-row-4-col-0");
+
+    // The M19 fixed sequence survives so existing combat, reward, rest, deck,
+    // relic, and character behavior keeps working after selection.
+    expect(migratedRun?.currentNodeId).toBe("elite");
+    expect(migratedRun?.completedNodeIds).toStrictEqual([
+      "ordinary_1",
+      "rest_1",
+      "ordinary_2",
+    ]);
+    expect(migratedRun?.deck).toBeNull();
+    expect(migratedRun?.relicIds).toStrictEqual(["relic.shared_warranty"]);
+    expect(migratedRun?.characters).toStrictEqual([
+      { actorId: "morrow", hp: 44, maxHp: 44 },
+      { actorId: "switch", hp: 36, maxHp: 36 },
+    ]);
+  });
+
+  it("rejects a version 2 run that cannot map onto the Act 1 template", () => {
+    const current = exportSave(createM19Run(1900));
+    const snapshot = structuredClone(envelopeOf(current).snapshot) as Record<
+      string,
+      unknown
+    >;
+    const run = { ...(snapshot.run as Record<string, unknown>) };
+    run.currentNodeId = "not_an_authored_node";
+    snapshot.run = run;
+
+    const result = importSave(reseal(current, { saveVersion: 2, snapshot }));
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe("unmigratable_save_version");
+  });
+});
+
+describe("M22 save navigation validation", () => {
+  it("rejects a save whose first completed map node is not reachable from the Act 1 entrance", () => {
+    // A later Act 1 node can never be the sole first completed node: from an
+    // empty completion set the only legal first stop is reachable from row 1.
+    const laterAct1NodeId = "act-1-row-4-col-0";
+    const current = exportSave(createM22Run(1900));
+    const snapshot = structuredClone(envelopeOf(current).snapshot) as Record<
+      string,
+      unknown
+    >;
+    const run = { ...(snapshot.run as Record<string, unknown>) };
+    run.completedMapNodeIds = [laterAct1NodeId];
+    run.mapNodeId = laterAct1NodeId;
+    run.currentNodeId = laterAct1NodeId;
+    snapshot.run = run;
+
+    const result = importSave(reseal(current, { snapshot }));
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.code).toBe("invalid_snapshot");
   });
 });

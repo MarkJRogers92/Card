@@ -14,6 +14,22 @@ Base: `34b31a4` (`codex/m21-persistence`)
 
 ## Status and publication boundary
 
+### Final local acceptance update — 2026-09-12
+
+The temporary incomplete `node_modules` symlink was replaced with a clean
+`npm ci` install from the unchanged committed lockfile. The exact focused gate
+then passed on this worktree:
+
+- `npm run test:m19` — 12 tests passed.
+- `npm run test:m20` — 28 tests passed.
+- `npm run test:m21` — 25 tests passed.
+- `npm run test:m22` — 53 tests passed.
+- `npx playwright test tests/browser/m22-map.spec.ts` — 1 test passed.
+
+The earlier missing-`fake-indexeddb` and loopback limitations recorded below
+are retained as historical worker-sandbox evidence; they are no longer current
+local acceptance blockers.
+
 Tasks 1-3 are implemented at the branch head. Task 4 authored this handoff and
 updated the SDD ledger, but the task instruction explicitly prohibited
 committing. Those two documentation files are therefore working-tree changes

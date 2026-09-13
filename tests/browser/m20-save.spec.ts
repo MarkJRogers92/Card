@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { SAVE_SCHEMA_VERSION } from "../../src/engine";
 
 function tamperChecksum(text: string): string {
   return text.replace(/"checksum":"([^"]+)"/, (_match, value: string) => {
@@ -18,14 +19,14 @@ test("exports, reimports, and rejects a tampered save in the browser", async ({ 
   await page.getByTestId("save-export").click();
   await expect(page.getByTestId("save-status")).toHaveText("exported");
   const exported = await page.getByTestId("save-text").inputValue();
-  expect(exported).toContain('"saveVersion":2');
+  expect(exported).toContain(`"saveVersion":${SAVE_SCHEMA_VERSION}`);
   expect(exported).toContain('"checksum":"fnv1a64-utf8-v1:');
 
   await page.getByRole("button", { name: "Restart act" }).click();
   await expect(page.getByTestId("state-hash")).not.toHaveText(originalHash ?? "");
 
   await page.getByTestId("save-import").click();
-  await expect(page.getByTestId("save-status")).toHaveText("loaded: v2");
+  await expect(page.getByTestId("save-status")).toHaveText(`loaded: v${SAVE_SCHEMA_VERSION}`);
   await expect(page.getByTestId("state-hash")).toHaveText(originalHash ?? "");
 
   const tampered = tamperChecksum(exported);

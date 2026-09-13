@@ -7,10 +7,10 @@ import {
   validateRunMap,
   type RunMap,
   type RunMapNode,
-  type RunMapNodeKind,
+  type MapNodeKind,
 } from "../../src/engine/map";
 
-const EXPECTED_ROW_KINDS: readonly (readonly RunMapNodeKind[])[] = [
+const EXPECTED_ROW_KINDS: readonly (readonly MapNodeKind[])[] = [
   ["combat"],
   ["combat", "event", "event"],
   ["shop", "workshop"],
@@ -52,12 +52,13 @@ function hasNoConsecutiveDuplicateOrdinaryEncounter(map: RunMap): boolean {
     let previous: string | null = null;
     for (let row = 1; row <= 7; row += 1) {
       const ordinary = act.nodes
-        .filter(
-          (candidate) =>
-            candidate.row === row &&
-            candidate.payload.kind === "act_1_ordinary_encounter",
+        .map((candidate) =>
+          candidate.row === row &&
+          candidate.payload.kind === "act_1_ordinary_encounter"
+            ? candidate.payload.encounterId
+            : null,
         )
-        .map((candidate) => candidate.payload.encounterId);
+        .filter((encounterId): encounterId is string => encounterId !== null);
       for (const encounterId of ordinary) {
         if (encounterId === previous) return false;
         previous = encounterId;

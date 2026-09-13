@@ -35,7 +35,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Verify card visuals and explanations
-        run: npx playwright test tests/browser/card-visuals.spec.ts tests/browser/card-explanations.spec.ts --project=chromium
+        run: npx playwright test tests/browser/card-visuals.spec.ts tests/browser/card-explanations.spec.ts
 
       - name: Build GitHub Pages bundle
         run: npm run build -- --base=/Card/
